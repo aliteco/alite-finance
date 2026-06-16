@@ -10,13 +10,18 @@ export default function LoginPage() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
-  async function handleSubmit(e: React.SubmitEvent<HTMLFormElement>) {
+  async function handleSubmit(e: React.SyntheticEvent) {
     e.preventDefault()
     setLoading(true)
     setError('')
-    const result = await signIn(email, password)
-    if (result?.error) {
-      setError(result.error)
+    try {
+      const result = await signIn(email, password)
+      if (result?.error) {
+        setError(result.error)
+      }
+    } catch (err) {
+      setError('Something went wrong. Please try again.')
+    } finally {
       setLoading(false)
     }
   }

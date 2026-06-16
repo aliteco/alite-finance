@@ -12,7 +12,7 @@ export default function RegisterPage() {
   const [success, setSuccess] = useState('')
   const [loading, setLoading] = useState(false)
 
-  async function handleSubmit(e: React.SubmitEvent<HTMLFormElement>) {
+  async function handleSubmit(e: React.SyntheticEvent) {
     e.preventDefault()
     if (password.length < 8) {
       setError('Password must be at least 8 characters.')
@@ -21,13 +21,18 @@ export default function RegisterPage() {
     setLoading(true)
     setError('')
     setSuccess('')
-    const result = await signUp(email, password, fullName)
-    if (result?.error) {
-      setError(result.error)
-    } else if (result?.success) {
-      setSuccess(result.success)
+    try {
+      const result = await signUp(email, password, fullName)
+      if (result?.error) {
+        setError(result.error)
+      } else if (result?.success) {
+        setSuccess(result.success)
+      }
+    } catch (err) {
+      setError('Something went wrong. Please try again.')
+    } finally {
+      setLoading(false)
     }
-    setLoading(false)
   }
 
   return (
