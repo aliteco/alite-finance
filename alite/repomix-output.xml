@@ -1,0 +1,3842 @@
+This file is a merged representation of the entire codebase, combined into a single document by Repomix.
+
+<file_summary>
+This section contains a summary of this file.
+
+<purpose>
+This file contains a packed representation of the entire repository's contents.
+It is designed to be easily consumable by AI systems for analysis, code review,
+or other automated processes.
+</purpose>
+
+<file_format>
+The content is organized as follows:
+1. This summary section
+2. Repository information
+3. Directory structure
+4. Repository files (if enabled)
+5. Multiple file entries, each consisting of:
+  - File path as an attribute
+  - Full contents of the file
+</file_format>
+
+<usage_guidelines>
+- This file should be treated as read-only. Any changes should be made to the
+  original repository files, not this packed version.
+- When processing this file, use the file path to distinguish
+  between different files in the repository.
+- Be aware that this file may contain sensitive information. Handle it with
+  the same level of security as you would the original repository.
+</usage_guidelines>
+
+<notes>
+- Some files may have been excluded based on .gitignore rules and Repomix's configuration
+- Binary files are not included in this packed representation. Please refer to the Repository Structure section for a complete list of file paths, including binary files
+- Files matching patterns in .gitignore are excluded
+- Files matching default ignore patterns are excluded
+- Files are sorted by Git change count (files with more changes are at the bottom)
+</notes>
+
+</file_summary>
+
+<directory_structure>
+public/
+  file.svg
+  globe.svg
+  next.svg
+  vercel.svg
+  window.svg
+src/
+  app/
+    (app)/
+      layout.tsx
+    (auth)/
+      login/
+        page.tsx
+      register/
+        page.tsx
+    actions/
+      transactions.ts
+    dashboard/
+      page.tsx
+    settings/
+      page.tsx
+    transactions/
+      new/
+        page.tsx
+      page.tsx
+    favicon.ico
+    globals.css
+    layout.tsx
+    page.tsx
+  components/
+    navigation.tsx
+    settings-form.tsx
+    theme-provider.tsx
+    theme-toggle.tsx
+    transaction-form.tsx
+  lib/
+    supabase/
+      auth.ts
+      client.ts
+      index.ts
+      server.ts
+.gitignore
+AGENTS.md
+CLAUDE.md
+eslint.config.mjs
+next.config.ts
+package.json
+postcss.config.mjs
+README.md
+tailwind.config.ts
+tsconfig.json
+</directory_structure>
+
+<files>
+This section contains the contents of the repository's files.
+
+<file path="public/file.svg">
+<svg fill="none" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg"><path d="M14.5 13.5V5.41a1 1 0 0 0-.3-.7L9.8.29A1 1 0 0 0 9.08 0H1.5v13.5A2.5 2.5 0 0 0 4 16h8a2.5 2.5 0 0 0 2.5-2.5m-1.5 0v-7H8v-5H3v12a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1M9.5 5V2.12L12.38 5zM5.13 5h-.62v1.25h2.12V5zm-.62 3h7.12v1.25H4.5zm.62 3h-.62v1.25h7.12V11z" clip-rule="evenodd" fill="#666" fill-rule="evenodd"/></svg>
+</file>
+
+<file path="public/globe.svg">
+<svg fill="none" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><g clip-path="url(#a)"><path fill-rule="evenodd" clip-rule="evenodd" d="M10.27 14.1a6.5 6.5 0 0 0 3.67-3.45q-1.24.21-2.7.34-.31 1.83-.97 3.1M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16m.48-1.52a7 7 0 0 1-.96 0H7.5a4 4 0 0 1-.84-1.32q-.38-.89-.63-2.08a40 40 0 0 0 3.92 0q-.25 1.2-.63 2.08a4 4 0 0 1-.84 1.31zm2.94-4.76q1.66-.15 2.95-.43a7 7 0 0 0 0-2.58q-1.3-.27-2.95-.43a18 18 0 0 1 0 3.44m-1.27-3.54a17 17 0 0 1 0 3.64 39 39 0 0 1-4.3 0 17 17 0 0 1 0-3.64 39 39 0 0 1 4.3 0m1.1-1.17q1.45.13 2.69.34a6.5 6.5 0 0 0-3.67-3.44q.65 1.26.98 3.1M8.48 1.5l.01.02q.41.37.84 1.31.38.89.63 2.08a40 40 0 0 0-3.92 0q.25-1.2.63-2.08a4 4 0 0 1 .85-1.32 7 7 0 0 1 .96 0m-2.75.4a6.5 6.5 0 0 0-3.67 3.44 29 29 0 0 1 2.7-.34q.31-1.83.97-3.1M4.58 6.28q-1.66.16-2.95.43a7 7 0 0 0 0 2.58q1.3.27 2.95.43a18 18 0 0 1 0-3.44m.17 4.71q-1.45-.12-2.69-.34a6.5 6.5 0 0 0 3.67 3.44q-.65-1.27-.98-3.1" fill="#666"/></g><defs><clipPath id="a"><path fill="#fff" d="M0 0h16v16H0z"/></clipPath></defs></svg>
+</file>
+
+<file path="public/next.svg">
+<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 394 80"><path fill="#000" d="M262 0h68.5v12.7h-27.2v66.6h-13.6V12.7H262V0ZM149 0v12.7H94v20.4h44.3v12.6H94v21h55v12.6H80.5V0h68.7zm34.3 0h-17.8l63.8 79.4h17.9l-32-39.7 32-39.6h-17.9l-23 28.6-23-28.6zm18.3 56.7-9-11-27.1 33.7h17.8l18.3-22.7z"/><path fill="#000" d="M81 79.3 17 0H0v79.3h13.6V17l50.2 62.3H81Zm252.6-.4c-1 0-1.8-.4-2.5-1s-1.1-1.6-1.1-2.6.3-1.8 1-2.5 1.6-1 2.6-1 1.8.3 2.5 1a3.4 3.4 0 0 1 .6 4.3 3.7 3.7 0 0 1-3 1.8zm23.2-33.5h6v23.3c0 2.1-.4 4-1.3 5.5a9.1 9.1 0 0 1-3.8 3.5c-1.6.8-3.5 1.3-5.7 1.3-2 0-3.7-.4-5.3-1s-2.8-1.8-3.7-3.2c-.9-1.3-1.4-3-1.4-5h6c.1.8.3 1.6.7 2.2s1 1.2 1.6 1.5c.7.4 1.5.5 2.4.5 1 0 1.8-.2 2.4-.6a4 4 0 0 0 1.6-1.8c.3-.8.5-1.8.5-3V45.5zm30.9 9.1a4.4 4.4 0 0 0-2-3.3 7.5 7.5 0 0 0-4.3-1.1c-1.3 0-2.4.2-3.3.5-.9.4-1.6 1-2 1.6a3.5 3.5 0 0 0-.3 4c.3.5.7.9 1.3 1.2l1.8 1 2 .5 3.2.8c1.3.3 2.5.7 3.7 1.2a13 13 0 0 1 3.2 1.8 8.1 8.1 0 0 1 3 6.5c0 2-.5 3.7-1.5 5.1a10 10 0 0 1-4.4 3.5c-1.8.8-4.1 1.2-6.8 1.2-2.6 0-4.9-.4-6.8-1.2-2-.8-3.4-2-4.5-3.5a10 10 0 0 1-1.7-5.6h6a5 5 0 0 0 3.5 4.6c1 .4 2.2.6 3.4.6 1.3 0 2.5-.2 3.5-.6 1-.4 1.8-1 2.4-1.7a4 4 0 0 0 .8-2.4c0-.9-.2-1.6-.7-2.2a11 11 0 0 0-2.1-1.4l-3.2-1-3.8-1c-2.8-.7-5-1.7-6.6-3.2a7.2 7.2 0 0 1-2.4-5.7 8 8 0 0 1 1.7-5 10 10 0 0 1 4.3-3.5c2-.8 4-1.2 6.4-1.2 2.3 0 4.4.4 6.2 1.2 1.8.8 3.2 2 4.3 3.4 1 1.4 1.5 3 1.5 5h-5.8z"/></svg>
+</file>
+
+<file path="public/vercel.svg">
+<svg fill="none" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1155 1000"><path d="m577.3 0 577.4 1000H0z" fill="#fff"/></svg>
+</file>
+
+<file path="public/window.svg">
+<svg fill="none" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path fill-rule="evenodd" clip-rule="evenodd" d="M1.5 2.5h13v10a1 1 0 0 1-1 1h-11a1 1 0 0 1-1-1zM0 1h16v11.5a2.5 2.5 0 0 1-2.5 2.5h-11A2.5 2.5 0 0 1 0 12.5zm3.75 4.5a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5M7 4.75a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0m1.75.75a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5" fill="#666"/></svg>
+</file>
+
+<file path="src/app/(app)/layout.tsx">
+import { redirect } from 'next/navigation'
+import { createClient } from '@/lib/supabase/server'
+import Navigation from '@/components/navigation'
+
+export default async function AppLayout({ children }: { children: React.ReactNode }) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) redirect('/login')
+
+  return (
+    <>
+      <Navigation />
+      <main>{children}</main>
+    </>
+  )
+}
+</file>
+
+<file path="src/app/(auth)/login/page.tsx">
+'use client'
+
+import { useState } from 'react'
+import Link from 'next/link'
+import { signIn } from '@/lib/supabase/auth'
+
+export default function LoginPage() {
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
+
+  async function handleSubmit(e: React.SubmitEvent<HTMLFormElement>) {
+  e.preventDefault()
+    setLoading(true)
+    setError('')
+    try {
+      const result = await signIn(email, password)
+      if (result?.error) {
+        setError(result.error)
+      }
+    } catch (err) {
+      setError('Something went wrong. Please try again.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <div className="min-h-screen bg-background flex flex-col justify-center px-6">
+      <div className="w-full max-w-sm mx-auto">
+        {/* Logo */}
+        <div className="mb-10 text-center">
+          <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-primary mb-4">
+            <span className="text-primary-foreground font-bold text-xl">A</span>
+          </div>
+          <h1 className="text-2xl font-semibold tracking-tight text-foreground">Alite</h1>
+          <p className="text-sm text-muted-foreground mt-1">Your personal finance, simplified</p>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium text-foreground" htmlFor="email">
+              Email
+            </label>
+            <input
+              id="email"
+              type="email"
+              autoComplete="email"
+              required
+              value={email}
+              onChange={e => setEmail(e.target.value)}
+              placeholder="you@example.com"
+              className="w-full h-11 rounded-xl border border-border bg-card px-4 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 transition"
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium text-foreground" htmlFor="password">
+              Password
+            </label>
+            <input
+              id="password"
+              type="password"
+              autoComplete="current-password"
+              required
+              value={password}
+              onChange={e => setPassword(e.target.value)}
+              placeholder="••••••••"
+              className="w-full h-11 rounded-xl border border-border bg-card px-4 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 transition"
+            />
+          </div>
+
+          {error && (
+            <p className="text-sm text-destructive bg-destructive/10 rounded-lg px-3 py-2">
+              {error}
+            </p>
+          )}
+
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full h-11 rounded-xl bg-primary text-primary-foreground text-sm font-medium disabled:opacity-50 transition active:scale-[0.98]"
+          >
+            {loading ? 'Signing in…' : 'Sign in'}
+          </button>
+        </form>
+
+        <p className="text-center text-sm text-muted-foreground mt-6">
+          Don't have an account?{' '}
+          <Link href="/register" className="text-primary font-medium">
+            Sign up
+          </Link>
+        </p>
+      </div>
+    </div>
+  )
+}
+</file>
+
+<file path="src/app/(auth)/register/page.tsx">
+'use client'
+
+import { useState } from 'react'
+import Link from 'next/link'
+import { signUp } from '@/lib/supabase/auth'
+
+export default function RegisterPage() {
+  const [fullName, setFullName] = useState('')
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [error, setError] = useState('')
+  const [success, setSuccess] = useState('')
+  const [loading, setLoading] = useState(false)
+
+  async function handleSubmit(e: React.SubmitEvent<HTMLFormElement>) {
+    e.preventDefault()
+    if (password.length < 8) {
+      setError('Password must be at least 8 characters.')
+      return
+    }
+    setLoading(true)
+    setError('')
+    setSuccess('')
+    try {
+      const result = await signUp(email, password, fullName)
+      if (result?.error) {
+        setError(typeof result.error === 'string' ? result.error : "An unexpected error occurred")
+      } else if (result?.success) {
+        setSuccess(result.success)
+      }
+    } catch (err) {
+      setError('Something went wrong. Please try again.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <div className="min-h-screen bg-background flex flex-col justify-center px-6">
+      <div className="w-full max-w-sm mx-auto">
+        {/* Logo */}
+        <div className="mb-10 text-center">
+          <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-primary mb-4">
+            <span className="text-primary-foreground font-bold text-xl">A</span>
+          </div>
+          <h1 className="text-2xl font-semibold tracking-tight text-foreground">Create account</h1>
+          <p className="text-sm text-muted-foreground mt-1">Start tracking your finances</p>
+        </div>
+
+        {success ? (
+          <div className="text-center space-y-4">
+            <div className="bg-income/10 text-income rounded-xl px-4 py-4 text-sm font-medium">
+              {success}
+            </div>
+            <Link href="/login" className="block text-sm text-primary font-medium">
+              Back to sign in
+            </Link>
+          </div>
+        ) : (
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium text-foreground" htmlFor="fullName">
+                Full name
+              </label>
+              <input
+                id="fullName"
+                type="text"
+                autoComplete="name"
+                required
+                value={fullName}
+                onChange={e => setFullName(e.target.value)}
+                placeholder="Jane Doe"
+                className="w-full h-11 rounded-xl border border-border bg-card px-4 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 transition"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium text-foreground" htmlFor="email">
+                Email
+              </label>
+              <input
+                id="email"
+                type="email"
+                autoComplete="email"
+                required
+                value={email}
+                onChange={e => setEmail(e.target.value)}
+                placeholder="you@example.com"
+                className="w-full h-11 rounded-xl border border-border bg-card px-4 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 transition"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium text-foreground" htmlFor="password">
+                Password
+              </label>
+              <input
+                id="password"
+                type="password"
+                autoComplete="new-password"
+                required
+                value={password}
+                onChange={e => setPassword(e.target.value)}
+                placeholder="Min. 8 characters"
+                className="w-full h-11 rounded-xl border border-border bg-card px-4 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 transition"
+              />
+            </div>
+
+            {error && (
+              <p className="text-sm text-destructive bg-destructive/10 rounded-lg px-3 py-2">
+                {error}
+              </p>
+            )}
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full h-11 rounded-xl bg-primary text-primary-foreground text-sm font-medium disabled:opacity-50 transition active:scale-[0.98]"
+            >
+              {loading ? 'Creating account…' : 'Create account'}
+            </button>
+          </form>
+        )}
+
+        <p className="text-center text-sm text-muted-foreground mt-6">
+          Already have an account?{' '}
+          <Link href="/login" className="text-primary font-medium">
+            Sign in
+          </Link>
+        </p>
+      </div>
+    </div>
+  )
+}
+</file>
+
+<file path="src/app/actions/transactions.ts">
+'use server'
+
+import { revalidatePath } from 'next/cache'
+import { redirect } from 'next/navigation'
+import { createClient } from '@/lib/supabase/server'
+
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+export type TransactionType = 'income' | 'expense'
+
+export interface CreateTransactionInput {
+  account_id: string
+  type: TransactionType
+  amount: number
+  currency: string
+  exchange_rate_used: number        // rate: account_currency → base_currency
+  base_currency_amount: number      // amount * exchange_rate_used, computed client-side, validated here
+  category_id: string
+  description: string
+  happened_at: string               // ISO date string
+}
+
+export interface ActionResult {
+  error?: string
+  success?: boolean
+  id?: string
+}
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+function assertUser(user: { id: string } | null): asserts user is { id: string } {
+  if (!user) throw new Error('Unauthenticated')
+}
+
+// ─── Exchange rate lookup ──────────────────────────────────────────────────────
+
+export async function getExchangeRate(
+  fromCurrency: string,
+  toCurrency: string
+): Promise<{ rate: number; error?: string }> {
+  if (fromCurrency === toCurrency) return { rate: 1 }
+
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('exchange_rates')
+    .select('rate')
+    .eq('from_currency', fromCurrency)
+    .eq('to_currency', toCurrency)
+    .order('date', { ascending: false })
+    .limit(1)
+    .single()
+
+  if (error || !data) {
+    return { rate: 1, error: `No rate found for ${fromCurrency}→${toCurrency}` }
+  }
+  return { rate: data.rate }
+}
+
+// ─── Categories ───────────────────────────────────────────────────────────────
+
+export async function getCategories(type?: TransactionType) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+
+  let query = supabase
+    .from('categories')
+    .select('id, name, type, is_system')
+    .or(`user_id.is.null,user_id.eq.${user?.id}`)
+    .order('is_system', { ascending: false })
+    .order('name')
+
+  if (type) query = query.eq('type', type)
+
+  const { data, error } = await query
+  if (error) return []
+  return data ?? []
+}
+
+// ─── Create transaction ────────────────────────────────────────────────────────
+
+export async function createTransaction(
+  input: CreateTransactionInput
+): Promise<ActionResult> {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  assertUser(user)
+
+  // Server-side validation: recompute base_currency_amount to prevent tampering
+  const expectedBase = parseFloat(
+    (input.amount * input.exchange_rate_used).toFixed(2)
+  )
+  const delta = Math.abs(expectedBase - input.base_currency_amount)
+  if (delta > 0.01) {
+    return { error: 'Base currency amount mismatch — please refresh and retry.' }
+  }
+
+  // Insert transaction
+  const { data: tx, error: txError } = await supabase
+    .from('transactions')
+    .insert({
+      user_id: user.id,
+      account_id: input.account_id,
+      type: input.type,
+      amount: input.amount,
+      currency: input.currency,
+      exchange_rate_used: input.exchange_rate_used,
+      base_currency_amount: input.base_currency_amount,
+      category_id: input.category_id,
+      description: input.description || null,
+      happened_at: input.happened_at,
+      transfer_id: null,
+    })
+    .select('id')
+    .single()
+
+  if (txError) return { error: txError.message }
+
+  // Update account balance
+  const balanceDelta = input.type === 'income' ? input.amount : -input.amount
+  const { error: balanceError } = await supabase.rpc('increment_account_balance', {
+    p_account_id: input.account_id,
+    p_delta: balanceDelta,
+  })
+
+  if (balanceError) {
+    // Rollback transaction
+    await supabase.from('transactions').delete().eq('id', tx.id)
+    return { error: 'Failed to update account balance.' }
+  }
+
+  revalidatePath('/dashboard')
+  revalidatePath('/transactions')
+  revalidatePath(`/accounts/${input.account_id}`)
+
+  return { success: true, id: tx.id }
+}
+
+// ─── Delete transaction ────────────────────────────────────────────────────────
+
+export async function deleteTransaction(id: string): Promise<ActionResult> {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  assertUser(user)
+
+  // Fetch first to reverse balance
+  const { data: tx, error: fetchError } = await supabase
+    .from('transactions')
+    .select('account_id, type, amount')
+    .eq('id', id)
+    .eq('user_id', user.id)
+    .single()
+
+  if (fetchError || !tx) return { error: 'Transaction not found.' }
+  if (tx.type === null) return { error: 'Cannot delete a transfer leg directly.' }
+
+  const balanceDelta = tx.type === 'income' ? -tx.amount : tx.amount
+  await supabase.rpc('increment_account_balance', {
+    p_account_id: tx.account_id,
+    p_delta: balanceDelta,
+  })
+
+  const { error } = await supabase
+    .from('transactions')
+    .delete()
+    .eq('id', id)
+    .eq('user_id', user.id)
+
+  if (error) return { error: error.message }
+
+  revalidatePath('/dashboard')
+  revalidatePath('/transactions')
+  revalidatePath(`/accounts/${tx.account_id}`)
+  return { success: true }
+}
+
+// ─── Update profile settings ───────────────────────────────────────────────────
+
+export async function updateProfile(fields: {
+  base_currency?: string
+  full_name?: string
+}): Promise<ActionResult> {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  assertUser(user)
+
+  const { error } = await supabase
+    .from('profiles')
+    .update({ ...fields, updated_at: new Date().toISOString() })
+    .eq('id', user.id)
+
+  if (error) return { error: error.message }
+
+  revalidatePath('/settings')
+  revalidatePath('/dashboard')
+  return { success: true }
+}
+
+// ─── Create account ───────────────────────────────────────────────────────────
+
+export async function createAccount(fields: {
+  name: string
+  type: string
+  currency: string
+  balance: number
+}): Promise<ActionResult> {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  assertUser(user)
+
+  const { data, error } = await supabase
+    .from('accounts')
+    .insert({ ...fields, user_id: user.id, is_active: true })
+    .select('id')
+    .single()
+
+  if (error) return { error: error.message }
+
+  revalidatePath('/accounts')
+  revalidatePath('/dashboard')
+  redirect(`/accounts/${data.id}`)
+}
+</file>
+
+<file path="src/app/dashboard/page.tsx">
+import { redirect } from 'next/navigation'
+import { createClient } from '@/lib/supabase/server'
+
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+interface Profile {
+  base_currency: string
+}
+
+interface Account {
+  id: string
+  name: string
+  currency: string
+  balance: number
+  type: string
+}
+
+interface Transaction {
+  id: string
+  type: 'income' | 'expense'
+  amount: number
+  base_currency_amount: number
+  currency: string
+  description: string | null
+  created_at: string
+  categories: { name: string } | null
+  accounts: { name: string; currency: string } | null
+}
+
+interface MonthlyMetrics {
+  income: number
+  expense: number
+}
+
+// ─── Data fetching ────────────────────────────────────────────────────────────
+
+async function getDashboardData() {
+  const supabase = await createClient()
+
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) redirect('/login')
+
+  const now = new Date()
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString()
+  const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59).toISOString()
+
+  // Run queries in parallel
+  const [profileRes, accountsRes, monthlyTxRes, recentTxRes] = await Promise.all([
+    supabase
+      .from('profiles')
+      .select('base_currency')
+      .eq('id', user.id)
+      .single<Profile>(),
+
+    supabase
+      .from('accounts')
+      .select('id, name, currency, balance, type')
+      .eq('user_id', user.id)
+      .eq('is_active', true)
+      .order('balance', { ascending: false }),
+
+    // Monthly income/expense — exclude transfer legs
+    supabase
+      .from('transactions')
+      .select('type, base_currency_amount')
+      .eq('user_id', user.id)
+      .in('type', ['income', 'expense'])
+      .gte('created_at', monthStart)
+      .lte('created_at', monthEnd)
+      .is('transfer_id', null),        // exclude transfer legs
+
+    // Recent 15 transactions (non-transfer)
+    supabase
+      .from('transactions')
+      .select(`
+        id, type, amount, base_currency_amount, currency,
+        description, created_at,
+        categories ( name ),
+        accounts ( name, currency )
+      `)
+      .eq('user_id', user.id)
+      .in('type', ['income', 'expense'])
+      .is('transfer_id', null)
+      .order('created_at', { ascending: false })
+      .limit(15),
+  ])
+
+  const profile = profileRes.data ?? { base_currency: 'IDR' }
+  const accounts: Account[] = accountsRes.data ?? []
+  const monthlyTxs = monthlyTxRes.data ?? []
+  const recentTxs: Transaction[] = (recentTxRes.data as unknown as Transaction[]) ?? []
+
+  // Net worth: sum of all account balances already stored in base_currency_amount
+  // Accounts store balance in their own currency — we need base_currency_amount equivalents
+  // Here we assume accounts.balance is already in account currency, and we use
+  // a dedicated net_worth view or sum base_currency_amount. Adjust to your schema.
+  const netWorth = accounts.reduce((sum, a) => sum + (a.balance ?? 0), 0)
+
+  // Monthly aggregates from base_currency_amount (immutable historical)
+  const monthly: MonthlyMetrics = monthlyTxs.reduce(
+    (acc, tx) => {
+      if (tx.type === 'income') acc.income += tx.base_currency_amount ?? 0
+      if (tx.type === 'expense') acc.expense += tx.base_currency_amount ?? 0
+      return acc
+    },
+    { income: 0, expense: 0 }
+  )
+
+  return { profile, accounts, monthly, recentTxs, user }
+}
+
+// ─── Formatters ───────────────────────────────────────────────────────────────
+
+function formatCurrency(amount: number, currency: string) {
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency,
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(amount)
+}
+
+function formatDate(iso: string) {
+  const d = new Date(iso)
+  const today = new Date()
+  const yesterday = new Date(today)
+  yesterday.setDate(today.getDate() - 1)
+
+  if (d.toDateString() === today.toDateString()) return 'Today'
+  if (d.toDateString() === yesterday.toDateString()) return 'Yesterday'
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+}
+
+// ─── Sub-components ───────────────────────────────────────────────────────────
+
+function MetricCard({
+  label,
+  value,
+  currency,
+  accent,
+}: {
+  label: string
+  value: number
+  currency: string
+  accent?: 'income' | 'expense' | 'neutral'
+}) {
+  const colorMap = {
+    income: 'text-emerald-400',
+    expense: 'text-red-400',
+    neutral: 'text-foreground',
+  }
+  const color = colorMap[accent ?? 'neutral']
+
+  return (
+    <div className="bg-card border border-border rounded-2xl px-4 py-4 flex flex-col gap-1">
+      <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+        {label}
+      </span>
+      <span className={`text-xl font-semibold tabular-nums leading-tight ${color}`}>
+        {formatCurrency(value, currency)}
+      </span>
+    </div>
+  )
+}
+
+function TxRow({ tx, baseCurrency }: { tx: Transaction; baseCurrency: string }) {
+  const isIncome = tx.type === 'income'
+  const category = tx.categories?.name ?? 'Uncategorized'
+  const accountName = tx.accounts?.name ?? '—'
+  const sign = isIncome ? '+' : '−'
+  const amtColor = isIncome ? 'text-emerald-400' : 'text-red-400'
+
+  return (
+    <div className="flex items-center gap-3 py-3 border-b border-border last:border-0">
+      {/* Category dot */}
+      <div
+        className={`w-8 h-8 rounded-full shrink-0 flex items-center justify-center text-xs font-bold
+          ${isIncome ? 'bg-emerald-400/10 text-emerald-400' : 'bg-red-400/10 text-red-400'}`}
+      >
+        {category.charAt(0).toUpperCase()}
+      </div>
+
+      {/* Description + meta */}
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-medium text-foreground truncate">
+          {tx.description ?? category}
+        </p>
+        <p className="text-xs text-muted-foreground truncate">
+          {accountName} · {formatDate(tx.created_at)}
+        </p>
+      </div>
+
+      {/* Amount */}
+      <div className="text-right shrink-0">
+        <p className={`text-sm font-semibold tabular-nums ${amtColor}`}>
+          {sign}{formatCurrency(tx.amount, tx.currency)}
+        </p>
+        {tx.currency !== baseCurrency && (
+          <p className="text-[11px] text-muted-foreground tabular-nums">
+            {formatCurrency(tx.base_currency_amount, baseCurrency)}
+          </p>
+        )}
+      </div>
+    </div>
+  )
+}
+
+// ─── Page ─────────────────────────────────────────────────────────────────────
+
+export default async function DashboardPage() {
+  const { profile, accounts, monthly, recentTxs } = await getDashboardData()
+  const { base_currency } = profile
+  const savings = monthly.income - monthly.expense
+  const now = new Date()
+  const monthLabel = now.toLocaleString('en-US', { month: 'long', year: 'numeric' })
+
+  return (
+    <div className="min-h-screen bg-background pb-24 md:pl-56">
+      <div className="max-w-lg mx-auto px-4 pt-8 space-y-6">
+
+        {/* ── Net Worth ── */}
+        <section>
+          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1">
+            Net Worth
+          </p>
+          <h2 className="text-4xl font-bold tabular-nums tracking-tight text-foreground leading-none">
+            {formatCurrency(
+              accounts.reduce((s, a) => s + (a.balance ?? 0), 0),
+              base_currency
+            )}
+          </h2>
+          <p className="text-xs text-muted-foreground mt-1">
+            {base_currency} · {accounts.length} account{accounts.length !== 1 ? 's' : ''}
+          </p>
+        </section>
+
+        {/* ── Monthly summary ── */}
+        <section>
+          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3">
+            {monthLabel}
+          </p>
+          <div className="grid grid-cols-3 gap-2">
+            <MetricCard label="Income" value={monthly.income} currency={base_currency} accent="income" />
+            <MetricCard label="Expense" value={monthly.expense} currency={base_currency} accent="expense" />
+            <MetricCard label="Saved" value={savings} currency={base_currency} accent={savings >= 0 ? 'income' : 'expense'} />
+          </div>
+        </section>
+
+        {/* ── Savings rate bar ── */}
+        {monthly.income > 0 && (
+          <section className="bg-card border border-border rounded-2xl px-4 py-3">
+            <div className="flex justify-between items-center mb-2">
+              <span className="text-xs font-medium text-muted-foreground">Savings rate</span>
+              <span className="text-xs font-semibold text-foreground tabular-nums">
+                {Math.max(0, Math.round((savings / monthly.income) * 100))}%
+              </span>
+            </div>
+            <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+              <div
+                className="h-full bg-emerald-400 rounded-full transition-all"
+                style={{ width: `${Math.min(100, Math.max(0, (savings / monthly.income) * 100))}%` }}
+              />
+            </div>
+          </section>
+        )}
+
+        {/* ── Accounts strip ── */}
+        {accounts.length > 0 && (
+        <section>
+            <div className="flex items-center justify-between mb-3">
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Accounts</p>
+            <a href="/accounts" className="text-xs text-primary font-medium">See all</a>
+            </div>
+            <div className="flex gap-2 overflow-x-auto pb-1 -mx-4 px-4 snap-x snap-mandatory">
+            {accounts.map((account) => (
+                <a // <--- Ensure this tag is present
+                key={account.id}
+                href={`/accounts/${account.id}`}
+                className="snap-start shrink-0 bg-card border border-border rounded-2xl px-4 py-3 w-44 flex flex-col gap-2 active:opacity-70 transition"
+                >
+                <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                    {account.type}
+                    </span>
+                    <span className="text-[10px] text-muted-foreground">{account.currency}</span>
+                </div>
+                <p className="text-sm font-semibold text-foreground leading-tight truncate">{account.name}</p>
+                <p className="text-base font-bold tabular-nums text-foreground">
+                    {formatCurrency(account.balance, account.currency)}
+                </p>
+                </a>
+            ))}
+            </div>
+        </section>
+        )}
+
+        {/* ── Recent transactions ── */}
+        <section>
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Recent</p>
+            <a href="/transactions" className="text-xs text-primary font-medium">See all</a>
+          </div>
+
+          {recentTxs.length === 0 ? (
+            <div className="bg-card border border-border rounded-2xl px-4 py-8 text-center">
+              <p className="text-sm text-muted-foreground">No transactions yet</p>
+              <a href="/transactions/new" className="text-xs text-primary font-medium mt-1 block">
+                Add your first transaction
+              </a>
+            </div>
+          ) : (
+            <div className="bg-card border border-border rounded-2xl px-4">
+              {recentTxs.map(tx => (
+                <TxRow key={tx.id} tx={tx} baseCurrency={base_currency} />
+              ))}
+            </div>
+          )}
+        </section>
+
+      </div>
+    </div>
+  )
+}
+</file>
+
+<file path="src/app/settings/page.tsx">
+import { redirect } from 'next/navigation'
+import { createClient } from '@/lib/supabase/server'
+import SettingsForm from '@/components/settings-form'
+import { ThemeToggle } from '@/components/theme-toggle'
+
+export default async function SettingsPage() {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) redirect('/login')
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('full_name, base_currency')
+    .eq('id', user.id)
+    .single()
+
+  return (
+    <div className="page-wrapper">
+      <div className="max-w-lg mx-auto px-4 pt-6 space-y-6">
+
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-xl font-bold tracking-tight">Settings</h1>
+            <p className="text-xs text-muted-foreground mt-0.5">{user.email}</p>
+          </div>
+          <ThemeToggle />
+        </div>
+
+        <SettingsForm
+          initialName={profile?.full_name ?? ''}
+          initialCurrency={profile?.base_currency ?? 'IDR'}
+          email={user.email ?? ''}
+        />
+      </div>
+    </div>
+  )
+}
+</file>
+
+<file path="src/app/transactions/new/page.tsx">
+import { redirect } from 'next/navigation'
+import Link from 'next/link'
+import { createClient } from '@/lib/supabase/server'
+
+interface Transaction {
+  id: string
+  type: 'income' | 'expense'
+  amount: number
+  base_currency_amount: number
+  currency: string
+  description: string | null
+  happened_at: string
+  categories: { name: string } | null
+  accounts: { name: string } | null
+}
+
+type FilterType = 'all' | 'income' | 'expense'
+
+function formatCurrency(amount: number, currency: string) {
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency,
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+  }).format(amount)
+}
+
+function formatDate(iso: string) {
+  const d = new Date(iso)
+  const today = new Date()
+  const yesterday = new Date(today)
+  yesterday.setDate(today.getDate() - 1)
+  if (d.toDateString() === today.toDateString()) return 'Today'
+  if (d.toDateString() === yesterday.toDateString()) return 'Yesterday'
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+}
+
+function groupByDate(txs: Transaction[]): [string, Transaction[]][] {
+  const map = new Map<string, Transaction[]>()
+  for (const tx of txs) {
+    const label = formatDate(tx.happened_at)
+    if (!map.has(label)) map.set(label, [])
+    map.get(label)!.push(tx)
+  }
+  return Array.from(map.entries())
+}
+
+export default async function TransactionsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ type?: string; category?: string; page?: string; account?: string }>
+}) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) redirect('/login')
+
+  const params = await searchParams
+  const filterType = (params.type ?? 'all') as FilterType
+  const filterAccount = params.account ?? ''
+  const page = Math.max(1, parseInt(params.page ?? '1'))
+  const PAGE_SIZE = 40
+  const from = (page - 1) * PAGE_SIZE
+  const to = from + PAGE_SIZE - 1
+
+  const [profileRes, txRes, accountsRes] = await Promise.all([
+    supabase.from('profiles').select('base_currency').eq('id', user.id).single(),
+
+    (() => {
+      let q = supabase
+        .from('transactions')
+        .select(`
+          id, type, amount, base_currency_amount, currency,
+          description, happened_at,
+          categories ( name ),
+          accounts ( name )
+        `, { count: 'exact' })
+        .eq('user_id', user.id)
+        .is('transfer_id', null)
+        .order('happened_at', { ascending: false })
+        .range(from, to)
+
+      if (filterType !== 'all') q = q.eq('type', filterType)
+      if (filterAccount) q = q.eq('account_id', filterAccount)
+
+      return q
+    })(),
+
+    supabase
+      .from('accounts')
+      .select('id, name')
+      .eq('user_id', user.id)
+      .eq('is_active', true)
+      .order('name'),
+  ])
+
+  const baseCurrency = profileRes.data?.base_currency ?? 'IDR'
+  const transactions = (txRes.data as unknown as Transaction[]) ?? []
+  const totalCount = txRes.count ?? 0
+  const totalPages = Math.ceil(totalCount / PAGE_SIZE)
+  const accounts = accountsRes.data ?? []
+
+  const grouped = groupByDate(transactions)
+
+  // Build filter URL helper
+  function filterUrl(overrides: Record<string, string>) {
+    const p = new URLSearchParams({
+      ...(filterType !== 'all' ? { type: filterType } : {}),
+      ...(filterAccount ? { account: filterAccount } : {}),
+      ...overrides,
+    })
+    return `/transactions?${p.toString()}`
+  }
+
+  return (
+    <div className="min-h-screen bg-background pb-28 md:pl-56">
+      <div className="max-w-lg mx-auto px-4 pt-6 space-y-5">
+
+        {/* Header */}
+        <div className="flex items-end justify-between">
+          <div>
+            <h1 className="text-xl font-bold tracking-tight">Transactions</h1>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              {totalCount} total
+            </p>
+          </div>
+          <Link
+            href="/transactions/new"
+            className="h-9 px-4 rounded-xl bg-primary text-primary-foreground text-xs font-semibold flex items-center gap-1.5 hover:opacity-90 transition-opacity"
+          >
+            + New
+          </Link>
+        </div>
+
+        {/* Filters */}
+        <div className="space-y-2">
+          {/* Type filter */}
+          <div className="flex bg-muted rounded-xl p-1 gap-1">
+            {(['all', 'income', 'expense'] as const).map(t => (
+              <Link
+                key={t}
+                href={filterUrl({ type: t, page: '1' })}
+                className={`flex-1 h-8 rounded-lg text-xs font-semibold capitalize text-center leading-8 transition-colors
+                  ${filterType === t
+                    ? t === 'income'
+                      ? 'bg-card text-income'
+                      : t === 'expense'
+                      ? 'bg-card text-expense'
+                      : 'bg-card text-foreground'
+                    : 'text-muted-foreground'
+                  }`}
+              >
+                {t}
+              </Link>
+            ))}
+          </div>
+
+          {/* Account filter */}
+          {accounts.length > 1 && (
+            <div className="flex gap-2 overflow-x-auto pb-0.5">
+              <Link
+                href={filterUrl({ account: '', page: '1' })}
+                className={`shrink-0 rounded-xl px-3 py-1.5 text-xs font-medium transition-colors
+                  ${!filterAccount ? 'bg-primary text-primary-foreground' : 'bg-card border border-border text-muted-foreground hover:text-foreground'}`}
+              >
+                All accounts
+              </Link>
+              {accounts.map(a => (
+                <Link
+                  key={a.id}
+                  href={filterUrl({ account: a.id, page: '1' })}
+                  className={`shrink-0 rounded-xl px-3 py-1.5 text-xs font-medium transition-colors
+                    ${filterAccount === a.id ? 'bg-primary text-primary-foreground' : 'bg-card border border-border text-muted-foreground hover:text-foreground'}`}
+                >
+                  {a.name}
+                </Link>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Transaction list */}
+        {transactions.length === 0 ? (
+          <div className="bg-card border border-border rounded-2xl px-4 py-12 text-center">
+            <p className="text-sm text-muted-foreground mb-1">
+              {filterType !== 'all' || filterAccount ? 'No transactions match these filters.' : 'No transactions yet.'}
+            </p>
+            <Link href="/transactions/new" className="text-xs text-primary font-medium">
+              Add transaction →
+            </Link>
+          </div>
+        ) : (
+          <div className="space-y-5">
+            {grouped.map(([dateLabel, txs]) => (
+              <div key={dateLabel}>
+                <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mb-2 px-1">
+                  {dateLabel}
+                </p>
+                <div className="bg-card border border-border rounded-2xl overflow-hidden">
+                  {txs.map((tx, i) => (
+                    <div
+                      key={tx.id}
+                      className={`flex items-center gap-3 px-4 py-3.5 ${i < txs.length - 1 ? 'border-b border-border' : ''}`}
+                    >
+                      <div
+                        className={`w-8 h-8 rounded-[9px] flex items-center justify-center text-xs font-bold shrink-0
+                          ${tx.type === 'income' ? 'bg-income/10 text-income' : 'bg-expense/10 text-expense'}`}
+                      >
+                        {(tx.categories?.name ?? 'U').charAt(0).toUpperCase()}
+                      </div>
+
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-medium text-foreground truncate">
+                          {tx.description ?? tx.categories?.name ?? 'Transaction'}
+                        </p>
+                        <p className="text-[10px] text-muted-foreground">
+                          {tx.accounts?.name} · {tx.categories?.name ?? 'Uncategorized'}
+                        </p>
+                      </div>
+
+                      <div className="text-right shrink-0">
+                        <p className={`text-xs font-semibold tabular-nums ${tx.type === 'income' ? 'text-income' : 'text-expense'}`}>
+                          {tx.type === 'income' ? '+' : '−'}{formatCurrency(tx.amount, tx.currency)}
+                        </p>
+                        {tx.currency !== baseCurrency && (
+                          <p className="text-[10px] text-muted-foreground tabular-nums">
+                            {formatCurrency(tx.base_currency_amount, baseCurrency)}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div className="flex items-center justify-between px-1">
+                <Link
+                  href={filterUrl({ page: String(page - 1) })}
+                  className={`text-xs font-medium px-3 py-2 rounded-lg transition-colors
+                    ${page <= 1 ? 'text-muted-foreground/30 pointer-events-none' : 'text-muted-foreground hover:text-foreground'}`}
+                >
+                  ← Previous
+                </Link>
+                <span className="text-[11px] text-muted-foreground">{page} of {totalPages}</span>
+                <Link
+                  href={filterUrl({ page: String(page + 1) })}
+                  className={`text-xs font-medium px-3 py-2 rounded-lg transition-colors
+                    ${page >= totalPages ? 'text-muted-foreground/30 pointer-events-none' : 'text-muted-foreground hover:text-foreground'}`}
+                >
+                  Next →
+                </Link>
+              </div>
+            )}
+          </div>
+        )}
+
+      </div>
+    </div>
+  )
+}
+</file>
+
+<file path="src/app/transactions/page.tsx">
+import { redirect } from 'next/navigation'
+import Link from 'next/link'
+import { createClient } from '@/lib/supabase/server'
+
+interface Transaction {
+  id: string
+  type: 'income' | 'expense'
+  amount: number
+  base_currency_amount: number
+  currency: string
+  description: string | null
+  happened_at: string
+  categories: { name: string } | null
+  accounts: { name: string } | null
+}
+
+type FilterType = 'all' | 'income' | 'expense'
+
+function formatCurrency(amount: number, currency: string) {
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency,
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+  }).format(amount)
+}
+
+function formatDate(iso: string) {
+  const d = new Date(iso)
+  const today = new Date()
+  const yesterday = new Date(today)
+  yesterday.setDate(today.getDate() - 1)
+  if (d.toDateString() === today.toDateString()) return 'Today'
+  if (d.toDateString() === yesterday.toDateString()) return 'Yesterday'
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+}
+
+function groupByDate(txs: Transaction[]): [string, Transaction[]][] {
+  const map = new Map<string, Transaction[]>()
+  for (const tx of txs) {
+    const label = formatDate(tx.happened_at)
+    if (!map.has(label)) map.set(label, [])
+    map.get(label)!.push(tx)
+  }
+  return Array.from(map.entries())
+}
+
+export default async function TransactionsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ type?: string; category?: string; page?: string; account?: string }>
+}) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) redirect('/login')
+
+  const params = await searchParams
+  const filterType = (params.type ?? 'all') as FilterType
+  const filterAccount = params.account ?? ''
+  const page = Math.max(1, parseInt(params.page ?? '1'))
+  const PAGE_SIZE = 40
+  const from = (page - 1) * PAGE_SIZE
+  const to = from + PAGE_SIZE - 1
+
+  const [profileRes, txRes, accountsRes] = await Promise.all([
+    supabase.from('profiles').select('base_currency').eq('id', user.id).single(),
+
+    (() => {
+      let q = supabase
+        .from('transactions')
+        .select(`
+          id, type, amount, base_currency_amount, currency,
+          description, happened_at,
+          categories ( name ),
+          accounts ( name )
+        `, { count: 'exact' })
+        .eq('user_id', user.id)
+        .is('transfer_id', null)
+        .order('happened_at', { ascending: false })
+        .range(from, to)
+
+      if (filterType !== 'all') q = q.eq('type', filterType)
+      if (filterAccount) q = q.eq('account_id', filterAccount)
+
+      return q
+    })(),
+
+    supabase
+      .from('accounts')
+      .select('id, name')
+      .eq('user_id', user.id)
+      .eq('is_active', true)
+      .order('name'),
+  ])
+
+  const baseCurrency = profileRes.data?.base_currency ?? 'IDR'
+  const transactions = (txRes.data as unknown as Transaction[]) ?? []
+  const totalCount = txRes.count ?? 0
+  const totalPages = Math.ceil(totalCount / PAGE_SIZE)
+  const accounts = accountsRes.data ?? []
+
+  const grouped = groupByDate(transactions)
+
+  // Build filter URL helper
+  function filterUrl(overrides: Record<string, string>) {
+    const p = new URLSearchParams({
+      ...(filterType !== 'all' ? { type: filterType } : {}),
+      ...(filterAccount ? { account: filterAccount } : {}),
+      ...overrides,
+    })
+    return `/transactions?${p.toString()}`
+  }
+
+  return (
+    <div className="min-h-screen bg-background pb-28 md:pl-56">
+      <div className="max-w-lg mx-auto px-4 pt-6 space-y-5">
+
+        {/* Header */}
+        <div className="flex items-end justify-between">
+          <div>
+            <h1 className="text-xl font-bold tracking-tight">Transactions</h1>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              {totalCount} total
+            </p>
+          </div>
+          <Link
+            href="/transactions/new"
+            className="h-9 px-4 rounded-xl bg-primary text-primary-foreground text-xs font-semibold flex items-center gap-1.5 hover:opacity-90 transition-opacity"
+          >
+            + New
+          </Link>
+        </div>
+
+        {/* Filters */}
+        <div className="space-y-2">
+          {/* Type filter */}
+          <div className="flex bg-muted rounded-xl p-1 gap-1">
+            {(['all', 'income', 'expense'] as const).map(t => (
+              <Link
+                key={t}
+                href={filterUrl({ type: t, page: '1' })}
+                className={`flex-1 h-8 rounded-lg text-xs font-semibold capitalize text-center leading-8 transition-colors
+                  ${filterType === t
+                    ? t === 'income'
+                      ? 'bg-card text-income'
+                      : t === 'expense'
+                      ? 'bg-card text-expense'
+                      : 'bg-card text-foreground'
+                    : 'text-muted-foreground'
+                  }`}
+              >
+                {t}
+              </Link>
+            ))}
+          </div>
+
+          {/* Account filter */}
+          {accounts.length > 1 && (
+            <div className="flex gap-2 overflow-x-auto pb-0.5">
+              <Link
+                href={filterUrl({ account: '', page: '1' })}
+                className={`shrink-0 rounded-xl px-3 py-1.5 text-xs font-medium transition-colors
+                  ${!filterAccount ? 'bg-primary text-primary-foreground' : 'bg-card border border-border text-muted-foreground hover:text-foreground'}`}
+              >
+                All accounts
+              </Link>
+              {accounts.map(a => (
+                <Link
+                  key={a.id}
+                  href={filterUrl({ account: a.id, page: '1' })}
+                  className={`shrink-0 rounded-xl px-3 py-1.5 text-xs font-medium transition-colors
+                    ${filterAccount === a.id ? 'bg-primary text-primary-foreground' : 'bg-card border border-border text-muted-foreground hover:text-foreground'}`}
+                >
+                  {a.name}
+                </Link>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Transaction list */}
+        {transactions.length === 0 ? (
+          <div className="bg-card border border-border rounded-2xl px-4 py-12 text-center">
+            <p className="text-sm text-muted-foreground mb-1">
+              {filterType !== 'all' || filterAccount ? 'No transactions match these filters.' : 'No transactions yet.'}
+            </p>
+            <Link href="/transactions/new" className="text-xs text-primary font-medium">
+              Add transaction →
+            </Link>
+          </div>
+        ) : (
+          <div className="space-y-5">
+            {grouped.map(([dateLabel, txs]) => (
+              <div key={dateLabel}>
+                <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mb-2 px-1">
+                  {dateLabel}
+                </p>
+                <div className="bg-card border border-border rounded-2xl overflow-hidden">
+                  {txs.map((tx, i) => (
+                    <div
+                      key={tx.id}
+                      className={`flex items-center gap-3 px-4 py-3.5 ${i < txs.length - 1 ? 'border-b border-border' : ''}`}
+                    >
+                      <div
+                        className={`w-8 h-8 rounded-[9px] flex items-center justify-center text-xs font-bold shrink-0
+                          ${tx.type === 'income' ? 'bg-income/10 text-income' : 'bg-expense/10 text-expense'}`}
+                      >
+                        {(tx.categories?.name ?? 'U').charAt(0).toUpperCase()}
+                      </div>
+
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-medium text-foreground truncate">
+                          {tx.description ?? tx.categories?.name ?? 'Transaction'}
+                        </p>
+                        <p className="text-[10px] text-muted-foreground">
+                          {tx.accounts?.name} · {tx.categories?.name ?? 'Uncategorized'}
+                        </p>
+                      </div>
+
+                      <div className="text-right shrink-0">
+                        <p className={`text-xs font-semibold tabular-nums ${tx.type === 'income' ? 'text-income' : 'text-expense'}`}>
+                          {tx.type === 'income' ? '+' : '−'}{formatCurrency(tx.amount, tx.currency)}
+                        </p>
+                        {tx.currency !== baseCurrency && (
+                          <p className="text-[10px] text-muted-foreground tabular-nums">
+                            {formatCurrency(tx.base_currency_amount, baseCurrency)}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div className="flex items-center justify-between px-1">
+                <Link
+                  href={filterUrl({ page: String(page - 1) })}
+                  className={`text-xs font-medium px-3 py-2 rounded-lg transition-colors
+                    ${page <= 1 ? 'text-muted-foreground/30 pointer-events-none' : 'text-muted-foreground hover:text-foreground'}`}
+                >
+                  ← Previous
+                </Link>
+                <span className="text-[11px] text-muted-foreground">{page} of {totalPages}</span>
+                <Link
+                  href={filterUrl({ page: String(page + 1) })}
+                  className={`text-xs font-medium px-3 py-2 rounded-lg transition-colors
+                    ${page >= totalPages ? 'text-muted-foreground/30 pointer-events-none' : 'text-muted-foreground hover:text-foreground'}`}
+                >
+                  Next →
+                </Link>
+              </div>
+            )}
+          </div>
+        )}
+
+      </div>
+    </div>
+  )
+}
+</file>
+
+<file path="src/app/globals.css">
+@import "tailwindcss";
+
+/* ── Custom Dark Variant ── */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* ═══════════════════════════════════════════════════════════════
+   THEME TOKENS — Light Mode (default)
+   ═══════════════════════════════════════════════════════════════ */
+:root {
+  /* ── Surfaces ── */
+  --background: #ffffff;
+  --foreground: #0a0a0a;
+  --card: #fafafa;
+  --card-hover: #f5f5f5;
+  --muted: #f0f0f0;
+  --muted-foreground: #737373;
+  --muted-foreground-strong: #525252;
+
+  /* ── Borders ── */
+  --border: rgba(0, 0, 0, 0.08);
+  --border-strong: rgba(0, 0, 0, 0.14);
+  --border-hover: rgba(0, 0, 0, 0.20);
+  --divider: rgba(0, 0, 0, 0.06);
+
+  /* ── Brand ── */
+  --primary: #0a0a0a;
+  --primary-foreground: #ffffff;
+  --primary-hover: #262626;
+  --primary-muted: rgba(10, 10, 10, 0.08);
+
+  /* ── Semantic Colors ── */
+  --income: #16a34a;
+  --income-muted: rgba(22, 163, 74, 0.10);
+  --income-hover: #15803d;
+  --expense: #dc2626;
+  --expense-muted: rgba(220, 38, 38, 0.10);
+  --expense-hover: #b91c1c;
+  --destructive: #dc2626;
+  --destructive-muted: rgba(220, 38, 38, 0.10);
+
+  /* ── Accent / Interactive ── */
+  --accent: #f5f5f5;
+  --accent-foreground: #0a0a0a;
+  --ring: rgba(0, 0, 0, 0.15);
+  --ring-strong: rgba(0, 0, 0, 0.25);
+
+  /* ── Shadows ── */
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-md: 0 4px 12px rgba(0,0,0,0.06);
+  --shadow-lg: 0 8px 24px rgba(0,0,0,0.08);
+  --shadow-xl: 0 16px 48px rgba(0,0,0,0.10);
+  --shadow-inner: inset 0 1px 2px rgba(0,0,0,0.04);
+
+  /* ── Type Scale ── */
+  --text-xs: 11px;
+  --text-sm: 13px;
+  --text-base: 15px;
+  --text-lg: 17px;
+  --text-xl: 20px;
+  --text-2xl: 24px;
+  --text-3xl: 30px;
+  --text-4xl: 36px;
+  --text-5xl: 48px;
+  --text-6xl: 60px;
+
+  /* ── Radius ── */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  --radius-2xl: 24px;
+  --radius-full: 9999px;
+
+  /* ── Spacing ── */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+  --space-20: 80px;
+  --space-24: 96px;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   THEME TOKENS — Dark Mode (overrides)
+   ═══════════════════════════════════════════════════════════════ */
+@layer theme {
+  :root, :host {
+    @variant dark {
+      /* ── Surfaces ── */
+      --background: #09090b;
+      --foreground: #fafafa;
+      --card: #111113;
+      --card-hover: #161618;
+      --muted: #1a1a1c;
+      --muted-foreground: #a1a1aa;
+      --muted-foreground-strong: #d4d4d8;
+
+      /* ── Borders ── */
+      --border: rgba(255, 255, 255, 0.07);
+      --border-strong: rgba(255, 255, 255, 0.12);
+      --border-hover: rgba(255, 255, 255, 0.18);
+      --divider: rgba(255, 255, 255, 0.05);
+
+      /* ── Brand ── */
+      --primary: #fafafa;
+      --primary-foreground: #09090b;
+      --primary-hover: #e4e4e7;
+      --primary-muted: rgba(250, 250, 250, 0.08);
+
+      /* ── Semantic Colors ── */
+      --income: #34d399;
+      --income-muted: rgba(52, 211, 153, 0.12);
+      --income-hover: #10b981;
+      --expense: #f87171;
+      --expense-muted: rgba(248, 113, 113, 0.12);
+      --expense-hover: #ef4444;
+      --destructive: #f87171;
+      --destructive-muted: rgba(248, 113, 113, 0.12);
+
+      /* ── Accent / Interactive ── */
+      --accent: #1a1a1c;
+      --accent-foreground: #fafafa;
+      --ring: rgba(255, 255, 255, 0.15);
+      --ring-strong: rgba(255, 255, 255, 0.25);
+
+      /* ── Shadows ── */
+      --shadow-sm: 0 1px 2px rgba(0,0,0,0.30);
+      --shadow-md: 0 4px 12px rgba(0,0,0,0.40);
+      --shadow-lg: 0 8px 24px rgba(0,0,0,0.50);
+      --shadow-xl: 0 16px 48px rgba(0,0,0,0.60);
+      --shadow-inner: inset 0 1px 2px rgba(0,0,0,0.20);
+    }
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   TAILWIND THEME INLINE
+   ═══════════════════════════════════════════════════════════════ */
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-hover: var(--card-hover);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted-foreground-strong: var(--muted-foreground-strong);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-border-hover: var(--border-hover);
+  --color-divider: var(--divider);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-muted: var(--primary-muted);
+  --color-income: var(--income);
+  --color-income-muted: var(--income-muted);
+  --color-income-hover: var(--income-hover);
+  --color-expense: var(--expense);
+  --color-expense-muted: var(--expense-muted);
+  --color-expense-hover: var(--expense-hover);
+  --color-destructive: var(--destructive);
+  --color-destructive-muted: var(--destructive-muted);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-ring: var(--ring);
+  --color-ring-strong: var(--ring-strong);
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-geist-mono);
+  --radius-sm: var(--radius-sm);
+  --radius-md: var(--radius-md);
+  --radius-lg: var(--radius-lg);
+  --radius-xl: var(--radius-xl);
+  --radius-2xl: var(--radius-2xl);
+  --radius-full: var(--radius-full);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   BASE STYLES
+   ═══════════════════════════════════════════════════════════════ */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans), -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', sans-serif;
+  font-size: var(--text-base);
+  line-height: 1.5;
+  min-height: 100vh;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+/* ── Scrollbar (webkit) ── */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: var(--radius-full);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--border-hover);
+}
+
+/* ── Selection ── */
+::selection {
+  background: var(--primary-muted);
+  color: var(--foreground);
+}
+
+/* ── Focus Visible ── */
+:focus-visible {
+  outline: 2px solid var(--ring-strong);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+/* ── Inputs (global base) ── */
+input, textarea, select {
+  background: var(--card);
+  color: var(--foreground);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  font-family: inherit;
+  font-size: var(--text-sm);
+  padding: 10px 14px;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+}
+
+input::placeholder, textarea::placeholder {
+  color: var(--muted-foreground);
+  opacity: 0.7;
+}
+
+input:hover, textarea:hover, select:hover {
+  border-color: var(--border-hover);
+}
+
+input:focus, textarea:focus, select:focus {
+  outline: none;
+  border-color: var(--ring-strong);
+  box-shadow: 0 0 0 3px var(--ring);
+  background: var(--background);
+}
+
+input:disabled, textarea:disabled, select:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ── Buttons (global base) ── */
+button {
+  font-family: inherit;
+  cursor: pointer;
+  border: none;
+  background: none;
+  color: inherit;
+  transition: all 0.15s ease;
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ── Links ── */
+a {
+  color: inherit;
+  text-decoration: none;
+  transition: color 0.15s ease, opacity 0.15s ease;
+}
+
+a:hover {
+  opacity: 0.8;
+}
+
+/* ── Images ── */
+img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   UTILITY CLASSES
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── Tabular Numbers ── */
+.tabnum, .tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Safe Area Padding (mobile) ── */
+.safe-pb {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+.safe-px {
+  padding-left: env(safe-area-inset-left, 0px);
+  padding-right: env(safe-area-inset-right, 0px);
+}
+
+/* ── Card Hover Effect ── */
+.card-hover {
+  transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+}
+
+.card-hover:hover {
+  background: var(--card-hover);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
+}
+
+.card-hover:active {
+  transform: translateY(0);
+  box-shadow: var(--shadow-sm);
+}
+
+/* ── Press Effect ── */
+.press {
+  transition: transform 0.1s ease, opacity 0.1s ease;
+}
+
+.press:active {
+  transform: scale(0.98);
+  opacity: 0.9;
+}
+
+/* ── Glass Effect ── */
+.glass {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+}
+
+.dark .glass {
+  background: rgba(9, 9, 11, 0.7);
+}
+
+/* ── Gradient Text ── */
+.gradient-text {
+  background: linear-gradient(135deg, var(--foreground) 0%, var(--muted-foreground) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ── Skeleton Loading ── */
+@keyframes skeleton {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--muted) 25%,
+    var(--card-hover) 50%,
+    var(--muted) 75%
+  );
+  background-size: 200% 100%;
+  animation: skeleton 1.5s ease-in-out infinite;
+  border-radius: var(--radius-md);
+}
+
+/* ── Fade In Animation ── */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.fade-in {
+  animation: fadeIn 0.4s ease-out forwards;
+}
+
+/* ── Stagger Children ── */
+.stagger > * {
+  opacity: 0;
+  animation: fadeIn 0.4s ease-out forwards;
+}
+
+.stagger > *:nth-child(1) { animation-delay: 0.05s; }
+.stagger > *:nth-child(2) { animation-delay: 0.10s; }
+.stagger > *:nth-child(3) { animation-delay: 0.15s; }
+.stagger > *:nth-child(4) { animation-delay: 0.20s; }
+.stagger > *:nth-child(5) { animation-delay: 0.25s; }
+.stagger > *:nth-child(6) { animation-delay: 0.30s; }
+
+/* ═══════════════════════════════════════════════════════════════
+   LAYOUT HELPERS
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── Container ── */
+.container-app {
+  max-width: 1024px;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: var(--space-4);
+  padding-right: var(--space-4);
+}
+
+@media (min-width: 640px) {
+  .container-app {
+    padding-left: var(--space-6);
+    padding-right: var(--space-6);
+  }
+}
+
+/* ── Section Spacing ── */
+.section-sm { padding-top: var(--space-6); padding-bottom: var(--space-6); }
+.section-md { padding-top: var(--space-10); padding-bottom: var(--space-10); }
+.section-lg { padding-top: var(--space-16); padding-bottom: var(--space-16); }
+.section-xl { padding-top: var(--space-20); padding-bottom: var(--space-20); }
+
+/* ── Page Wrapper (with sidebar offset) ── */
+.page-wrapper {
+  min-height: 100vh;
+  background: var(--background);
+  padding-bottom: calc(var(--space-24) + env(safe-area-inset-bottom, 0px));
+}
+
+@media (min-width: 768px) {
+  .page-wrapper {
+    padding-left: 224px;
+    padding-bottom: var(--space-8);
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   COMPONENT PATTERNS
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── Badge ── */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--muted);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-full);
+  padding: 6px 12px;
+  font-size: var(--text-xs);
+  font-weight: 500;
+  color: var(--muted-foreground);
+  letter-spacing: 0.02em;
+}
+
+.badge-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--income);
+  flex-shrink: 0;
+}
+
+/* ── Card ── */
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.card:hover {
+  border-color: var(--border-strong);
+  box-shadow: var(--shadow-sm);
+}
+
+/* ── Button Primary ── */
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 40px;
+  padding: 0 20px;
+  border-radius: var(--radius-lg);
+  background: var(--primary);
+  color: var(--primary-foreground);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  transition: all 0.15s ease;
+}
+
+.btn-primary:hover {
+  background: var(--primary-hover);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+
+.btn-primary:active {
+  transform: translateY(0);
+  box-shadow: var(--shadow-sm);
+}
+
+/* ── Button Secondary ── */
+.btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 40px;
+  padding: 0 20px;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-strong);
+  background: var(--card);
+  color: var(--foreground);
+  font-size: var(--text-sm);
+  font-weight: 500;
+  transition: all 0.15s ease;
+}
+
+.btn-secondary:hover {
+  background: var(--muted);
+  border-color: var(--border-hover);
+}
+
+/* ── Button Ghost ── */
+.btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 36px;
+  padding: 0 14px;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--muted-foreground);
+  font-size: var(--text-sm);
+  font-weight: 500;
+  transition: all 0.15s ease;
+}
+
+.btn-ghost:hover {
+  background: var(--muted);
+  color: var(--foreground);
+}
+
+/* ── Income Button ── */
+.btn-income {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 48px;
+  padding: 0 24px;
+  border-radius: var(--radius-xl);
+  background: var(--income);
+  color: white;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  transition: all 0.15s ease;
+}
+
+.btn-income:hover {
+  background: var(--income-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px var(--income-muted);
+}
+
+.btn-income:active {
+  transform: translateY(0) scale(0.98);
+}
+
+/* ── Expense Button ── */
+.btn-expense {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 48px;
+  padding: 0 24px;
+  border-radius: var(--radius-xl);
+  background: var(--expense);
+  color: white;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  transition: all 0.15s ease;
+}
+
+.btn-expense:hover {
+  background: var(--expense-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px var(--expense-muted);
+}
+
+.btn-expense:active {
+  transform: translateY(0) scale(0.98);
+}
+
+/* ── Chip / Pill ── */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: var(--radius-lg);
+  font-size: var(--text-xs);
+  font-weight: 500;
+  transition: all 0.15s ease;
+  cursor: pointer;
+  border: 1px solid transparent;
+}
+
+.chip-active {
+  background: var(--primary);
+  color: var(--primary-foreground);
+  border-color: var(--primary);
+}
+
+.chip-inactive {
+  background: var(--muted);
+  color: var(--muted-foreground);
+  border-color: var(--border);
+}
+
+.chip-inactive:hover {
+  background: var(--card-hover);
+  color: var(--foreground);
+  border-color: var(--border-strong);
+}
+
+/* ── Income Chip ── */
+.chip-income {
+  background: var(--income-muted);
+  color: var(--income);
+  border-color: var(--income-muted);
+}
+
+.chip-income:hover {
+  background: var(--income);
+  color: white;
+}
+
+/* ── Expense Chip ── */
+.chip-expense {
+  background: var(--expense-muted);
+  color: var(--expense);
+  border-color: var(--expense-muted);
+}
+
+.chip-expense:hover {
+  background: var(--expense);
+  color: white;
+}
+
+/* ── Progress Bar ── */
+.progress-bar {
+  height: 6px;
+  background: var(--muted);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  border-radius: var(--radius-full);
+  background: var(--income);
+  transition: width 0.5s ease;
+}
+
+/* ── Divider ── */
+.divider {
+  height: 1px;
+  background: var(--divider);
+  width: 100%;
+}
+
+/* ── Empty State ── */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-12) var(--space-6);
+  text-align: center;
+  gap: var(--space-3);
+}
+
+.empty-state-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-lg);
+  background: var(--muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--muted-foreground);
+  margin-bottom: var(--space-2);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   RESPONSIVE HELPERS
+   ═══════════════════════════════════════════════════════════════ */
+@media (max-width: 767px) {
+  .hide-mobile { display: none !important; }
+}
+
+@media (min-width: 768px) {
+  .hide-desktop { display: none !important; }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   PRINT STYLES
+   ═══════════════════════════════════════════════════════════════ */
+@media print {
+  body {
+    background: white !important;
+    color: black !important;
+  }
+  
+  .no-print {
+    display: none !important;
+  }
+}
+</file>
+
+<file path="src/app/layout.tsx">
+import type { Metadata } from "next";
+import { Geist, Geist_Mono } from "next/font/google";
+import { Plus_Jakarta_Sans } from 'next/font/google';
+import "./globals.css";
+
+
+const jakarta = Plus_Jakarta_Sans({
+  subsets: ['latin'],
+  variable: '--font-sans',
+  display: 'swap',
+});
+
+const geistSans = Geist({
+  variable: "--font-geist-sans",
+  subsets: ["latin"],
+});
+
+const geistMono = Geist_Mono({
+  variable: "--font-geist-mono",
+  subsets: ["latin"],
+});
+
+export const metadata: Metadata = {
+  title: "Create Next App",
+  description: "Generated by create next app",
+};
+
+export default function RootLayout({
+  children,
+}: Readonly<{
+  children: React.ReactNode;
+}>) {
+  return (
+    <html
+      lang="en"
+      className={`${geistSans.variable} ${geistMono.variable} ${jakarta.variable} h-full antialiased`}
+    >
+      <body className="min-h-full flex flex-col">{children}</body>
+    </html>
+  );
+}
+</file>
+
+<file path="src/app/page.tsx">
+import Link from 'next/link'
+
+const FEATURES = [
+  {
+    icon: '₿',
+    title: 'Multi-currency',
+    body: 'Track IDR, USD, EUR and more. Every transaction stored at the exact exchange rate used — historical accuracy guaranteed.',
+  },
+  {
+    icon: '↕',
+    title: 'Honest metrics',
+    body: 'Income, expenses, and savings rate computed from real data in real-time. No estimates, no interpolation.',
+  },
+  {
+    icon: '⇄',
+    title: 'Transfer-aware',
+    body: 'Moving money between your accounts never inflates your income or expense totals. Accounting done right.',
+  },
+  {
+    icon: '◎',
+    title: 'Budget control',
+    body: 'Per-category spending limits with live progress. Know where you stand before you overspend.',
+  },
+]
+
+const PREVIEW_TXS = [
+  { icon: 'S', name: 'Salary', meta: 'Income · Today', amount: '+Rp 18.4M', positive: true },
+  { icon: 'G', name: 'Grab', meta: 'Transport · Today', amount: '−Rp 45K', positive: false },
+  { icon: 'A', name: 'Alfa Mart', meta: 'Groceries · Yesterday', amount: '−Rp 312K', positive: false },
+  { icon: 'N', name: 'Netflix', meta: 'Subscriptions · Dec 14', amount: '−$15.99', positive: false },
+]
+
+export default function LandingPage() {
+  return (
+    <div className="min-h-screen bg-background text-foreground">
+
+      {/* ── Nav ── */}
+      <header className="sticky top-0 z-50 border-b border-border bg-background/80 backdrop-blur-xl">
+        <div className="max-w-5xl mx-auto px-6 h-14 flex items-center justify-between">
+          {/* Logo */}
+          <div className="flex items-center gap-2.5">
+            <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center shrink-0">
+              <span className="text-primary-foreground font-bold text-sm leading-none">A</span>
+            </div>
+            <span className="text-sm font-semibold tracking-tight">Alite</span>
+          </div>
+
+          {/* Links — hidden on mobile */}
+          <nav className="hidden md:flex items-center gap-7">
+            {['Features', 'Accounts', 'Security'].map(l => (
+              <span key={l} className="text-xs text-muted-foreground hover:text-foreground transition-colors cursor-pointer">
+                {l}
+              </span>
+            ))}
+          </nav>
+
+          {/* CTAs */}
+          <div className="flex items-center gap-2.5">
+            <Link
+              href="/login"
+              className="hidden sm:block text-xs text-muted-foreground hover:text-foreground transition-colors px-3 py-1.5"
+            >
+              Sign in
+            </Link>
+            <Link
+              href="/register"
+              className="text-xs font-medium bg-primary text-primary-foreground rounded-lg px-3.5 py-1.5 hover:opacity-90 transition-opacity"
+            >
+              Get started
+            </Link>
+          </div>
+        </div>
+      </header>
+
+      {/* ── Hero ── */}
+      <section className="max-w-2xl mx-auto px-6 pt-20 pb-16 text-center">
+        {/* Badge */}
+        <div className="inline-flex items-center gap-2 bg-muted border border-border rounded-full px-3.5 py-1.5 mb-8">
+          <span className="w-1.5 h-1.5 rounded-full bg-income shrink-0" />
+          <span className="text-[11px] text-muted-foreground tracking-wide">Multi-currency · Real-time tracking</span>
+        </div>
+
+        <h1 className="text-5xl sm:text-6xl font-bold tracking-[-0.04em] leading-[1.04] text-foreground mb-5">
+          Your money,
+          <br />
+          <span className="text-muted-foreground">finally clear.</span>
+        </h1>
+
+        <p className="text-sm text-muted-foreground leading-relaxed max-w-sm mx-auto mb-8">
+          Track spending, net worth, and budgets across every currency and account — without the noise.
+        </p>
+
+        <div className="flex items-center justify-center gap-3">
+          <Link
+            href="/register"
+            className="h-10 px-5 rounded-xl bg-primary text-primary-foreground text-sm font-semibold tracking-tight hover:opacity-90 transition-opacity flex items-center"
+          >
+            Create free account
+          </Link>
+          <Link
+            href="/login"
+            className="h-10 px-5 rounded-xl border border-border text-sm text-muted-foreground hover:text-foreground hover:border-border-strong transition-colors flex items-center"
+          >
+            Sign in →
+          </Link>
+        </div>
+      </section>
+
+      {/* ── App Preview ── */}
+      <section className="max-w-xs mx-auto px-6 pb-20">
+
+        {/* Net Worth Card */}
+        <div className="bg-card border border-border rounded-[22px] p-5 mb-3">
+          <div className="flex items-center justify-between mb-6">
+            <span className="text-[10px] font-semibold text-muted-foreground tracking-[0.8px] uppercase">
+              Net Worth
+            </span>
+            <div className="flex gap-1">
+              <span className="w-2 h-2 rounded-full bg-income" />
+              <span className="w-2 h-2 rounded-full bg-border" />
+            </div>
+          </div>
+
+          <div className="tabnum text-4xl font-bold tracking-[-1.5px] text-foreground mb-1">
+            Rp 487.2M
+          </div>
+          <div className="text-[11px] text-muted-foreground mb-5">IDR · 4 accounts</div>
+
+          <div className="grid grid-cols-3 gap-3 pt-4 border-t border-border">
+            {[
+              { label: 'Income', value: '+18.4M', color: 'text-income' },
+              { label: 'Expenses', value: '−11.2M', color: 'text-expense' },
+              { label: 'Saved', value: '7.2M', color: 'text-income' },
+            ].map(({ label, value, color }) => (
+              <div key={label}>
+                <div className="text-[10px] text-muted-foreground uppercase tracking-[0.5px] mb-1">{label}</div>
+                <div className={`tabnum text-sm font-semibold ${color}`}>{value}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Recent Transactions */}
+        <div className="bg-card border border-border rounded-[22px] overflow-hidden">
+          <div className="px-5 py-3 border-b border-border">
+            <span className="text-[10px] font-semibold text-muted-foreground tracking-[0.8px] uppercase">
+              Recent
+            </span>
+          </div>
+          {PREVIEW_TXS.map(({ icon, name, meta, amount, positive }) => (
+            <div key={name} className="flex items-center gap-3 px-5 py-3 border-b border-border last:border-0">
+              <div className="w-8 h-8 rounded-[9px] bg-muted flex items-center justify-center text-xs font-bold text-muted-foreground shrink-0">
+                {icon}
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="text-xs font-medium text-foreground truncate">{name}</div>
+                <div className="text-[10px] text-muted-foreground">{meta}</div>
+              </div>
+              <div className={`tabnum text-xs font-semibold shrink-0 ${positive ? 'text-income' : 'text-expense'}`}>
+                {amount}
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* ── Features ── */}
+      <section className="max-w-2xl mx-auto px-6 pb-24">
+        <div className="text-center mb-10">
+          <p className="text-[11px] text-muted-foreground tracking-widest uppercase mb-2">Built different</p>
+          <h2 className="text-3xl font-bold tracking-[-0.05em]">Everything you need,<br />nothing you don't.</h2>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {FEATURES.map(({ icon, title, body }) => (
+            <div key={title} className="bg-card border border-border rounded-[18px] p-5">
+              <div className="w-8 h-8 rounded-[9px] bg-muted flex items-center justify-center text-base mb-4">
+                {icon}
+              </div>
+              <h3 className="text-sm font-semibold mb-2 tracking-tight">{title}</h3>
+              <p className="text-xs text-muted-foreground leading-relaxed">{body}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* ── Bottom CTA ── */}
+      <section className="border-t border-border">
+        <div className="max-w-2xl mx-auto px-6 py-20 text-center">
+          <h2 className="text-3xl font-bold tracking-[-0.05em] mb-3">
+            Start tracking today.
+          </h2>
+          <p className="text-sm text-muted-foreground mb-8">Free to use. No card required.</p>
+          <div className="flex items-center justify-center gap-3">
+            <Link
+              href="/register"
+              className="h-10 px-5 rounded-xl bg-primary text-primary-foreground text-sm font-semibold hover:opacity-90 transition-opacity flex items-center"
+            >
+              Create account
+            </Link>
+            <Link
+              href="/login"
+              className="h-10 px-5 rounded-xl border border-border text-sm text-muted-foreground hover:text-foreground transition-colors flex items-center"
+            >
+              Sign in
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* ── Footer ── */}
+      <footer className="border-t border-border px-6 py-5">
+        <div className="max-w-5xl mx-auto flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="w-5 h-5 rounded-md bg-primary flex items-center justify-center">
+              <span className="text-primary-foreground font-bold text-[10px]">A</span>
+            </div>
+            <span className="text-[11px] text-muted-foreground">Alite · Personal Finance</span>
+          </div>
+          <span className="text-[11px] text-muted-foreground hidden sm:block">
+            Next.js · Supabase · Tailwind
+          </span>
+        </div>
+      </footer>
+    </div>
+  )
+}
+</file>
+
+<file path="src/components/navigation.tsx">
+'use client'
+
+import Link from 'next/link'
+import { usePathname } from 'next/navigation'
+
+const NAV_ITEMS = [
+  { href: '/dashboard', label: 'Home', icon: HomeIcon },
+  { href: '/transactions', label: 'Transactions', icon: TxIcon },
+  { href: '/accounts', label: 'Accounts', icon: AccountIcon },
+  { href: '/settings', label: 'Settings', icon: SettingsIcon },
+]
+
+function HomeIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+      <polyline points="9 22 9 12 15 12 15 22" />
+    </svg>
+  )
+}
+
+function TxIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <line x1="12" y1="1" x2="12" y2="23" />
+      <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+    </svg>
+  )
+}
+
+function AccountIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="2" y="5" width="20" height="14" rx="2" />
+      <line x1="2" y1="10" x2="22" y2="10" />
+    </svg>
+  )
+}
+
+function SettingsIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="3" />
+      <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
+    </svg>
+  )
+}
+
+export default function Navigation() {
+  const pathname = usePathname()
+
+  return (
+    <>
+      {/* Desktop sidebar */}
+      <nav className="hide-mobile fixed left-0 top-0 h-full w-56 bg-card border-r border-border z-50 flex flex-col">
+        <div className="p-5">
+          <Link href="/dashboard" className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-xl bg-primary flex items-center justify-center">
+              <span className="text-primary-foreground font-bold text-sm">A</span>
+            </div>
+            <span className="font-semibold text-foreground tracking-tight">Alite</span>
+          </Link>
+        </div>
+        <div className="flex-1 px-3 space-y-1">
+          {NAV_ITEMS.map(item => {
+            const isActive = pathname === item.href || pathname.startsWith(item.href + '/')
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors
+                  ${isActive
+                    ? 'bg-primary-muted text-foreground'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+                  }`}
+              >
+                <item.icon className={`w-[18px] h-[18px] ${isActive ? 'text-foreground' : ''}`} />
+                {item.label}
+              </Link>
+            )
+          })}
+        </div>
+      </nav>
+
+      {/* Mobile bottom bar */}
+      <nav className="hide-desktop fixed bottom-0 left-0 right-0 bg-card/90 backdrop-blur-xl border-t border-border z-50 safe-pb">
+        <div className="flex items-center justify-around px-2 py-2">
+          {NAV_ITEMS.map(item => {
+            const isActive = pathname === item.href || pathname.startsWith(item.href + '/')
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={`flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-lg transition-colors
+                  ${isActive ? 'text-foreground' : 'text-muted-foreground'}`}
+              >
+                <item.icon className={`w-5 h-5 ${isActive ? 'text-foreground' : ''}`} />
+                <span className="text-[10px] font-medium">{item.label}</span>
+              </Link>
+            )
+          })}
+        </div>
+      </nav>
+    </>
+  )
+}
+</file>
+
+<file path="src/components/settings-form.tsx">
+'use client'
+
+import { useState, useTransition } from 'react'
+import { updateProfile } from '@/app/actions/transactions'
+import { createClient } from '@/lib/supabase/client'
+import { useRouter } from 'next/navigation'
+
+const CURRENCIES = [
+  { code: 'IDR', label: 'Indonesian Rupiah' },
+  { code: 'USD', label: 'US Dollar' },
+  { code: 'EUR', label: 'Euro' },
+  { code: 'SGD', label: 'Singapore Dollar' },
+  { code: 'JPY', label: 'Japanese Yen' },
+  { code: 'GBP', label: 'British Pound' },
+  { code: 'AUD', label: 'Australian Dollar' },
+  { code: 'MYR', label: 'Malaysian Ringgit' },
+]
+
+interface SettingsFormProps {
+  initialName: string
+  initialCurrency: string
+  email: string
+}
+
+export default function SettingsForm({ initialName, initialCurrency, email }: SettingsFormProps) {
+  const router = useRouter()
+  const [isPending, startTransition] = useTransition()
+  const [isSigningOut, setIsSigningOut] = useState(false)
+
+  const [fullName, setFullName] = useState(initialName)
+  const [baseCurrency, setBaseCurrency] = useState(initialCurrency)
+  const [saved, setSaved] = useState(false)
+  const [error, setError] = useState('')
+
+  async function handleSave(e: React.SubmitEvent) {
+    e.preventDefault()
+    setError('')
+    setSaved(false)
+    startTransition(async () => {
+      const result = await updateProfile({ full_name: fullName, base_currency: baseCurrency })
+      if (result.error) {
+        setError(result.error)
+      } else {
+        setSaved(true)
+        setTimeout(() => setSaved(false), 2500)
+      }
+    })
+  }
+
+  async function handleSignOut() {
+    setIsSigningOut(true)
+    const supabase = createClient()
+    await supabase.auth.signOut()
+    router.push('/login')
+  }
+
+  return (
+    <form onSubmit={handleSave} className="space-y-3">
+
+      {/* Profile */}
+      <div className="bg-card border border-border rounded-2xl px-4 py-4 space-y-4">
+        <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest">Profile</p>
+
+        <div>
+          <label className="text-[10px] font-medium text-muted-foreground block mb-1.5">Full name</label>
+          <input
+            type="text"
+            value={fullName}
+            onChange={e => setFullName(e.target.value)}
+            placeholder="Your name"
+            className="w-full bg-transparent text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none"
+          />
+        </div>
+
+        <div className="border-t border-border pt-4">
+          <label className="text-[10px] font-medium text-muted-foreground block mb-1.5">Email</label>
+          <p className="text-sm text-muted-foreground">{email}</p>
+        </div>
+      </div>
+
+      {/* Base currency */}
+      <div className="bg-card border border-border rounded-2xl px-4 py-4">
+        <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mb-1">
+          Base currency
+        </p>
+        <p className="text-[11px] text-muted-foreground mb-3">
+          All amounts are converted to this currency for metrics. Historical transactions are not affected.
+        </p>
+        <div className="space-y-1">
+          {CURRENCIES.map(c => (
+            <button
+              key={c.code}
+              type="button"
+              onClick={() => setBaseCurrency(c.code)}
+              className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm transition-colors
+                ${baseCurrency === c.code
+                  ? 'bg-primary/10 text-foreground'
+                  : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                }`}
+            >
+              <span className="font-medium">{c.label}</span>
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-muted-foreground font-mono">{c.code}</span>
+                {baseCurrency === c.code && (
+                  <span className="w-1.5 h-1.5 rounded-full bg-income" />
+                )}
+              </div>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Error / success */}
+      {error && (
+        <p className="text-xs text-expense bg-expense/10 rounded-xl px-4 py-3 border border-expense/20">
+          {error}
+        </p>
+      )}
+      {saved && (
+        <p className="text-xs text-income bg-income/10 rounded-xl px-4 py-3 border border-income/20">
+          Settings saved.
+        </p>
+      )}
+
+      <button
+        type="submit"
+        disabled={isPending}
+        className="w-full h-11 rounded-2xl bg-primary text-primary-foreground text-sm font-semibold tracking-tight transition-all active:scale-[0.98] disabled:opacity-50"
+      >
+        {isPending ? 'Saving…' : 'Save changes'}
+      </button>
+
+      {/* Danger zone */}
+      <div className="bg-card border border-border rounded-2xl px-4 py-4 mt-4">
+        <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mb-3">Account</p>
+        <button
+          type="button"
+          onClick={handleSignOut}
+          disabled={isSigningOut}
+          className="w-full h-10 rounded-xl border border-expense/30 text-expense text-xs font-semibold hover:bg-expense/10 transition-colors disabled:opacity-50"
+        >
+          {isSigningOut ? 'Signing out…' : 'Sign out'}
+        </button>
+      </div>
+    </form>
+  )
+}
+</file>
+
+<file path="src/components/theme-provider.tsx">
+"use client"
+
+import { ThemeProvider as NextThemesProvider } from "next-themes"
+import type { ThemeProviderProps } from "next-themes"
+
+export function ThemeProvider({ children, ...props }: ThemeProviderProps) {
+  return <NextThemesProvider {...props}>{children}</NextThemesProvider>
+}
+</file>
+
+<file path="src/components/theme-toggle.tsx">
+"use client"
+
+import { useTheme } from "next-themes"
+import { useEffect, useState } from "react"
+
+export function ThemeToggle({ className = "" }: { className?: string }) {
+  const { theme, setTheme, resolvedTheme } = useTheme()
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  if (!mounted) {
+    return (
+      <div className={`w-9 h-9 rounded-xl bg-muted animate-pulse ${className}`} />
+    )
+  }
+
+  const isDark = resolvedTheme === "dark"
+
+  return (
+    <button
+      onClick={() => setTheme(isDark ? "light" : "dark")}
+      className={`relative w-9 h-9 rounded-xl flex items-center justify-center 
+        bg-muted hover:bg-muted-foreground/20 transition-all duration-200
+        active:scale-95 ${className}`}
+      aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
+      title={isDark ? "Switch to light mode" : "Switch to dark mode"}
+    >
+      {isDark ? (
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+          strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+          className="text-foreground">
+          <circle cx="12" cy="12" r="5" />
+          <line x1="12" y1="1" x2="12" y2="3" />
+          <line x1="12" y1="21" x2="12" y2="23" />
+          <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
+          <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
+          <line x1="1" y1="12" x2="3" y2="12" />
+          <line x1="21" y1="12" x2="23" y2="12" />
+          <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
+          <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
+        </svg>
+      ) : (
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+          strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+          className="text-foreground">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+        </svg>
+      )}
+    </button>
+  )
+}
+</file>
+
+<file path="src/components/transaction-form.tsx">
+'use client'
+
+import { useState, useEffect, useTransition, useCallback } from 'react'
+import { useRouter } from 'next/navigation'
+import {
+  createTransaction,
+  getExchangeRate,
+  type TransactionType,
+} from '@/app/actions/transactions'
+
+interface Account {
+  id: string
+  name: string
+  currency: string
+  type: string
+}
+
+interface Category {
+  id: string
+  name: string
+  type: string
+}
+
+interface TransactionFormProps {
+  accounts: Account[]
+  categories: Category[]
+  baseCurrency: string
+  defaultAccountId?: string
+}
+
+const COMMON_CURRENCIES = ['IDR', 'USD', 'EUR', 'SGD', 'JPY', 'GBP', 'AUD', 'MYR']
+
+function formatCurrency(amount: number, currency: string) {
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency,
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+  }).format(amount)
+}
+
+export default function TransactionForm({
+  accounts,
+  categories,
+  baseCurrency,
+  defaultAccountId,
+}: TransactionFormProps) {
+  const router = useRouter()
+  const [isPending, startTransition] = useTransition()
+
+  // Form state
+  const [type, setType] = useState<TransactionType>('expense')
+  const [accountId, setAccountId] = useState(defaultAccountId ?? accounts[0]?.id ?? '')
+  const [amount, setAmount] = useState('')
+  const [currency, setCurrency] = useState(
+    accounts.find(a => a.id === (defaultAccountId ?? accounts[0]?.id))?.currency ?? baseCurrency
+  )
+  const [categoryId, setCategoryId] = useState('')
+  const [description, setDescription] = useState('')
+  const [happenedAt, setHappenedAt] = useState(
+    new Date().toISOString().slice(0, 10)
+  )
+
+  // Rate state
+  const [exchangeRate, setExchangeRate] = useState(1)
+  const [rateLoading, setRateLoading] = useState(false)
+  const [rateError, setRateError] = useState('')
+
+  // UI state
+  const [error, setError] = useState('')
+  const [showCurrencyPicker, setShowCurrencyPicker] = useState(false)
+
+  // Derived
+  const baseCurrencyAmount = parseFloat(
+    (parseFloat(amount || '0') * exchangeRate).toFixed(2)
+  )
+  const filteredCategories = categories.filter(c => c.type === type || c.type === 'both')
+  const selectedAccount = accounts.find(a => a.id === accountId)
+
+  // Fetch rate when currency or baseCurrency changes
+  const fetchRate = useCallback(async (from: string, to: string) => {
+    if (from === to) { setExchangeRate(1); return }
+    setRateLoading(true)
+    setRateError('')
+    const result = await getExchangeRate(from, to)
+    if (result.error) setRateError(result.error)
+    setExchangeRate(result.rate)
+    setRateLoading(false)
+  }, [])
+
+  useEffect(() => {
+    fetchRate(currency, baseCurrency)
+  }, [currency, baseCurrency, fetchRate])
+
+  // When account changes, sync currency to account's currency
+  useEffect(() => {
+    const account = accounts.find(a => a.id === accountId)
+    if (account) setCurrency(account.currency)
+  }, [accountId, accounts])
+
+  // Reset category when type changes
+  useEffect(() => {
+    setCategoryId('')
+  }, [type])
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    setError('')
+
+    const numAmount = parseFloat(amount)
+    if (!numAmount || numAmount <= 0) { setError('Enter a valid amount.'); return }
+    if (!accountId) { setError('Select an account.'); return }
+    if (!categoryId) { setError('Select a category.'); return }
+
+    startTransition(async () => {
+      const result = await createTransaction({
+        account_id: accountId,
+        type,
+        amount: numAmount,
+        currency,
+        exchange_rate_used: exchangeRate,
+        base_currency_amount: baseCurrencyAmount,
+        category_id: categoryId,
+        description,
+        happened_at: happenedAt,
+      })
+
+      if (result.error) {
+        setError(result.error)
+      } else {
+        router.push('/transactions')
+        router.refresh()
+      }
+    })
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-3">
+
+      {/* Type toggle */}
+      <div className="flex bg-muted rounded-xl p-1">
+        {(['expense', 'income'] as const).map(t => (
+          <button
+            key={t}
+            type="button"
+            onClick={() => setType(t)}
+            className={`flex-1 h-9 rounded-lg text-xs font-semibold tracking-wide capitalize transition-all
+              ${type === t
+                ? t === 'expense'
+                  ? 'bg-card text-expense shadow-sm'
+                  : 'bg-card text-income shadow-sm'
+                : 'text-muted-foreground'
+              }`}
+          >
+            {t}
+          </button>
+        ))}
+      </div>
+
+      {/* Amount + Currency */}
+      <div className="bg-card border border-border rounded-2xl px-4 py-4">
+        <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest block mb-2">
+          Amount
+        </label>
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={() => setShowCurrencyPicker(p => !p)}
+            className="shrink-0 flex items-center gap-1.5 text-sm font-semibold text-foreground bg-muted rounded-lg px-2.5 py-1.5 hover:bg-muted/80 transition-colors"
+          >
+            {currency}
+            <span className="text-muted-foreground text-xs">▾</span>
+          </button>
+          <input
+            type="number"
+            inputMode="decimal"
+            placeholder="0"
+            value={amount}
+            onChange={e => setAmount(e.target.value)}
+            className="flex-1 bg-transparent text-2xl font-bold tabular-nums text-foreground placeholder:text-muted-foreground/40 focus:outline-none min-w-0"
+          />
+        </div>
+
+        {/* Currency picker dropdown */}
+        {showCurrencyPicker && (
+          <div className="mt-3 pt-3 border-t border-border grid grid-cols-4 gap-1.5">
+            {COMMON_CURRENCIES.map(c => (
+              <button
+                key={c}
+                type="button"
+                onClick={() => { setCurrency(c); setShowCurrencyPicker(false) }}
+                className={`text-xs font-medium rounded-lg py-1.5 transition-colors
+                  ${c === currency
+                    ? 'bg-primary text-primary-foreground'
+                    : 'bg-muted text-muted-foreground hover:text-foreground'
+                  }`}
+              >
+                {c}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* Base currency conversion preview */}
+        {currency !== baseCurrency && parseFloat(amount) > 0 && (
+          <div className="mt-3 pt-3 border-t border-border flex items-center justify-between">
+            <span className="text-[11px] text-muted-foreground">
+              {rateLoading ? 'Fetching rate…' : rateError ? '⚠ Rate unavailable' : `1 ${currency} = ${exchangeRate} ${baseCurrency}`}
+            </span>
+            <span className="text-[11px] font-semibold text-foreground tabular-nums">
+              ≈ {formatCurrency(baseCurrencyAmount, baseCurrency)}
+            </span>
+          </div>
+        )}
+      </div>
+
+      {/* Account */}
+      <div className="bg-card border border-border rounded-2xl px-4 py-4">
+        <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest block mb-2.5">
+          Account
+        </label>
+        <div className="flex flex-wrap gap-2">
+          {accounts.map(account => (
+            <button
+              key={account.id}
+              type="button"
+              onClick={() => setAccountId(account.id)}
+              className={`flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-medium transition-colors
+                ${accountId === account.id
+                  ? 'bg-primary text-primary-foreground'
+                  : 'bg-muted text-muted-foreground hover:text-foreground'
+                }`}
+            >
+              <span className="w-4 h-4 rounded-md bg-current/10 flex items-center justify-center text-[9px] font-bold">
+                {account.name.charAt(0)}
+              </span>
+              {account.name}
+              <span className="opacity-60">{account.currency}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Category */}
+      <div className="bg-card border border-border rounded-2xl px-4 py-4">
+        <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest block mb-2.5">
+          Category
+        </label>
+        {filteredCategories.length === 0 ? (
+          <p className="text-xs text-muted-foreground">No categories yet.</p>
+        ) : (
+          <div className="flex flex-wrap gap-2">
+            {filteredCategories.map(cat => (
+              <button
+                key={cat.id}
+                type="button"
+                onClick={() => setCategoryId(cat.id)}
+                className={`rounded-xl px-3 py-2 text-xs font-medium transition-colors
+                  ${categoryId === cat.id
+                    ? type === 'expense'
+                      ? 'bg-expense/15 text-expense'
+                      : 'bg-income/15 text-income'
+                    : 'bg-muted text-muted-foreground hover:text-foreground'
+                  }`}
+              >
+                {cat.name}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Description + Date */}
+      <div className="bg-card border border-border rounded-2xl px-4 py-4 space-y-4">
+        <div>
+          <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest block mb-2">
+            Note (optional)
+          </label>
+          <input
+            type="text"
+            placeholder="What was this for?"
+            value={description}
+            onChange={e => setDescription(e.target.value)}
+            maxLength={120}
+            className="w-full bg-transparent text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none"
+          />
+        </div>
+        <div className="border-t border-border pt-4">
+          <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest block mb-2">
+            Date
+          </label>
+          <input
+            type="date"
+            value={happenedAt}
+            onChange={e => setHappenedAt(e.target.value)}
+            className="bg-transparent text-sm text-foreground focus:outline-none w-full"
+          />
+        </div>
+      </div>
+
+      {/* Error */}
+      {error && (
+        <p className="text-xs text-expense bg-expense/10 rounded-xl px-4 py-3 border border-expense/20">
+          {error}
+        </p>
+      )}
+
+      {/* Submit */}
+      <button
+        type="submit"
+        disabled={isPending}
+        className={`w-full h-12 rounded-2xl text-sm font-semibold tracking-tight transition-all
+          active:scale-[0.98] disabled:opacity-50
+          ${type === 'expense'
+            ? 'bg-expense text-white'
+            : 'bg-income text-white'
+          }`}
+      >
+        {isPending
+          ? 'Saving…'
+          : `Add ${type} ${amount ? formatCurrency(parseFloat(amount) || 0, currency) : ''}`
+        }
+      </button>
+    </form>
+  )
+}
+</file>
+
+<file path="src/lib/supabase/auth.ts">
+'use server'
+
+import { redirect } from 'next/navigation'
+import { createClient } from '@/lib/supabase/server'
+
+export async function signIn(email: string, password: string) {
+  const supabase = await createClient()
+
+  const { error } = await supabase.auth.signInWithPassword({ email, password })
+
+  if (error) {
+    return { error: error.message }
+  }
+
+  redirect('/dashboard')
+}
+
+export async function signUp(email: string, password: string, fullName: string) {
+  const supabase = await createClient()
+
+  const { data, error } = await supabase.auth.signUp({
+    email,
+    password,
+    options: {
+      data: { full_name: fullName },
+    },
+  })
+
+  if (error) {
+    console.error('Supabase signUp error:', error.name, error.status, error.message, error)
+    return { error: error.message || 'Failed to sign up. Please try again.' }
+  }
+
+  if (data.session) {
+    redirect('/dashboard')
+  }
+
+  return {
+    success: 'Check your email and click the confirmation link to activate your account.',
+  }
+}
+
+export async function signOut() {
+  const supabase = await createClient()
+  await supabase.auth.signOut()
+  redirect('/login')
+}
+</file>
+
+<file path="src/lib/supabase/client.ts">
+import { createBrowserClient } from '@supabase/ssr'
+
+export function createClient() {
+  return createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  )
+}
+</file>
+
+<file path="src/lib/supabase/index.ts">
+export type Currency =
+  | 'IDR' | 'USD' | 'EUR' | 'TWD' | 'JPY' | 'SGD' | 'GBP'
+  | 'AUD' | 'CNY' | 'HKD' | 'KRW' | 'MYR' | 'THB' | 'PHP' | 'VND';
+
+export type AccountType = 'cash' | 'bank' | 'savings' | 'credit_card' | 'investment' | 'other';
+export type TransactionType = 'income' | 'expense' | 'transfer';
+export type BudgetPeriod = 'weekly' | 'monthly' | 'yearly';
+export type RecurringFrequency = 'daily' | 'weekly' | 'biweekly' | 'monthly' | 'quarterly' | 'yearly';
+export type CategoryType = 'income' | 'expense' | 'both';
+export type TransferType = 'debit' | 'credit';
+
+export interface Profile {
+  id: string;
+  email: string;
+  full_name: string | null;
+  avatar_url: string | null;
+  base_currency: Currency;
+  default_account_id: string | null;
+  onboarding_completed: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Account {
+  id: string;
+  user_id: string;
+  name: string;
+  type: AccountType;
+  currency: Currency;
+  balance: number;
+  color: string;
+  icon: string;
+  is_active: boolean;
+  include_in_net_worth: boolean;
+  created_at: string;
+  updated_at: string;
+  // computed
+  balance_in_base?: number;
+}
+
+export interface Category {
+  id: string;
+  user_id: string | null;
+  name: string;
+  icon: string;
+  color: string;
+  type: CategoryType;
+  is_system: boolean;
+  created_at: string;
+}
+
+export interface Transaction {
+  id: string;
+  user_id: string;
+  account_id: string;
+  category_id: string | null;
+  type: TransactionType;
+  amount: number;
+  currency: Currency;
+  exchange_rate_used: number;
+  base_currency_amount: number;
+  description: string | null;
+  date: string;
+  transfer_id: string | null;
+  transfer_type: TransferType | null;
+  recurring_id: string | null;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+  // joined
+  account?: Account;
+  category?: Category;
+}
+
+export interface Transfer {
+  id: string;
+  user_id: string;
+  from_account_id: string;
+  to_account_id: string;
+  from_amount: number;
+  to_amount: number;
+  from_currency: Currency;
+  to_currency: Currency;
+  exchange_rate: number;
+  date: string;
+  description: string | null;
+  debit_transaction_id: string | null;
+  credit_transaction_id: string | null;
+  created_at: string;
+  // joined
+  from_account?: Account;
+  to_account?: Account;
+}
+
+export interface Budget {
+  id: string;
+  user_id: string;
+  category_id: string | null;
+  name: string;
+  amount: number;
+  currency: Currency;
+  period: BudgetPeriod;
+  start_date: string;
+  end_date: string | null;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+  // joined
+  category?: Category;
+  // computed
+  spent?: number;
+  remaining?: number;
+  percentage?: number;
+}
+
+export interface Goal {
+  id: string;
+  user_id: string;
+  name: string;
+  description: string | null;
+  target_amount: number;
+  current_amount: number;
+  currency: Currency;
+  target_date: string | null;
+  icon: string;
+  color: string;
+  is_completed: boolean;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+  // computed
+  percentage?: number;
+  monthly_needed?: number;
+}
+
+export interface GoalContribution {
+  id: string;
+  goal_id: string;
+  user_id: string;
+  account_id: string | null;
+  amount: number;
+  currency: Currency;
+  exchange_rate: number;
+  base_currency_amount: number;
+  date: string;
+  notes: string | null;
+  created_at: string;
+}
+
+export interface RecurringTransaction {
+  id: string;
+  user_id: string;
+  account_id: string;
+  category_id: string | null;
+  type: 'income' | 'expense';
+  amount: number;
+  currency: Currency;
+  description: string;
+  frequency: RecurringFrequency;
+  start_date: string;
+  end_date: string | null;
+  next_due_date: string;
+  last_generated_date: string | null;
+  is_active: boolean;
+  auto_generate: boolean;
+  created_at: string;
+  updated_at: string;
+  // joined
+  account?: Account;
+  category?: Category;
+}
+
+export interface ExchangeRate {
+  id: string;
+  base_currency: Currency;
+  target_currency: Currency;
+  rate: number;
+  date: string;
+  created_at: string;
+}
+
+// Dashboard types
+export interface DashboardData {
+  net_worth: number;
+  monthly_income: number;
+  monthly_expenses: number;
+  monthly_savings_rate: number;
+  accounts: Account[];
+  recent_transactions: Transaction[];
+  top_categories: CategorySpending[];
+  spending_trend: SpendingTrend[];
+  budget_overview: BudgetOverview[];
+  upcoming_recurring: RecurringTransaction[];
+}
+
+export interface CategorySpending {
+  category_id: string | null;
+  category_name: string;
+  category_icon: string;
+  category_color: string;
+  total_base: number;
+  transaction_count: number;
+  percentage?: number;
+}
+
+export interface SpendingTrend {
+  month: string;
+  income: number;
+  expenses: number;
+  savings: number;
+}
+
+export interface BudgetOverview {
+  budget: Budget;
+  spent: number;
+  remaining: number;
+  percentage: number;
+}
+
+// Form types
+export interface CreateAccountInput {
+  name: string;
+  type: AccountType;
+  currency: Currency;
+  balance: number;
+  color: string;
+  icon: string;
+  include_in_net_worth: boolean;
+}
+
+export interface CreateTransactionInput {
+  account_id: string;
+  category_id: string | null;
+  type: 'income' | 'expense';
+  amount: number;
+  description: string | null;
+  date: string;
+  notes: string | null;
+}
+
+export interface CreateTransferInput {
+  from_account_id: string;
+  to_account_id: string;
+  from_amount: number;
+  to_amount: number;
+  exchange_rate: number;
+  date: string;
+  description: string | null;
+}
+
+export interface CreateBudgetInput {
+  category_id: string | null;
+  name: string;
+  amount: number;
+  period: BudgetPeriod;
+  start_date: string;
+  end_date: string | null;
+}
+
+export interface CreateGoalInput {
+  name: string;
+  description: string | null;
+  target_amount: number;
+  target_date: string | null;
+  icon: string;
+  color: string;
+}
+</file>
+
+<file path="src/lib/supabase/server.ts">
+import { createServerClient } from '@supabase/ssr'
+import { cookies } from 'next/headers'
+
+export async function createClient() {
+  const cookieStore = await cookies()
+
+  return createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return cookieStore.getAll()
+        },
+        setAll(cookiesToSet) {
+          try {
+            cookiesToSet.forEach(({ name, value, options }) =>
+              cookieStore.set(name, value, options)
+            )
+          } catch {
+            // Server Component — can be ignored if middleware refreshes sessions
+          }
+        },
+      },
+    }
+  )
+}
+</file>
+
+<file path=".gitignore">
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+
+# dependencies
+/node_modules
+/.pnp
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
+
+# testing
+/coverage
+
+# next.js
+/.next/
+/out/
+
+# production
+/build
+
+# misc
+.DS_Store
+*.pem
+
+# debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# env files (can opt-in for committing if needed)
+.env*
+
+# vercel
+.vercel
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts
+</file>
+
+<file path="AGENTS.md">
+<!-- BEGIN:nextjs-agent-rules -->
+# This is NOT the Next.js you know
+
+This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` before writing any code. Heed deprecation notices.
+<!-- END:nextjs-agent-rules -->
+</file>
+
+<file path="CLAUDE.md">
+@AGENTS.md
+</file>
+
+<file path="eslint.config.mjs">
+import { defineConfig, globalIgnores } from "eslint/config";
+import nextVitals from "eslint-config-next/core-web-vitals";
+import nextTs from "eslint-config-next/typescript";
+
+const eslintConfig = defineConfig([
+  ...nextVitals,
+  ...nextTs,
+  // Override default ignores of eslint-config-next.
+  globalIgnores([
+    // Default ignores of eslint-config-next:
+    ".next/**",
+    "out/**",
+    "build/**",
+    "next-env.d.ts",
+  ]),
+]);
+
+export default eslintConfig;
+</file>
+
+<file path="next.config.ts">
+import type { NextConfig } from "next";
+
+const nextConfig: NextConfig = {
+  experimental: {
+    serverActions: {
+      allowedOrigins: ["localhost:3000"],
+    },
+  },
+  images: {
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "*.supabase.co",
+      },
+    ],
+  },
+};
+
+export default nextConfig;
+</file>
+
+<file path="package.json">
+{
+  "name": "alite",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint"
+  },
+  "dependencies": {
+    "@supabase/ssr": "^0.12.0",
+    "@supabase/supabase-js": "^2.108.2",
+    "next": "16.2.9",
+    "next-themes": "^0.4.6",
+    "react": "19.2.4",
+    "react-dom": "19.2.4",
+    "tailwindcss-animate": "^1.0.7"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
+    "eslint": "^9",
+    "eslint-config-next": "16.2.9",
+    "tailwindcss": "^4.3.1",
+    "typescript": "^5"
+  }
+}
+</file>
+
+<file path="postcss.config.mjs">
+const config = {
+  plugins: {
+    "@tailwindcss/postcss": {},
+  },
+};
+
+export default config;
+</file>
+
+<file path="README.md">
+This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+
+## Getting Started
+
+First, run the development server:
+
+```bash
+npm run dev
+# or
+yarn dev
+# or
+pnpm dev
+# or
+bun dev
+```
+
+Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+
+You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+
+This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+
+## Learn More
+
+To learn more about Next.js, take a look at the following resources:
+
+- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
+- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+
+You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+
+## Deploy on Vercel
+
+The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+
+Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+</file>
+
+<file path="tailwind.config.ts">
+import type { Config } from "tailwindcss";
+
+const config: Config = {
+  darkMode: "class",
+  content: [
+    "./src/pages/**/*.{js,ts,jsx,tsx,mdx}",
+    "./src/components/**/*.{js,ts,jsx,tsx,mdx}",
+    "./src/app/**/*.{js,ts,jsx,tsx,mdx}",
+  ],
+  theme: {
+    extend: {
+      colors: {
+        background: "hsl(var(--background))",
+        foreground: "hsl(var(--foreground))",
+        card: {
+          DEFAULT: "hsl(var(--card))",
+          foreground: "hsl(var(--card-foreground))",
+        },
+        popover: {
+          DEFAULT: "hsl(var(--popover))",
+          foreground: "hsl(var(--popover-foreground))",
+        },
+        primary: {
+          DEFAULT: "hsl(var(--primary))",
+          foreground: "hsl(var(--primary-foreground))",
+        },
+        secondary: {
+          DEFAULT: "hsl(var(--secondary))",
+          foreground: "hsl(var(--secondary-foreground))",
+        },
+        muted: {
+          DEFAULT: "hsl(var(--muted))",
+          foreground: "hsl(var(--muted-foreground))",
+        },
+        accent: {
+          DEFAULT: "hsl(var(--accent))",
+          foreground: "hsl(var(--accent-foreground))",
+        },
+        destructive: {
+          DEFAULT: "hsl(var(--destructive))",
+          foreground: "hsl(var(--destructive-foreground))",
+        },
+        border: "hsl(var(--border))",
+        input: "hsl(var(--input))",
+        ring: "hsl(var(--ring))",
+        income: "#10b981",
+        expense: "#f43f5e",
+        transfer: "#6366f1",
+      },
+      borderRadius: {
+        lg: "var(--radius)",
+        md: "calc(var(--radius) - 2px)",
+        sm: "calc(var(--radius) - 4px)",
+      },
+      fontFamily: {
+        sans: ["var(--font-inter)", "system-ui", "sans-serif"],
+        mono: ["var(--font-mono)", "monospace"],
+      },
+      keyframes: {
+        "accordion-down": {
+          from: { height: "0" },
+          to: { height: "var(--radix-accordion-content-height)" },
+        },
+        "accordion-up": {
+          from: { height: "var(--radix-accordion-content-height)" },
+          to: { height: "0" },
+        },
+        "slide-up": {
+          from: { transform: "translateY(100%)", opacity: "0" },
+          to: { transform: "translateY(0)", opacity: "1" },
+        },
+        "fade-in": {
+          from: { opacity: "0" },
+          to: { opacity: "1" },
+        },
+      },
+      animation: {
+        "accordion-down": "accordion-down 0.2s ease-out",
+        "accordion-up": "accordion-up 0.2s ease-out",
+        "slide-up": "slide-up 0.3s ease-out",
+        "fade-in": "fade-in 0.2s ease-out",
+      },
+    },
+  },
+  plugins: [require("tailwindcss-animate")],
+};
+
+export default config;
+</file>
+
+<file path="tsconfig.json">
+{
+  "compilerOptions": {
+    "target": "ES2017",
+    "lib": ["dom", "dom.iterable", "esnext"],
+    "allowJs": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "noEmit": true,
+    "esModuleInterop": true,
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "jsx": "react-jsx",
+    "incremental": true,
+    "plugins": [
+      {
+        "name": "next"
+      }
+    ],
+    "paths": {
+      "@/*": [
+        "./src/*"
+      ]
+    }
+  },
+  "include": [
+    "next-env.d.ts",
+    "**/*.ts",
+    "**/*.tsx",
+    ".next/types/**/*.ts",
+    ".next/dev/types/**/*.ts",
+    "**/*.mts"
+  ],
+  "exclude": ["node_modules"]
+}
+</file>
+
+</files>

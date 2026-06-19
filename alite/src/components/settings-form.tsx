@@ -1,19 +1,19 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import React, { useState, useTransition } from 'react'
 import { updateProfile } from '@/app/actions/transactions'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 
 const CURRENCIES = [
-  { code: 'IDR', label: 'Indonesian Rupiah' },
-  { code: 'USD', label: 'US Dollar' },
-  { code: 'EUR', label: 'Euro' },
-  { code: 'SGD', label: 'Singapore Dollar' },
-  { code: 'JPY', label: 'Japanese Yen' },
-  { code: 'GBP', label: 'British Pound' },
-  { code: 'AUD', label: 'Australian Dollar' },
-  { code: 'MYR', label: 'Malaysian Ringgit' },
+  { code: 'IDR', label: 'Indonesian Rupiah', flag: '🇮🇩' },
+  { code: 'USD', label: 'US Dollar', flag: '🇺🇸' },
+  { code: 'EUR', label: 'Euro', flag: '🇪🇺' },
+  { code: 'SGD', label: 'Singapore Dollar', flag: '🇸🇬' },
+  { code: 'JPY', label: 'Japanese Yen', flag: '🇯🇵' },
+  { code: 'GBP', label: 'British Pound', flag: '🇬🇧' },
+  { code: 'AUD', label: 'Australian Dollar', flag: '🇦🇺' },
+  { code: 'MYR', label: 'Malaysian Ringgit', flag: '🇲🇾' },
 ]
 
 interface SettingsFormProps {
@@ -99,8 +99,15 @@ export default function SettingsForm({ initialName, initialCurrency, email }: Se
                 }`}
             >
               <span className="font-medium">{c.label}</span>
+
               <div className="flex items-center gap-2">
-                <span className="text-xs text-muted-foreground font-mono">{c.code}</span>
+                {/* ADD THIS */}
+                <span className="text-base leading-none">{c.flag}</span>
+
+                <span className="text-xs text-muted-foreground font-mono">
+                  {c.code}
+                </span>
+
                 {baseCurrency === c.code && (
                   <span className="w-1.5 h-1.5 rounded-full bg-income" />
                 )}

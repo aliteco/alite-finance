@@ -10,8 +10,8 @@ export default function LoginPage() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
-  async function handleSubmit(e: React.SyntheticEvent) {
-    e.preventDefault()
+  async function handleSubmit(e: React.SubmitEvent<HTMLFormElement>) {
+  e.preventDefault()
     setLoading(true)
     setError('')
     try {
@@ -81,13 +81,14 @@ export default function LoginPage() {
             type="submit"
             disabled={loading}
             className="w-full h-11 rounded-xl bg-primary text-primary-foreground text-sm font-medium disabled:opacity-50 transition active:scale-[0.98]"
+            style={{ backgroundColor: '#000000', color: '#ffffff' }}
           >
             {loading ? 'Signing in…' : 'Sign in'}
           </button>
         </form>
 
         <p className="text-center text-sm text-muted-foreground mt-6">
-          Don't have an account?{' '}
+          Don&apos;t have an account?{' '}
           <Link href="/register" className="text-primary font-medium">
             Sign up
           </Link>

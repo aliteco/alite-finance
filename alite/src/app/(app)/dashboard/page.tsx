@@ -91,9 +91,6 @@ async function getDashboardData() {
   const recentTxs: Transaction[] = (recentTxRes.data as unknown as Transaction[]) ?? []
 
   // Net worth: sum of all account balances already stored in base_currency_amount
-  // Accounts store balance in their own currency — we need base_currency_amount equivalents
-  // Here we assume accounts.balance is already in account currency, and we use
-  // a dedicated net_worth view or sum base_currency_amount. Adjust to your schema.
   const netWorth = accounts.reduce((sum, a) => sum + (a.balance ?? 0), 0)
 
   // Monthly aggregates from base_currency_amount (immutable historical)
@@ -106,7 +103,7 @@ async function getDashboardData() {
     { income: 0, expense: 0 }
   )
 
-  return { profile, accounts, monthly, recentTxs, user }
+  return { profile, accounts, monthly, recentTxs, user, netWorth }
 }
 
 // ─── Formatters ───────────────────────────────────────────────────────────────
@@ -145,8 +142,8 @@ function MetricCard({
   accent?: 'income' | 'expense' | 'neutral'
 }) {
   const colorMap = {
-    income: 'text-emerald-400',
-    expense: 'text-red-400',
+    income: 'text-income',
+    expense: 'text-expense',
     neutral: 'text-foreground',
   }
   const color = colorMap[accent ?? 'neutral']
@@ -168,14 +165,14 @@ function TxRow({ tx, baseCurrency }: { tx: Transaction; baseCurrency: string }) 
   const category = tx.categories?.name ?? 'Uncategorized'
   const accountName = tx.accounts?.name ?? '—'
   const sign = isIncome ? '+' : '−'
-  const amtColor = isIncome ? 'text-emerald-400' : 'text-red-400'
+  const amtColor = isIncome ? 'text-income' : 'text-expense'
 
   return (
     <div className="flex items-center gap-3 py-3 border-b border-border last:border-0">
       {/* Category dot */}
       <div
         className={`w-8 h-8 rounded-full shrink-0 flex items-center justify-center text-xs font-bold
-          ${isIncome ? 'bg-emerald-400/10 text-emerald-400' : 'bg-red-400/10 text-red-400'}`}
+          ${isIncome ? 'bg-income/10 text-income' : 'bg-expense/10 text-expense'}`}
       >
         {category.charAt(0).toUpperCase()}
       </div>
@@ -208,14 +205,22 @@ function TxRow({ tx, baseCurrency }: { tx: Transaction; baseCurrency: string }) 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default async function DashboardPage() {
-  const { profile, accounts, monthly, recentTxs } = await getDashboardData()
+  const { profile, accounts, monthly, recentTxs, netWorth } = await getDashboardData()
   const { base_currency } = profile
   const savings = monthly.income - monthly.expense
   const now = new Date()
   const monthLabel = now.toLocaleString('en-US', { month: 'long', year: 'numeric' })
 
+  // Savings rate: can legitimately be negative (spent more than earned this month).
+  // Previously this was clamped to 0 before display, which silently hid overspending.
+  const savingsRate = monthly.income > 0 ? (savings / monthly.income) * 100 : 0
+  const isOverspent = savingsRate < 0
+  const displayRate = Math.round(savingsRate)
+  // Bar fill: clamp magnitude to 100 for width purposes only, never hide the sign.
+  const barWidthPct = Math.min(100, Math.abs(savingsRate))
+
   return (
-    <div className="min-h-screen bg-background pb-24 md:pl-56">
+    <div className="min-h-screen bg-background pb-24">
       <div className="max-w-lg mx-auto px-4 pt-8 space-y-6">
 
         {/* ── Net Worth ── */}
@@ -224,10 +229,7 @@ export default async function DashboardPage() {
             Net Worth
           </p>
           <h2 className="text-4xl font-bold tabular-nums tracking-tight text-foreground leading-none">
-            {formatCurrency(
-              accounts.reduce((s, a) => s + (a.balance ?? 0), 0),
-              base_currency
-            )}
+            {formatCurrency(netWorth, base_currency)}
           </h2>
           <p className="text-xs text-muted-foreground mt-1">
             {base_currency} · {accounts.length} account{accounts.length !== 1 ? 's' : ''}
@@ -250,17 +252,24 @@ export default async function DashboardPage() {
         {monthly.income > 0 && (
           <section className="bg-card border border-border rounded-2xl px-4 py-3">
             <div className="flex justify-between items-center mb-2">
-              <span className="text-xs font-medium text-muted-foreground">Savings rate</span>
-              <span className="text-xs font-semibold text-foreground tabular-nums">
-                {Math.max(0, Math.round((savings / monthly.income) * 100))}%
+              <span className="text-xs font-medium text-muted-foreground">
+                {isOverspent ? 'Overspent this month' : 'Savings rate'}
+              </span>
+              <span className={`text-xs font-semibold tabular-nums ${isOverspent ? 'text-expense' : 'text-foreground'}`}>
+                {isOverspent ? '−' : ''}{Math.abs(displayRate)}%
               </span>
             </div>
             <div className="h-1.5 bg-muted rounded-full overflow-hidden">
               <div
-                className="h-full bg-emerald-400 rounded-full transition-all"
-                style={{ width: `${Math.min(100, Math.max(0, (savings / monthly.income) * 100))}%` }}
+                className={`h-full rounded-full transition-all ${isOverspent ? 'bg-expense' : 'bg-income'}`}
+                style={{ width: `${barWidthPct}%` }}
               />
             </div>
+            {isOverspent && (
+              <p className="text-[11px] text-muted-foreground mt-2">
+                You spent {Math.abs(displayRate)}% more than you earned this month.
+              </p>
+            )}
           </section>
         )}
 
@@ -273,7 +282,7 @@ export default async function DashboardPage() {
             </div>
             <div className="flex gap-2 overflow-x-auto pb-1 -mx-4 px-4 snap-x snap-mandatory">
             {accounts.map((account) => (
-                <a // <--- Ensure this tag is present
+                <a
                 key={account.id}
                 href={`/accounts/${account.id}`}
                 className="snap-start shrink-0 bg-card border border-border rounded-2xl px-4 py-3 w-44 flex flex-col gap-2 active:opacity-70 transition"

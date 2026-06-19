@@ -1,0 +1,138 @@
+'use client'
+
+import { useState, useTransition } from 'react'
+import { createAccount } from '@/app/actions/transactions'
+
+const ACCOUNT_TYPES = [
+  { value: 'bank', label: 'Bank' },
+  { value: 'cash', label: 'Cash' },
+  { value: 'savings', label: 'Savings' },
+  { value: 'credit_card', label: 'Credit Card' },
+  { value: 'investment', label: 'Investment' },
+  { value: 'other', label: 'Other' },
+]
+
+const COMMON_CURRENCIES = ['IDR', 'USD', 'EUR', 'SGD', 'JPY', 'GBP', 'AUD', 'MYR', 'TWD']
+
+interface AccountFormProps {
+  defaultCurrency: string
+}
+
+export default function AccountForm({ defaultCurrency }: AccountFormProps) {
+  const [isPending, startTransition] = useTransition()
+
+  const [name, setName] = useState('')
+  const [type, setType] = useState('bank')
+  const [currency, setCurrency] = useState(defaultCurrency)
+  const [balance, setBalance] = useState('')
+  const [error, setError] = useState('')
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    setError('')
+
+    if (!name.trim()) { setError('Give your account a name.'); return }
+    const numBalance = parseFloat(balance || '0')
+    if (Number.isNaN(numBalance)) { setError('Enter a valid starting balance.'); return }
+
+    startTransition(async () => {
+      const result = await createAccount({
+        name: name.trim(),
+        type,
+        currency,
+        balance: numBalance,
+      })
+      // createAccount redirects on success; if we get here, something failed.
+      if (result?.error) {
+        setError(result.error)
+      }
+    })
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-3">
+
+      {/* Name */}
+      <div className="bg-card border border-border rounded-2xl px-4 py-4">
+        <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest block mb-2">
+          Account name
+        </label>
+        <input
+          type="text"
+          value={name}
+          onChange={e => setName(e.target.value)}
+          placeholder="e.g. BCA Checking"
+          maxLength={60}
+          className="w-full bg-transparent text-base font-medium text-foreground placeholder:text-muted-foreground/50 focus:outline-none"
+          autoFocus
+        />
+      </div>
+
+      {/* Type */}
+      <div className="bg-card border border-border rounded-2xl px-4 py-4">
+        <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest block mb-2.5">
+          Type
+        </label>
+        <select
+          value={type}
+          onChange={(e) => setType(e.target.value)}
+          className="w-full rounded-xl border border-border bg-background px-3 py-3 text-sm text-foreground focus:outline-none"
+        >
+          {ACCOUNT_TYPES.map((t) => (
+            <option key={t.value} value={t.value}>
+              {t.label}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      {/* Currency + starting balance */}
+      <div className="bg-card border border-border rounded-2xl px-4 py-4 space-y-4">
+        <div>
+          <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest block mb-2.5">
+            Currency
+          </label>
+          <select
+            value={currency}
+            onChange={(e) => setCurrency(e.target.value)}
+            className="w-full rounded-xl border border-border bg-background px-3 py-3 text-sm text-foreground focus:outline-none"
+          >
+            {COMMON_CURRENCIES.map((c) => (
+              <option key={c} value={c}>
+                {c}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className="border-t border-border pt-4">
+          <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest block mb-2">
+            Starting balance
+          </label>
+          <input
+            type="number"
+            inputMode="decimal"
+            placeholder="0"
+            value={balance}
+            onChange={e => setBalance(e.target.value)}
+            className="w-full bg-transparent text-2xl font-bold tabular-nums text-foreground placeholder:text-muted-foreground/40 focus:outline-none"
+          />
+        </div>
+      </div>
+
+      {error && (
+        <p className="text-xs text-expense bg-expense/10 rounded-xl px-4 py-3 border border-expense/20">
+          {error}
+        </p>
+      )}
+
+      <button
+        type="submit"
+        disabled={isPending}
+        className="w-full h-12 rounded-2xl bg-primary text-primary-foreground text-sm font-semibold tracking-tight transition-all active:scale-[0.98] disabled:opacity-50"
+      >
+        {isPending ? 'Creating…' : 'Create account'}
+      </button>
+    </form>
+  )
+}

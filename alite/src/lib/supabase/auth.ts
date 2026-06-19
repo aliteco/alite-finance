@@ -9,7 +9,7 @@ export async function signIn(email: string, password: string) {
   const { error } = await supabase.auth.signInWithPassword({ email, password })
 
   if (error) {
-    return { error: error.message }   // ← always a plain string
+    return { error: error.message }
   }
 
   redirect('/dashboard')
@@ -27,11 +27,10 @@ export async function signUp(email: string, password: string, fullName: string) 
   })
 
   if (error) {
-    return { error: error.message }   // ← always a plain string
+    console.error('Supabase signUp error:', error.name, error.status, error.message, error)
+    return { error: error.message || 'Failed to sign up. Please try again.' }
   }
 
-  // Supabase returns a fake session when email confirmation is disabled.
-  // Detect both cases: confirmation required vs auto-confirmed.
   if (data.session) {
     redirect('/dashboard')
   }

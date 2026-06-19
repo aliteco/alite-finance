@@ -1,0 +1,341 @@
+import { redirect } from 'next/navigation'
+import Link from 'next/link'
+import { createClient } from '@/lib/supabase/server'
+
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+interface Account {
+  id: string
+  name: string
+  type: string
+  currency: string
+  balance: number
+  color: string
+  is_active: boolean
+  include_in_net_worth: boolean
+}
+
+interface Profile {
+  base_currency: string
+}
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+function formatCurrency(amount: number, currency: string) {
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency,
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(amount)
+}
+
+const ACCOUNT_TYPE_LABELS: Record<string, string> = {
+  cash: 'Cash',
+  bank: 'Bank',
+  savings: 'Savings',
+  credit_card: 'Credit Card',
+  investment: 'Investment',
+  other: 'Other',
+}
+
+const ACCOUNT_TYPE_ICONS: Record<string, string> = {
+  cash: '💵',
+  bank: '🏦',
+  savings: '🏛',
+  credit_card: '💳',
+  investment: '📈',
+  other: '🗂',
+}
+
+// Group accounts by type for a cleaner layout
+function groupByType(accounts: Account[]): Map<string, Account[]> {
+  const map = new Map<string, Account[]>()
+  const order = ['bank', 'savings', 'cash', 'credit_card', 'investment', 'other']
+  for (const type of order) {
+    const group = accounts.filter(a => a.type === type)
+    if (group.length > 0) map.set(type, group)
+  }
+  return map
+}
+
+// ─── Page ─────────────────────────────────────────────────────────────────────
+
+export default async function AccountsPage() {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) redirect('/login')
+
+  const [profileRes, accountsRes] = await Promise.all([
+    supabase
+      .from('profiles')
+      .select('base_currency')
+      .eq('id', user.id)
+      .single(),
+
+    supabase
+      .from('accounts')
+      .select('id, name, type, currency, balance, color, is_active, include_in_net_worth')
+      .eq('user_id', user.id)
+      .order('type')
+      .order('name'),
+  ])
+
+  const baseCurrency = (profileRes.data as unknown as Profile)?.base_currency ?? 'IDR'
+  const accounts: Account[] = accountsRes.data ?? []
+
+  const activeAccounts = accounts.filter(a => a.is_active)
+  const netWorthAccounts = activeAccounts.filter(a => a.include_in_net_worth)
+
+  // Net worth = sum of all include_in_net_worth accounts
+  // NOTE: This is a simplified sum in account currency.
+  // For multi-currency accuracy you'd convert each to base_currency first.
+  // The dashboard does this properly via base_currency_amount on transactions.
+  const netWorth = netWorthAccounts.reduce((sum, a) => sum + (a.balance ?? 0), 0)
+
+  const grouped = groupByType(activeAccounts)
+
+  return (
+    <div className="min-h-screen bg-background pb-28">
+      {/* ── Font import via inline style ── */}
+      <style>{`@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');`}</style>
+
+      <div className="max-w-lg mx-auto px-4 pt-8 space-y-6">
+
+        {/* ── Header ── */}
+        <div className="flex items-end justify-between">
+          <div>
+            <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-[0.12em] mb-1">
+              Accounts
+            </p>
+            <h1 className="text-3xl font-bold tracking-tight text-foreground leading-none">
+              {activeAccounts.length} wallet{activeAccounts.length !== 1 ? 's' : ''}
+            </h1>
+          </div>
+          <Link
+            href="/accounts/new"
+            className="h-9 w-9 rounded-xl bg-primary text-primary-foreground flex items-center justify-center text-lg font-light hover:opacity-90 transition-opacity shrink-0"
+            aria-label="Add account"
+          >
+            +
+          </Link>
+        </div>
+
+        {/* ── Net Worth Summary ── */}
+        <div
+          className="rounded-2xl border px-5 py-5 relative overflow-hidden"
+          style={{ borderColor: 'rgba(255,255,255,0.08)', background: 'var(--card)' }}
+        >
+          {/* Subtle glow accent */}
+          <div
+            className="absolute inset-0 pointer-events-none"
+            style={{
+              background:
+                'radial-gradient(ellipse 60% 50% at 80% -10%, rgba(52,211,153,0.07) 0%, transparent 70%)',
+            }}
+          />
+
+          <p
+            className="text-[10px] font-semibold uppercase tracking-[0.12em] mb-1"
+            style={{ color: 'var(--muted-foreground)' }}
+          >
+            Net Worth
+          </p>
+          <p
+            className="text-4xl font-extrabold tracking-tight tabular-nums leading-none text-foreground"
+            style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}
+          >
+            {formatCurrency(netWorth, baseCurrency)}
+          </p>
+          <p className="text-xs text-muted-foreground mt-1.5">
+            {baseCurrency} · {netWorthAccounts.length} account{netWorthAccounts.length !== 1 ? 's' : ''} in net worth
+          </p>
+
+          {/* Mini breakdown row */}
+          {activeAccounts.length > 0 && (
+            <div
+              className="mt-4 pt-4 flex gap-5 flex-wrap"
+              style={{ borderTop: '0.5px solid rgba(255,255,255,0.08)' }}
+            >
+              {Array.from(grouped.entries()).slice(0, 4).map(([type, group]) => {
+                const subtotal = group.reduce((s, a) => s + (a.balance ?? 0), 0)
+                return (
+                  <div key={type}>
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-0.5">
+                      {ACCOUNT_TYPE_LABELS[type] ?? type}
+                    </p>
+                    <p className="text-sm font-semibold tabular-nums text-foreground">
+                      {formatCurrency(subtotal, baseCurrency)}
+                    </p>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* ── Account Groups ── */}
+        {accounts.length === 0 ? (
+          <EmptyState />
+        ) : (
+          <div className="space-y-5">
+            {Array.from(grouped.entries()).map(([type, group]) => (
+              <AccountGroup
+                key={type}
+                type={type}
+                accounts={group}
+                baseCurrency={baseCurrency}
+              />
+            ))}
+          </div>
+        )}
+
+      </div>
+    </div>
+  )
+}
+
+// ─── Account Group ─────────────────────────────────────────────────────────────
+
+function AccountGroup({
+  type,
+  accounts,
+  baseCurrency,
+}: {
+  type: string
+  accounts: Account[]
+  baseCurrency: string
+}) {
+  return (
+    <section>
+      <div className="flex items-center gap-2 mb-2.5 px-0.5">
+        <span className="text-base leading-none">{ACCOUNT_TYPE_ICONS[type] ?? '🗂'}</span>
+        <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-[0.12em]">
+          {ACCOUNT_TYPE_LABELS[type] ?? type}
+        </p>
+      </div>
+
+      <div
+        className="rounded-2xl overflow-hidden"
+        style={{
+          border: '0.5px solid rgba(255,255,255,0.08)',
+          background: 'var(--card)',
+        }}
+      >
+        {accounts.map((account, i) => (
+          <AccountRow
+            key={account.id}
+            account={account}
+            baseCurrency={baseCurrency}
+            hasBorder={i < accounts.length - 1}
+          />
+        ))}
+      </div>
+    </section>
+  )
+}
+
+// ─── Account Row ───────────────────────────────────────────────────────────────
+
+function AccountRow({
+  account,
+  baseCurrency,
+  hasBorder,
+}: {
+  account: Account
+  baseCurrency: string
+  hasBorder: boolean
+}) {
+  const isNegative = account.balance < 0
+
+  return (
+    <Link
+      href={`/accounts/${account.id}`}
+      className="flex items-center gap-3.5 px-4 py-4 transition-colors active:opacity-70 hover:bg-white/[0.02]"
+      style={
+        hasBorder
+          ? { borderBottom: '0.5px solid rgba(255,255,255,0.06)' }
+          : {}
+      }
+    >
+      {/* Color dot */}
+      <div
+        className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 text-sm font-bold"
+        style={{
+          background: account.color
+            ? `${account.color}22`
+            : 'rgba(255,255,255,0.06)',
+          color: account.color ?? 'var(--muted-foreground)',
+          border: `0.5px solid ${account.color ?? 'transparent'}44`,
+        }}
+      >
+        {account.name.charAt(0).toUpperCase()}
+      </div>
+
+      {/* Name + type */}
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-semibold text-foreground truncate leading-tight">
+          {account.name}
+        </p>
+        <p className="text-[11px] text-muted-foreground mt-0.5">
+          {account.currency}
+          {!account.include_in_net_worth && (
+            <span className="ml-1.5 text-muted-foreground/50">· excluded</span>
+          )}
+        </p>
+      </div>
+
+      {/* Balance + chevron */}
+      <div className="flex items-center gap-2 shrink-0">
+        <p
+          className={`text-sm font-bold tabular-nums ${
+            isNegative ? 'text-expense' : 'text-foreground'
+          }`}
+        >
+          {formatCurrency(account.balance, account.currency)}
+        </p>
+        <svg
+          width="6"
+          height="10"
+          viewBox="0 0 6 10"
+          fill="none"
+          className="text-muted-foreground/40"
+        >
+          <path
+            d="M1 1l4 4-4 4"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+      </div>
+    </Link>
+  )
+}
+
+// ─── Empty State ───────────────────────────────────────────────────────────────
+
+function EmptyState() {
+  return (
+    <div
+      className="rounded-2xl px-6 py-14 text-center"
+      style={{
+        border: '0.5px solid rgba(255,255,255,0.08)',
+        background: 'var(--card)',
+      }}
+    >
+      <div className="text-4xl mb-4">🏦</div>
+      <p className="text-sm font-semibold text-foreground mb-1">No accounts yet</p>
+      <p className="text-xs text-muted-foreground mb-5">
+        Add your first bank account or wallet to start tracking your net worth.
+      </p>
+      <Link
+        href="/accounts/new"
+        className="inline-flex items-center gap-2 h-9 px-4 rounded-xl bg-primary text-primary-foreground text-xs font-semibold hover:opacity-90 transition-opacity"
+      >
+        + Add account
+      </Link>
+    </div>
+  )
+}

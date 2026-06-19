@@ -12,7 +12,7 @@ export default function RegisterPage() {
   const [success, setSuccess] = useState('')
   const [loading, setLoading] = useState(false)
 
-  async function handleSubmit(e: React.SyntheticEvent) {
+  async function handleSubmit(e: React.SubmitEvent<HTMLFormElement>) {
     e.preventDefault()
     if (password.length < 8) {
       setError('Password must be at least 8 characters.')
@@ -24,7 +24,7 @@ export default function RegisterPage() {
     try {
       const result = await signUp(email, password, fullName)
       if (result?.error) {
-        setError(result.error)
+        setError(typeof result.error === 'string' ? result.error : "An unexpected error occurred")
       } else if (result?.success) {
         setSuccess(result.success)
       }
@@ -116,6 +116,7 @@ export default function RegisterPage() {
               type="submit"
               disabled={loading}
               className="w-full h-11 rounded-xl bg-primary text-primary-foreground text-sm font-medium disabled:opacity-50 transition active:scale-[0.98]"
+              style={{ backgroundColor: '#000000', color: '#ffffff' }}
             >
               {loading ? 'Creating account…' : 'Create account'}
             </button>

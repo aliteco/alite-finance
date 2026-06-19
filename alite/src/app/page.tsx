@@ -32,7 +32,7 @@ const PREVIEW_TXS = [
 
 export default function LandingPage() {
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div className="min-h-screen w-full bg-background text-foreground">
 
       {/* ── Nav ── */}
       <header className="sticky top-0 z-50 border-b border-border bg-background/80 backdrop-blur-xl">
@@ -107,7 +107,7 @@ export default function LandingPage() {
       </section>
 
       {/* ── App Preview ── */}
-      <section className="max-w-xs mx-auto px-6 pb-20">
+      <section className="max-w-xs mx-auto px-6 pb-20" style={{ width: '500px', maxWidth: '500px' }}>
 
         {/* Net Worth Card */}
         <div className="bg-card border border-border rounded-[22px] p-5 mb-3">
@@ -168,7 +168,7 @@ export default function LandingPage() {
       <section className="max-w-2xl mx-auto px-6 pb-24">
         <div className="text-center mb-10">
           <p className="text-[11px] text-muted-foreground tracking-widest uppercase mb-2">Built different</p>
-          <h2 className="text-3xl font-bold tracking-[-0.05em]">Everything you need,<br />nothing you don't.</h2>
+          <h2 className="text-3xl font-bold tracking-[-0.05em]">Everything you need,<br />nothing you don&apos;t.</h2>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -217,9 +217,13 @@ export default function LandingPage() {
             </div>
             <span className="text-[11px] text-muted-foreground">Alite · Personal Finance</span>
           </div>
-          <span className="text-[11px] text-muted-foreground hidden sm:block">
-            Next.js · Supabase · Tailwind
-          </span>
+          <a
+            href="mailto:cs.alitecompany@gmail.com"
+            className="hidden sm:flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <span>📧</span>
+            <span>cs.alitecompany@gmail.com</span>
+          </a>
         </div>
       </footer>
     </div>
