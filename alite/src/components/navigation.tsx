@@ -65,6 +65,19 @@ const NAV_ITEMS = [
     ),
   },
   {
+    href: '/recurring',
+    label: 'Recurring',
+    icon: (active: boolean) => (
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+        strokeWidth={active ? 2.2 : 1.8} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <path d="M17 2.1l4 4-4 4" />
+        <path d="M3 12.7V12a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3" />
+        <path d="M7 21.9l-4-4 4-4" />
+        <path d="M21 11.3V12a9 9 0 0 1-9 9 9 9 0 0 1-6-2.3" />
+      </svg>
+    ),
+},
+  {
     href: '/settings',
     label: 'Settings',
     icon: (active: boolean) => (

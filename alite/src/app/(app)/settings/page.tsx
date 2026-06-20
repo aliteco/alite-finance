@@ -1,4 +1,5 @@
 import { redirect } from 'next/navigation'
+import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import SettingsForm from '@/components/settings-form'
 import { ThemeToggle } from '@/components/theme-toggle'
@@ -25,6 +26,24 @@ export default async function SettingsPage() {
             <p className="text-xs text-muted-foreground mt-0.5">{user.email}</p>
           </div>
           <ThemeToggle />
+        </div>
+
+        {/* Quick links */}
+        <div className="bg-card border border-border rounded-2xl overflow-hidden">
+          <Link
+            href="/settings/categories"
+            className="flex items-center justify-between px-4 py-3.5 hover:bg-muted/40 transition-colors border-b border-border"
+          >
+            <span className="text-sm font-medium text-foreground">Manage categories</span>
+            <span className="text-muted-foreground" aria-hidden="true">→</span>
+          </Link>
+          <Link
+            href="/recurring"
+            className="flex items-center justify-between px-4 py-3.5 hover:bg-muted/40 transition-colors"
+          >
+            <span className="text-sm font-medium text-foreground">Recurring transactions</span>
+            <span className="text-muted-foreground" aria-hidden="true">→</span>
+          </Link>
         </div>
 
         <SettingsForm

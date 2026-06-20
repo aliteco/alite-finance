@@ -945,9 +945,9 @@ export default function InteractiveDashboard({
                                 fontSize: '11px',
                               }}
                               formatter={(value) => [
-                                formatCurrency(Number(value ?? 0), baseCurrency),
-                                '',
-                              ]}
+                              formatCurrency(Number(value ?? 0), baseCurrency),
+                              '',
+                            ]}
                             />
                           </PieChart>
                         </ResponsiveContainer>

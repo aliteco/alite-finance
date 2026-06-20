@@ -23,16 +23,30 @@ function validateAmount(amount: number): string | null {
   return null
 }
 
-export function nextDueDate(from: string, frequency: Frequency): string {
+function nextDueDate(from: string, frequency: Frequency): string {
   const d = new Date(from)
+
   switch (frequency) {
-    case 'daily': d.setDate(d.getDate() + 1); break
-    case 'weekly': d.setDate(d.getDate() + 7); break
-    case 'biweekly': d.setDate(d.getDate() + 14); break
-    case 'monthly': d.setMonth(d.getMonth() + 1); break
-    case 'quarterly': d.setMonth(d.getMonth() + 3); break
-    case 'yearly': d.setFullYear(d.getFullYear() + 1); break
+    case 'daily':
+      d.setDate(d.getDate() + 1)
+      break
+    case 'weekly':
+      d.setDate(d.getDate() + 7)
+      break
+    case 'biweekly':
+      d.setDate(d.getDate() + 14)
+      break
+    case 'monthly':
+      d.setMonth(d.getMonth() + 1)
+      break
+    case 'quarterly':
+      d.setMonth(d.getMonth() + 3)
+      break
+    case 'yearly':
+      d.setFullYear(d.getFullYear() + 1)
+      break
   }
+
   return d.toISOString().slice(0, 10)
 }
 
