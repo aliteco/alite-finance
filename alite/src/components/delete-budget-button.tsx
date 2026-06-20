@@ -1,170 +1,37 @@
 'use client'
 
-import { useState, useTransition, useEffect, useCallback } from 'react'
+import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { addGoalContribution } from '@/app/actions/goals'
-import { getExchangeRate } from '@/app/actions/transactions'
+import { deleteBudget } from '@/app/actions/transactions'
 
-interface Account {
-  id: string
-  name: string
-  currency: string
-}
-
-export default function ContributeForm({
-  goalId,
-  accounts,
-  goalCurrency,
-}: {
-  goalId: string
-  accounts: Account[]
-  goalCurrency: string
-}) {
+export default function DeleteBudgetButton({ budgetId }: { budgetId: string }) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
-  const [open, setOpen] = useState(false)
-  const [amount, setAmount] = useState('')
-  const [accountId, setAccountId] = useState(accounts[0]?.id ?? '')
-  const [error, setError] = useState('')
+  const [confirming, setConfirming] = useState(false)
 
-  const [rate, setRate] = useState(1)
-  const [rateLoading, setRateLoading] = useState(false)
-  const [rateError, setRateError] = useState('')
-
-  const account = accounts.find(a => a.id === accountId)
-  const sourceCurrency = account?.currency ?? goalCurrency
-  const isCrossCurrency = !!account && sourceCurrency !== goalCurrency
-
-  const fetchRate = useCallback(async (from: string, to: string) => {
-    if (from === to) { setRate(1); setRateError(''); return }
-    setRateLoading(true)
-    setRateError('')
-    const result = await getExchangeRate(from, to)
-    if (result.error || result.rate === 0) {
-      setRateError(result.error ?? `No rate found for ${from} → ${to}.`)
-      setRate(0)
-    } else {
-      setRate(result.rate)
-    }
-    setRateLoading(false)
-  }, [])
-
-  useEffect(() => {
-    if (open) fetchRate(sourceCurrency, goalCurrency)
-  }, [open, sourceCurrency, goalCurrency, fetchRate])
-
-  async function handleSubmit(e: React.FormEvent) {
+  function handleClick(e: React.MouseEvent) {
     e.preventDefault()
-    setError('')
-    const numAmount = parseFloat(amount)
-    if (!numAmount || numAmount <= 0) { setError('Enter a valid amount.'); return }
-    if (isCrossCurrency && rate === 0) {
-      setError(rateError || 'Missing exchange rate for this currency pair.')
+    e.stopPropagation()
+    if (!confirming) {
+      setConfirming(true)
       return
     }
-
     startTransition(async () => {
-      const result = await addGoalContribution({
-        goal_id: goalId,
-        account_id: accountId || null,
-        amount: numAmount,
-        currency: sourceCurrency,
-        exchange_rate: isCrossCurrency ? rate : 1,
-        date: new Date().toISOString().slice(0, 10),
-        notes: null,
-      })
-      if (result?.error) {
-        setError(result.error)
-      } else {
-        setAmount('')
-        setOpen(false)
-        router.refresh()
-      }
+      await deleteBudget(budgetId)
+      router.refresh()
     })
   }
 
-  if (!open) {
-    return (
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        className="w-full h-12 rounded-2xl bg-primary text-primary-foreground text-sm font-semibold tracking-tight transition-all active:scale-[0.98] hover:opacity-90"
-      >
-        + Add contribution
-      </button>
-    )
-  }
-
   return (
-    <form onSubmit={handleSubmit} className="bg-card border border-border rounded-2xl p-4 space-y-3" noValidate>
-      <div>
-        <label htmlFor="contrib-amount" className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest block mb-2">
-          Amount ({sourceCurrency})
-        </label>
-        <input
-          id="contrib-amount"
-          type="number"
-          inputMode="decimal"
-          min="0"
-          step="0.01"
-          autoFocus
-          placeholder="0"
-          value={amount}
-          onChange={e => setAmount(e.target.value)}
-          className="w-full bg-transparent text-2xl font-bold tabular-nums text-foreground placeholder:text-muted-foreground/40 focus:outline-none"
-        />
-        {isCrossCurrency && (
-          <p className="text-[11px] text-muted-foreground mt-2" aria-live="polite">
-            {rateLoading
-              ? 'Fetching rate…'
-              : rateError
-                ? `⚠ ${rateError}`
-                : `1 ${sourceCurrency} = ${rate} ${goalCurrency}`}
-          </p>
-        )}
-      </div>
-
-      {accounts.length > 0 && (
-        <div>
-          <label htmlFor="contrib-account" className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest block mb-2">
-            From account (optional)
-          </label>
-          <select
-            id="contrib-account"
-            value={accountId}
-            onChange={e => setAccountId(e.target.value)}
-            className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm text-foreground focus:outline-none"
-          >
-            <option value="">Don&apos;t debit an account</option>
-            {accounts.map(a => (
-              <option key={a.id} value={a.id}>{a.name} ({a.currency})</option>
-            ))}
-          </select>
-        </div>
-      )}
-
-      {error && (
-        <p role="alert" className="text-xs text-expense bg-expense/10 rounded-xl px-3 py-2 border border-expense/20">
-          {error}
-        </p>
-      )}
-
-      <div className="flex gap-2">
-        <button
-          type="button"
-          onClick={() => { setOpen(false); setError('') }}
-          className="flex-1 h-10 rounded-xl border border-border text-sm text-muted-foreground hover:text-foreground transition-colors"
-        >
-          Cancel
-        </button>
-        <button
-          type="submit"
-          disabled={isPending || (isCrossCurrency && rateLoading)}
-          className="flex-1 h-10 rounded-xl bg-primary text-primary-foreground text-sm font-semibold disabled:opacity-50"
-        >
-          {isPending ? 'Saving…' : 'Add'}
-        </button>
-      </div>
-    </form>
+    <button
+      type="button"
+      onClick={handleClick}
+      disabled={isPending}
+      aria-label={confirming ? 'Confirm delete budget' : 'Delete budget'}
+      className={`text-[10px] font-semibold px-2 py-1 rounded-lg transition-colors shrink-0
+        ${confirming ? 'bg-expense text-white' : 'text-muted-foreground hover:text-expense hover:bg-expense/10'}`}
+    >
+      {isPending ? '…' : confirming ? 'Confirm' : 'Delete'}
+    </button>
   )
 }
