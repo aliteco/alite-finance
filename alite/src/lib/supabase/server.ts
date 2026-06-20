@@ -18,7 +18,6 @@ export async function createClient() {
               cookieStore.set(name, value, options)
             )
           } catch {
-            // Server Component — can be ignored if middleware refreshes sessions
           }
         },
       },

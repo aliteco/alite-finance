@@ -71,6 +71,12 @@ function assertUser(user: { id: string } | null): asserts user is { id: string }
 }
 
 // ─── Exchange rate lookup ──────────────────────────────────────────────────────
+// FIX: schema columns are `base_currency` / `target_currency`, not
+// `from_currency` / `to_currency`. The mismatch made every cross-currency
+// transaction fail (PostgREST returns an error for an unknown column, and
+// `.single()` then throws because no row is returned).
+// Also switched `.single()` → `.maybeSingle()` so "no rate found" is a normal
+// null result instead of a thrown PostgrestError.
 
 export async function getExchangeRate(
   fromCurrency: string,
@@ -82,24 +88,27 @@ export async function getExchangeRate(
   const { data, error } = await supabase
     .from('exchange_rates')
     .select('rate')
-    .eq('from_currency', fromCurrency)
-    .eq('to_currency', toCurrency)
+    .eq('base_currency', fromCurrency)
+    .eq('target_currency', toCurrency)
     .order('date', { ascending: false })
     .limit(1)
-    .single()
+    .maybeSingle()
 
-  if (error || !data) {
-    // Also try the inverse rate
+  if (error) {
+    return { rate: 0, error: `Exchange rate lookup failed: ${error.message}` }
+  }
+
+  if (!data) {
     const { data: inverseData, error: inverseError } = await supabase
       .from('exchange_rates')
       .select('rate')
-      .eq('from_currency', toCurrency)
-      .eq('to_currency', fromCurrency)
+      .eq('base_currency', toCurrency)
+      .eq('target_currency', fromCurrency)
       .order('date', { ascending: false })
       .limit(1)
-      .single()
+      .maybeSingle()
 
-    if (inverseError || !inverseData) {
+    if (inverseError || !inverseData || !inverseData.rate) {
       return {
         rate: 0,
         error: `No exchange rate found for ${fromCurrency} → ${toCurrency}. Please add rates in your settings or enter the amount manually.`,
@@ -117,11 +126,12 @@ export async function getExchangeRate(
 export async function getCategories(type?: TransactionType) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return []
 
   let query = supabase
     .from('categories')
     .select('id, name, type, is_system')
-    .or(`user_id.is.null,user_id.eq.${user?.id}`)
+    .or(`user_id.is.null,user_id.eq.${user.id}`)
     .order('is_system', { ascending: false })
     .order('name')
 
@@ -141,7 +151,6 @@ export async function createTransaction(
   const { data: { user } } = await supabase.auth.getUser()
   assertUser(user)
 
-  // ── Server-side validation ──
   const amtErr = validateAmount(input.amount)
   if (amtErr) return { error: amtErr }
 
@@ -162,7 +171,6 @@ export async function createTransaction(
     return { error: 'Exchange rate must be positive. Missing rate for this currency pair.' }
   }
 
-  // Recompute base_currency_amount server-side to prevent tampering
   const expectedBase = parseFloat(
     (input.amount * input.exchange_rate_used).toFixed(2)
   )
@@ -171,19 +179,17 @@ export async function createTransaction(
     return { error: 'Base currency amount mismatch — please refresh and retry.' }
   }
 
-  // Verify the account belongs to this user
   const { data: account, error: acctFetchErr } = await supabase
     .from('accounts')
     .select('id, currency')
     .eq('id', input.account_id)
     .eq('user_id', user.id)
-    .single()
+    .maybeSingle()
 
   if (acctFetchErr || !account) {
     return { error: 'Account not found or access denied.' }
   }
 
-  // ── Try atomic RPC first; fall back to two-step if RPC doesn't exist ──
   const { data: rpcResult, error: rpcError } = await supabase.rpc(
     'create_transaction_atomic',
     {
@@ -207,7 +213,7 @@ export async function createTransaction(
     return { success: true, id: rpcResult as string }
   }
 
-  // ── Two-step fallback (non-atomic, but safe with rollback) ──
+  // Two-step fallback (non-atomic, but safe with rollback)
   const { data: tx, error: txError } = await supabase
     .from('transactions')
     .insert({
@@ -235,7 +241,6 @@ export async function createTransaction(
   })
 
   if (balanceError) {
-    // Rollback: delete the transaction we just created
     await supabase.from('transactions').delete().eq('id', tx.id)
     return {
       error:
@@ -260,7 +265,6 @@ export async function createTransfer(
   const { data: { user } } = await supabase.auth.getUser()
   assertUser(user)
 
-  // ── Validation ──
   const fromErr = validateUUID(input.from_account_id, 'Source account')
   if (fromErr) return { error: fromErr }
 
@@ -284,7 +288,6 @@ export async function createTransfer(
     return { error: 'Exchange rate must be positive.' }
   }
 
-  // Verify both accounts belong to this user
   const { data: accounts, error: acctErr } = await supabase
     .from('accounts')
     .select('id, balance, currency')
@@ -295,10 +298,6 @@ export async function createTransfer(
     return { error: 'One or both accounts not found or access denied.' }
   }
 
-  const fromAccount = accounts.find((a: { id: string; balance: number; currency: string }) => a.id === input.from_account_id)
-  if (!fromAccount) return { error: 'Source account not found.' }
-
-  // ── Try atomic RPC ──
   const { data: rpcResult, error: rpcError } = await supabase.rpc(
     'create_transfer_atomic',
     {
@@ -323,8 +322,7 @@ export async function createTransfer(
     return { success: true, id: rpcResult as string }
   }
 
-  // ── Multi-step fallback ──
-  // Step 1: Create the transfer record
+  // Multi-step fallback
   const { data: transfer, error: transferErr } = await supabase
     .from('transfers')
     .insert({
@@ -346,7 +344,6 @@ export async function createTransfer(
     return { error: `Failed to create transfer record: ${transferErr?.message}` }
   }
 
-  // Step 2: Create debit transaction (money leaving from_account)
   const { data: debitTx, error: debitErr } = await supabase
     .from('transactions')
     .insert({
@@ -370,7 +367,6 @@ export async function createTransfer(
     return { error: `Failed to create debit transaction: ${debitErr?.message}` }
   }
 
-  // Step 3: Create credit transaction (money arriving at to_account)
   const { data: creditTx, error: creditErr } = await supabase
     .from('transactions')
     .insert({
@@ -390,20 +386,17 @@ export async function createTransfer(
     .single()
 
   if (creditErr || !creditTx) {
-    // Rollback debit tx and transfer record
     await supabase.from('transactions').delete().eq('id', debitTx.id)
     await supabase.from('transfers').delete().eq('id', transfer.id)
     return { error: `Failed to create credit transaction: ${creditErr?.message}` }
   }
 
-  // Step 4: Update both account balances atomically via RPC
   const { error: fromBalErr } = await supabase.rpc('increment_account_balance', {
     p_account_id: input.from_account_id,
     p_delta: -input.from_amount,
   })
 
   if (fromBalErr) {
-    // Full rollback
     await supabase.from('transactions').delete().in('id', [debitTx.id, creditTx.id])
     await supabase.from('transfers').delete().eq('id', transfer.id)
     return { error: 'Failed to debit source account. Transfer was not saved.' }
@@ -415,7 +408,6 @@ export async function createTransfer(
   })
 
   if (toBalErr) {
-    // Reverse the debit we already applied
     await supabase.rpc('increment_account_balance', {
       p_account_id: input.from_account_id,
       p_delta: input.from_amount,
@@ -425,7 +417,6 @@ export async function createTransfer(
     return { error: 'Failed to credit destination account. Transfer was not saved.' }
   }
 
-  // Step 5: Link transaction IDs back to transfer record
   await supabase
     .from('transfers')
     .update({
@@ -452,13 +443,12 @@ export async function deleteTransaction(id: string): Promise<ActionResult> {
   const idErr = validateUUID(id, 'Transaction ID')
   if (idErr) return { error: idErr }
 
-  // Fetch the transaction — MUST belong to this user
   const { data: tx, error: fetchError } = await supabase
     .from('transactions')
     .select('id, account_id, type, amount, transfer_id, transfer_type')
     .eq('id', id)
-    .eq('user_id', user.id) // ownership check
-    .single()
+    .eq('user_id', user.id)
+    .maybeSingle()
 
   if (fetchError || !tx) {
     return { error: 'Transaction not found or access denied.' }
@@ -471,7 +461,6 @@ export async function deleteTransaction(id: string): Promise<ActionResult> {
     }
   }
 
-  // Reverse the balance change
   const balanceDelta = tx.type === 'income' ? -tx.amount : tx.amount
 
   const { error: balErr } = await supabase.rpc('increment_account_balance', {
@@ -490,10 +479,9 @@ export async function deleteTransaction(id: string): Promise<ActionResult> {
     .from('transactions')
     .delete()
     .eq('id', id)
-    .eq('user_id', user.id) // double-check ownership
+    .eq('user_id', user.id)
 
   if (delErr) {
-    // Re-apply the balance (undo our reversal)
     await supabase.rpc('increment_account_balance', {
       p_account_id: tx.account_id,
       p_delta: -balanceDelta,
@@ -524,26 +512,24 @@ export async function deleteTransfer(transferId: string): Promise<ActionResult> 
     )
     .eq('id', transferId)
     .eq('user_id', user.id)
-    .single()
+    .maybeSingle()
 
   if (fetchErr || !transfer) {
     return { error: 'Transfer not found or access denied.' }
   }
 
-  // Reverse balances first
   const { error: fromBalErr } = await supabase.rpc('increment_account_balance', {
     p_account_id: transfer.from_account_id,
-    p_delta: transfer.from_amount, // add back what was debited
+    p_delta: transfer.from_amount,
   })
   if (fromBalErr) return { error: 'Failed to reverse source balance.' }
 
   const { error: toBalErr } = await supabase.rpc('increment_account_balance', {
     p_account_id: transfer.to_account_id,
-    p_delta: -transfer.to_amount, // remove what was credited
+    p_delta: -transfer.to_amount,
   })
 
   if (toBalErr) {
-    // Re-reverse the from_account change
     await supabase.rpc('increment_account_balance', {
       p_account_id: transfer.from_account_id,
       p_delta: -transfer.from_amount,
@@ -551,7 +537,6 @@ export async function deleteTransfer(transferId: string): Promise<ActionResult> 
     return { error: 'Failed to reverse destination balance.' }
   }
 
-  // Delete transaction legs (they reference transfer via FK)
   const legIds = [
     transfer.debit_transaction_id,
     transfer.credit_transaction_id,
@@ -586,6 +571,10 @@ export async function updateProfile(fields: {
   const { data: { user } } = await supabase.auth.getUser()
   assertUser(user)
 
+  if (fields.full_name !== undefined && fields.full_name.trim().length === 0) {
+    return { error: 'Name cannot be empty.' }
+  }
+
   const { error } = await supabase
     .from('profiles')
     .update({ ...fields, updated_at: new Date().toISOString() })
@@ -610,13 +599,13 @@ export async function createAccount(fields: {
   const { data: { user } } = await supabase.auth.getUser()
   assertUser(user)
 
-  const amtErr = validateAmount(fields.balance === 0 ? 1 : Math.abs(fields.balance))
-  // balance can be 0 for new accounts — only reject negatives
+  if (!fields.name?.trim()) return { error: 'Account name is required.' }
   if (fields.balance < 0) return { error: 'Opening balance cannot be negative.' }
+  if (!Number.isFinite(fields.balance)) return { error: 'Enter a valid starting balance.' }
 
   const { data, error } = await supabase
     .from('accounts')
-    .insert({ ...fields, user_id: user.id, is_active: true })
+    .insert({ ...fields, name: fields.name.trim(), user_id: user.id, is_active: true })
     .select('id')
     .single()
 
@@ -625,7 +614,6 @@ export async function createAccount(fields: {
   revalidatePath('/accounts')
   revalidatePath('/dashboard')
 
-  // redirect OUTSIDE try/catch — Next.js throws internally on redirect()
   redirect(`/accounts/${data.id}`)
 }
 
@@ -633,7 +621,7 @@ export async function createAccount(fields: {
 
 export async function updateAccount(
   accountId: string,
-  fields: { name?: string; type?: string; color?: string ; include_in_net_worth?: boolean}
+  fields: { name?: string; type?: string; color?: string; include_in_net_worth?: boolean }
 ): Promise<ActionResult> {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -641,6 +629,10 @@ export async function updateAccount(
 
   const idErr = validateUUID(accountId, 'Account ID')
   if (idErr) return { error: idErr }
+
+  if (fields.name !== undefined && !fields.name.trim()) {
+    return { error: 'Account name cannot be empty.' }
+  }
 
   const { error } = await supabase
     .from('accounts')
@@ -681,6 +673,8 @@ export async function archiveAccount(id: string): Promise<ActionResult> {
   redirect('/accounts')
 }
 
+// ─── Budgets ──────────────────────────────────────────────────────────────────
+
 export interface CreateBudgetInput {
   category_id: string | null
   name: string
@@ -698,6 +692,8 @@ export async function createBudget(
   const { data: { user } } = await supabase.auth.getUser()
   assertUser(user)
 
+  if (!input.name?.trim()) return { error: 'Budget name is required.' }
+
   const amtErr = validateAmount(input.amount)
   if (amtErr) return { error: amtErr }
 
@@ -707,12 +703,16 @@ export async function createBudget(
   if (input.end_date) {
     const endDateErr = validateDate(input.end_date)
     if (endDateErr) return { error: endDateErr }
+    if (new Date(input.end_date) < new Date(input.start_date)) {
+      return { error: 'End date must be after start date.' }
+    }
   }
 
   const { data, error } = await supabase
     .from('budgets')
     .insert({
       ...input,
+      name: input.name.trim(),
       user_id: user.id,
       is_active: true,
     })

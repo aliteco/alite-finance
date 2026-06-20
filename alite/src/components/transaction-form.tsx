@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useTransition, useCallback } from 'react'
+import { useState, useEffect, useTransition, useCallback, useId } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   createTransaction,
@@ -38,7 +38,7 @@ interface TransactionFormProps {
 
 type FormMode = 'expense' | 'income' | 'transfer'
 
-const COMMON_CURRENCIES = ['IDR', 'USD', 'EUR', 'SGD', 'JPY', 'GBP', 'AUD', 'MYR', 'TWD', 'THB', 'MYR', 'PHP']
+const COMMON_CURRENCIES = ['IDR', 'USD', 'EUR', 'SGD', 'JPY', 'GBP', 'AUD', 'MYR', 'TWD', 'THB', 'PHP']
 
 function formatCurrency(amount: number, currency: string) {
   try {
@@ -64,11 +64,10 @@ export default function TransactionForm({
 }: TransactionFormProps) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
+  const errorId = useId()
 
-  // ── Form mode ──
   const [mode, setMode] = useState<FormMode>(defaultType ?? 'expense')
 
-  // ── Shared fields ──
   const firstAccountId = defaultAccountId ?? accounts[0]?.id ?? ''
   const [accountId, setAccountId] = useState(firstAccountId)
   const [amount, setAmount] = useState('')
@@ -82,20 +81,16 @@ export default function TransactionForm({
   )
   const [showCurrencyPicker, setShowCurrencyPicker] = useState(false)
 
-  // ── Transfer-specific ──
   const secondAccountId = accounts.find(a => a.id !== firstAccountId)?.id ?? ''
   const [toAccountId, setToAccountId] = useState(secondAccountId)
   const [toAmount, setToAmount] = useState('')
 
-  // ── Exchange rate ──
   const [exchangeRate, setExchangeRate] = useState(1)
   const [rateLoading, setRateLoading] = useState(false)
   const [rateError, setRateError] = useState('')
 
-  // ── UI ──
   const [error, setError] = useState('')
 
-  // ── Derived ──
   const numAmount = parseFloat(amount || '0')
   const baseCurrencyAmount = parseFloat((numAmount * exchangeRate).toFixed(2))
   const filteredCategories = categories.filter(
@@ -103,18 +98,15 @@ export default function TransactionForm({
   )
   const toAccount = accounts.find(a => a.id === toAccountId)
 
-  // ── Sync currency when account changes ──
   useEffect(() => {
     const account = accounts.find(a => a.id === accountId)
     if (account) setCurrency(account.currency)
   }, [accountId, accounts])
 
-  // ── Reset category on mode change ──
   useEffect(() => {
     setCategoryId('')
   }, [mode])
 
-  // ── Default toAccountId when mode switches to transfer ──
   useEffect(() => {
     if (mode === 'transfer') {
       const other = accounts.find(a => a.id !== accountId)
@@ -122,7 +114,6 @@ export default function TransactionForm({
     }
   }, [mode, accountId, accounts])
 
-  // ── Fetch exchange rate ──
   const fetchRate = useCallback(
     async (from: string, to: string) => {
       if (from === to) {
@@ -151,7 +142,6 @@ export default function TransactionForm({
     fetchRate(currency, baseCurrency)
   }, [currency, baseCurrency, fetchRate])
 
-  // ── Submit handler ──
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setError('')
@@ -196,7 +186,6 @@ export default function TransactionForm({
       return
     }
 
-    // income / expense
     if (!numAmount || numAmount <= 0) return setError('Enter a valid amount.')
     if (!accountId) return setError('Select an account.')
     if (!categoryId) return setError('Select a category.')
@@ -231,10 +220,12 @@ export default function TransactionForm({
   const isCrossCurrency = mode === 'transfer' && fromCurrency !== toCurrency
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-3">
+    <form onSubmit={handleSubmit} className="space-y-3" noValidate>
 
       {/* ── Mode toggle ── */}
       <div
+        role="radiogroup"
+        aria-label="Transaction type"
         className="flex rounded-xl p-1 gap-1"
         style={{ background: 'rgba(255,255,255,0.04)', border: '0.5px solid rgba(255,255,255,0.06)' }}
       >
@@ -246,8 +237,10 @@ export default function TransactionForm({
             <button
               key={m}
               type="button"
+              role="radio"
+              aria-checked={active}
               onClick={() => setMode(m)}
-              className={`flex-1 h-9 rounded-lg text-xs font-semibold capitalize transition-all ${
+              className={`flex-1 h-9 rounded-lg text-xs font-semibold capitalize transition-all focus-visible:ring-2 focus-visible:ring-offset-1 ${
                 active ? `bg-card shadow-sm ${activeColor}` : 'text-muted-foreground'
               }`}
             >
@@ -262,7 +255,7 @@ export default function TransactionForm({
         className="rounded-2xl px-4 py-4"
         style={{ border: '0.5px solid rgba(255,255,255,0.08)', background: 'var(--card)' }}
       >
-        <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-[0.12em] block mb-2">
+        <label htmlFor="amount-input" className="text-[10px] font-semibold text-muted-foreground uppercase tracking-[0.12em] block mb-2">
           {mode === 'transfer' ? 'Amount to send' : 'Amount'}
         </label>
         <div className="flex items-center gap-3">
@@ -270,11 +263,14 @@ export default function TransactionForm({
             <button
               type="button"
               onClick={() => setShowCurrencyPicker(p => !p)}
-              className="shrink-0 flex items-center gap-1 text-sm font-semibold text-foreground rounded-lg px-2.5 py-1.5 transition-colors"
+              aria-expanded={showCurrencyPicker}
+              aria-haspopup="listbox"
+              aria-label={`Currency: ${currency}. Tap to change`}
+              className="shrink-0 flex items-center gap-1 text-sm font-semibold text-foreground rounded-lg px-2.5 py-1.5 transition-colors focus-visible:ring-2"
               style={{ background: 'rgba(255,255,255,0.05)', border: '0.5px solid rgba(255,255,255,0.08)' }}
             >
               {currency}
-              <svg width="8" height="5" viewBox="0 0 8 5" fill="none" className="text-muted-foreground">
+              <svg width="8" height="5" viewBox="0 0 8 5" fill="none" className="text-muted-foreground" aria-hidden="true">
                 <path d="M1 1l3 3 3-3" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
               </svg>
             </button>
@@ -288,8 +284,11 @@ export default function TransactionForm({
             </span>
           )}
           <input
+            id="amount-input"
             type="number"
             inputMode="decimal"
+            step="0.01"
+            min="0"
             placeholder="0"
             value={amount}
             onChange={e => setAmount(e.target.value)}
@@ -297,15 +296,16 @@ export default function TransactionForm({
           />
         </div>
 
-        {/* Currency picker */}
         {showCurrencyPicker && mode !== 'transfer' && (
-          <div className="mt-3 pt-3 grid grid-cols-4 gap-1.5" style={{ borderTop: '0.5px solid rgba(255,255,255,0.06)' }}>
+          <div role="listbox" aria-label="Select currency" className="mt-3 pt-3 grid grid-cols-4 gap-1.5" style={{ borderTop: '0.5px solid rgba(255,255,255,0.06)' }}>
             {COMMON_CURRENCIES.filter((c, i, a) => a.indexOf(c) === i).map(c => (
               <button
                 key={c}
                 type="button"
+                role="option"
+                aria-selected={c === currency}
                 onClick={() => { setCurrency(c); setShowCurrencyPicker(false) }}
-                className={`text-xs font-semibold rounded-lg py-1.5 transition-colors ${
+                className={`text-xs font-semibold rounded-lg py-1.5 transition-colors focus-visible:ring-2 ${
                   c === currency
                     ? 'bg-primary text-primary-foreground'
                     : 'text-muted-foreground hover:text-foreground'
@@ -318,12 +318,11 @@ export default function TransactionForm({
           </div>
         )}
 
-        {/* Rate preview */}
         {mode !== 'transfer' && currency !== baseCurrency && numAmount > 0 && (
-          <div className="mt-3 pt-3 flex items-center justify-between" style={{ borderTop: '0.5px solid rgba(255,255,255,0.06)' }}>
+          <div className="mt-3 pt-3 flex items-center justify-between" style={{ borderTop: '0.5px solid rgba(255,255,255,0.06)' }} aria-live="polite">
             {rateError ? (
               <p className="text-[11px] font-medium text-expense flex items-center gap-1">
-                <span>⚠</span> {rateError.split('.')[0]}
+                <span aria-hidden="true">⚠</span> {rateError.split('.')[0]}
               </p>
             ) : rateLoading ? (
               <p className="text-[11px] text-muted-foreground">Fetching rate…</p>
@@ -347,38 +346,35 @@ export default function TransactionForm({
           className="rounded-2xl px-4 py-4 space-y-4"
           style={{ border: '0.5px solid rgba(255,255,255,0.08)', background: 'var(--card)' }}
         >
-          {/* From account */}
           <div>
-            <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-[0.12em] block mb-2">
+            <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-[0.12em] block mb-2">
               From
-            </label>
+            </span>
             <AccountPicker
               accounts={accounts}
               value={accountId}
               onChange={id => {
                 setAccountId(id)
-                // ensure toAccount differs
                 if (id === toAccountId) {
                   const other = accounts.find(a => a.id !== id)
                   if (other) setToAccountId(other.id)
                 }
               }}
               excludeId={toAccountId}
+              label="Source account"
             />
           </div>
 
-          {/* Arrow */}
-          <div className="flex items-center gap-3 py-1">
+          <div className="flex items-center gap-3 py-1" aria-hidden="true">
             <div className="flex-1 h-px" style={{ background: 'rgba(255,255,255,0.06)' }} />
             <span className="text-muted-foreground text-sm">↓</span>
             <div className="flex-1 h-px" style={{ background: 'rgba(255,255,255,0.06)' }} />
           </div>
 
-          {/* To account */}
           <div>
-            <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-[0.12em] block mb-2">
+            <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-[0.12em] block mb-2">
               To
-            </label>
+            </span>
             <AccountPicker
               accounts={accounts}
               value={toAccountId}
@@ -390,18 +386,21 @@ export default function TransactionForm({
                 }
               }}
               excludeId={accountId}
+              label="Destination account"
             />
           </div>
 
-          {/* Cross-currency: destination amount */}
           {isCrossCurrency && (
             <div className="pt-3" style={{ borderTop: '0.5px solid rgba(255,255,255,0.06)' }}>
-              <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-[0.12em] block mb-2">
+              <label htmlFor="dest-amount" className="text-[10px] font-semibold text-muted-foreground uppercase tracking-[0.12em] block mb-2">
                 Destination amount ({toCurrency})
               </label>
               <input
+                id="dest-amount"
                 type="number"
                 inputMode="decimal"
+                min="0"
+                step="0.01"
                 placeholder={`Amount in ${toCurrency}`}
                 value={toAmount}
                 onChange={e => setToAmount(e.target.value)}
@@ -418,10 +417,10 @@ export default function TransactionForm({
           className="rounded-2xl px-4 py-4"
           style={{ border: '0.5px solid rgba(255,255,255,0.08)', background: 'var(--card)' }}
         >
-          <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-[0.12em] block mb-2.5">
+          <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-[0.12em] block mb-2.5">
             Account
-          </label>
-          <AccountPicker accounts={accounts} value={accountId} onChange={setAccountId} />
+          </span>
+          <AccountPicker accounts={accounts} value={accountId} onChange={setAccountId} label="Account" />
         </div>
       )}
 
@@ -431,21 +430,23 @@ export default function TransactionForm({
           className="rounded-2xl px-4 py-4"
           style={{ border: '0.5px solid rgba(255,255,255,0.08)', background: 'var(--card)' }}
         >
-          <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-[0.12em] block mb-2.5">
+          <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-[0.12em] block mb-2.5">
             Category
-          </label>
+          </span>
           {filteredCategories.length === 0 ? (
             <p className="text-xs text-muted-foreground">No categories for this type.</p>
           ) : (
-            <div className="flex flex-wrap gap-2">
+            <div role="radiogroup" aria-label="Category" className="flex flex-wrap gap-2">
               {filteredCategories.map(cat => {
                 const active = categoryId === cat.id
                 return (
                   <button
                     key={cat.id}
                     type="button"
+                    role="radio"
+                    aria-checked={active}
                     onClick={() => setCategoryId(cat.id)}
-                    className="rounded-xl px-3 py-2 text-xs font-semibold transition-all"
+                    className="rounded-xl px-3 py-2 text-xs font-semibold transition-all focus-visible:ring-2"
                     style={
                       active
                         ? {
@@ -460,7 +461,7 @@ export default function TransactionForm({
                           }
                     }
                   >
-                    {cat.icon && <span className="mr-1">{cat.icon}</span>}
+                    {cat.icon && <span aria-hidden="true" className="mr-1">{cat.icon}</span>}
                     {cat.name}
                   </button>
                 )
@@ -476,10 +477,11 @@ export default function TransactionForm({
         style={{ border: '0.5px solid rgba(255,255,255,0.08)', background: 'var(--card)' }}
       >
         <div>
-          <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-[0.12em] block mb-2">
+          <label htmlFor="tx-note" className="text-[10px] font-semibold text-muted-foreground uppercase tracking-[0.12em] block mb-2">
             Note (optional)
           </label>
           <input
+            id="tx-note"
             type="text"
             placeholder="What was this for?"
             value={description}
@@ -489,13 +491,15 @@ export default function TransactionForm({
           />
         </div>
         <div style={{ borderTop: '0.5px solid rgba(255,255,255,0.06)', paddingTop: '1rem' }}>
-          <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-[0.12em] block mb-2">
+          <label htmlFor="tx-date" className="text-[10px] font-semibold text-muted-foreground uppercase tracking-[0.12em] block mb-2">
             Date
           </label>
           <input
+            id="tx-date"
             type="date"
             value={happenedAt}
             onChange={e => setHappenedAt(e.target.value)}
+            max={new Date().toISOString().slice(0, 10)}
             className="bg-transparent text-sm text-foreground focus:outline-none w-full"
           />
         </div>
@@ -504,6 +508,9 @@ export default function TransactionForm({
       {/* ── Error ── */}
       {error && (
         <div
+          id={errorId}
+          role="alert"
+          aria-live="assertive"
           className="rounded-xl px-4 py-3 text-xs font-medium text-expense"
           style={{ background: 'rgba(248,113,113,0.08)', border: '0.5px solid rgba(248,113,113,0.2)' }}
         >
@@ -515,7 +522,8 @@ export default function TransactionForm({
       <button
         type="submit"
         disabled={isPending}
-        className="w-full h-12 rounded-2xl text-sm font-bold tracking-tight transition-all active:scale-[0.98] disabled:opacity-40"
+        aria-describedby={error ? errorId : undefined}
+        className="w-full h-12 rounded-2xl text-sm font-bold tracking-tight transition-all active:scale-[0.98] disabled:opacity-40 focus-visible:ring-2 focus-visible:ring-offset-2"
         style={
           mode === 'income'
             ? { background: 'var(--income)', color: '#000' }
@@ -541,24 +549,32 @@ function AccountPicker({
   value,
   onChange,
   excludeId,
+  label,
 }: {
   accounts: Account[]
   value: string
   onChange: (id: string) => void
   excludeId?: string
+  label: string
 }) {
   const visible = excludeId ? accounts.filter(a => a.id !== excludeId) : accounts
 
+  if (visible.length === 0) {
+    return <p className="text-xs text-muted-foreground">No other accounts available.</p>
+  }
+
   return (
-    <div className="flex flex-wrap gap-2">
+    <div role="radiogroup" aria-label={label} className="flex flex-wrap gap-2">
       {visible.map(account => {
         const active = value === account.id
         return (
           <button
             key={account.id}
             type="button"
+            role="radio"
+            aria-checked={active}
             onClick={() => onChange(account.id)}
-            className="flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-semibold transition-all"
+            className="flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-semibold transition-all focus-visible:ring-2"
             style={
               active
                 ? {
@@ -574,6 +590,7 @@ function AccountPicker({
             }
           >
             <span
+              aria-hidden="true"
               className="w-4 h-4 rounded-md flex items-center justify-center text-[9px] font-bold shrink-0"
               style={{
                 background: active ? (account.color ? `${account.color}44` : 'rgba(255,255,255,0.12)') : 'rgba(255,255,255,0.06)',

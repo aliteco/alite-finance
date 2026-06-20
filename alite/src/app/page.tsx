@@ -107,7 +107,7 @@ export default function LandingPage() {
       </section>
 
       {/* ── App Preview ── */}
-      <section className="max-w-xs mx-auto px-6 pb-20" style={{ width: '500px', maxWidth: '500px' }}>
+      <section className="max-w-xs mx-auto px-6 pb-20">
 
         {/* Net Worth Card */}
         <div className="bg-card border border-border rounded-[22px] p-5 mb-3">

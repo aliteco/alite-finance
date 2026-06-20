@@ -3,7 +3,13 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 
-export async function signIn(email: string, password: string) {
+function safeRedirectPath(path: string | undefined): string {
+  // Prevent open-redirect: only allow same-origin relative paths.
+  if (!path || !path.startsWith('/') || path.startsWith('//')) return '/dashboard'
+  return path
+}
+
+export async function signIn(email: string, password: string, redirectTo?: string) {
   const supabase = await createClient()
 
   const { error } = await supabase.auth.signInWithPassword({ email, password })
@@ -12,7 +18,7 @@ export async function signIn(email: string, password: string) {
     return { error: error.message }
   }
 
-  redirect('/dashboard')
+  redirect(safeRedirectPath(redirectTo))
 }
 
 export async function signUp(email: string, password: string, fullName: string) {
@@ -27,7 +33,7 @@ export async function signUp(email: string, password: string, fullName: string) 
   })
 
   if (error) {
-    console.error('Supabase signUp error:', error.name, error.status, error.message, error)
+    console.error('Supabase signUp error:', error.name, error.status, error.message)
     return { error: error.message || 'Failed to sign up. Please try again.' }
   }
 

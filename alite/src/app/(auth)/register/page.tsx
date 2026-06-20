@@ -24,11 +24,11 @@ export default function RegisterPage() {
     try {
       const result = await signUp(email, password, fullName)
       if (result?.error) {
-        setError(typeof result.error === 'string' ? result.error : "An unexpected error occurred")
+        setError(typeof result.error === 'string' ? result.error : 'An unexpected error occurred')
       } else if (result?.success) {
         setSuccess(result.success)
       }
-    } catch (err) {
+    } catch {
       setError('Something went wrong. Please try again.')
     } finally {
       setLoading(false)
@@ -49,7 +49,7 @@ export default function RegisterPage() {
 
         {success ? (
           <div className="text-center space-y-4">
-            <div className="bg-income/10 text-income rounded-xl px-4 py-4 text-sm font-medium">
+            <div role="status" className="bg-income/10 text-income rounded-xl px-4 py-4 text-sm font-medium">
               {success}
             </div>
             <Link href="/login" className="block text-sm text-primary font-medium">
@@ -57,15 +57,17 @@ export default function RegisterPage() {
             </Link>
           </div>
         ) : (
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-4" noValidate>
             <div className="space-y-1.5">
               <label className="text-sm font-medium text-foreground" htmlFor="fullName">
                 Full name
               </label>
               <input
                 id="fullName"
+                name="fullName"
                 type="text"
                 autoComplete="name"
+                autoFocus
                 required
                 value={fullName}
                 onChange={e => setFullName(e.target.value)}
@@ -80,6 +82,7 @@ export default function RegisterPage() {
               </label>
               <input
                 id="email"
+                name="email"
                 type="email"
                 autoComplete="email"
                 required
@@ -96,18 +99,24 @@ export default function RegisterPage() {
               </label>
               <input
                 id="password"
+                name="password"
                 type="password"
                 autoComplete="new-password"
                 required
+                minLength={8}
                 value={password}
                 onChange={e => setPassword(e.target.value)}
                 placeholder="Min. 8 characters"
+                aria-describedby="password-hint"
                 className="w-full h-11 rounded-xl border border-border bg-card px-4 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 transition"
               />
+              <p id="password-hint" className="text-[11px] text-muted-foreground">
+                At least 8 characters.
+              </p>
             </div>
 
             {error && (
-              <p className="text-sm text-destructive bg-destructive/10 rounded-lg px-3 py-2">
+              <p role="alert" className="text-sm text-destructive bg-destructive/10 rounded-lg px-3 py-2">
                 {error}
               </p>
             )}
@@ -116,7 +125,6 @@ export default function RegisterPage() {
               type="submit"
               disabled={loading}
               className="w-full h-11 rounded-xl bg-primary text-primary-foreground text-sm font-medium disabled:opacity-50 transition active:scale-[0.98]"
-              style={{ backgroundColor: '#000000', color: '#ffffff' }}
             >
               {loading ? 'Creating account…' : 'Create account'}
             </button>

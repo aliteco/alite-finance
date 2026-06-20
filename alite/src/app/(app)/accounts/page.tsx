@@ -87,19 +87,16 @@ export default async function AccountsPage() {
   const activeAccounts = accounts.filter(a => a.is_active)
   const netWorthAccounts = activeAccounts.filter(a => a.include_in_net_worth)
 
-  // Net worth = sum of all include_in_net_worth accounts
-  // NOTE: This is a simplified sum in account currency.
-  // For multi-currency accuracy you'd convert each to base_currency first.
-  // The dashboard does this properly via base_currency_amount on transactions.
+  // NOTE: This is a simplified sum in account currency (not converted to base).
+  // For multi-currency accuracy across mixed-currency accounts, the dashboard's
+  // base_currency_amount-derived net worth is authoritative; this is a quick view.
   const netWorth = netWorthAccounts.reduce((sum, a) => sum + (a.balance ?? 0), 0)
 
   const grouped = groupByType(activeAccounts)
+  const hasMixedCurrencies = new Set(netWorthAccounts.map(a => a.currency)).size > 1
 
   return (
     <div className="min-h-screen bg-background pb-28">
-      {/* ── Font import via inline style ── */}
-      <style>{`@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');`}</style>
-
       <div className="max-w-lg mx-auto px-4 pt-8 space-y-6">
 
         {/* ── Header ── */}
@@ -124,9 +121,8 @@ export default async function AccountsPage() {
         {/* ── Net Worth Summary ── */}
         <div
           className="rounded-2xl border px-5 py-5 relative overflow-hidden"
-          style={{ borderColor: 'rgba(255,255,255,0.08)', background: 'var(--card)' }}
+          style={{ borderColor: 'var(--border)', background: 'var(--card)' }}
         >
-          {/* Subtle glow accent */}
           <div
             className="absolute inset-0 pointer-events-none"
             style={{
@@ -135,27 +131,21 @@ export default async function AccountsPage() {
             }}
           />
 
-          <p
-            className="text-[10px] font-semibold uppercase tracking-[0.12em] mb-1"
-            style={{ color: 'var(--muted-foreground)' }}
-          >
+          <p className="text-[10px] font-semibold uppercase tracking-[0.12em] mb-1 text-muted-foreground">
             Net Worth
           </p>
-          <p
-            className="text-4xl font-extrabold tracking-tight tabular-nums leading-none text-foreground"
-            style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}
-          >
+          <p className="text-4xl font-extrabold tracking-tight tabular-nums leading-none text-foreground">
             {formatCurrency(netWorth, baseCurrency)}
           </p>
           <p className="text-xs text-muted-foreground mt-1.5">
             {baseCurrency} · {netWorthAccounts.length} account{netWorthAccounts.length !== 1 ? 's' : ''} in net worth
+            {hasMixedCurrencies && ' · mixed currencies, not converted'}
           </p>
 
-          {/* Mini breakdown row */}
           {activeAccounts.length > 0 && (
             <div
               className="mt-4 pt-4 flex gap-5 flex-wrap"
-              style={{ borderTop: '0.5px solid rgba(255,255,255,0.08)' }}
+              style={{ borderTop: '0.5px solid var(--border)' }}
             >
               {Array.from(grouped.entries()).slice(0, 4).map(([type, group]) => {
                 const subtotal = group.reduce((s, a) => s + (a.balance ?? 0), 0)
@@ -207,10 +197,10 @@ function AccountGroup({
   baseCurrency: string
 }) {
   return (
-    <section>
+    <section aria-labelledby={`group-${type}`}>
       <div className="flex items-center gap-2 mb-2.5 px-0.5">
-        <span className="text-base leading-none">{ACCOUNT_TYPE_ICONS[type] ?? '🗂'}</span>
-        <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-[0.12em]">
+        <span className="text-base leading-none" aria-hidden="true">{ACCOUNT_TYPE_ICONS[type] ?? '🗂'}</span>
+        <p id={`group-${type}`} className="text-[10px] font-semibold text-muted-foreground uppercase tracking-[0.12em]">
           {ACCOUNT_TYPE_LABELS[type] ?? type}
         </p>
       </div>
@@ -218,7 +208,7 @@ function AccountGroup({
       <div
         className="rounded-2xl overflow-hidden"
         style={{
-          border: '0.5px solid rgba(255,255,255,0.08)',
+          border: '0.5px solid var(--border)',
           background: 'var(--card)',
         }}
       >
@@ -251,28 +241,27 @@ function AccountRow({
   return (
     <Link
       href={`/accounts/${account.id}`}
-      className="flex items-center gap-3.5 px-4 py-4 transition-colors active:opacity-70 hover:bg-white/[0.02]"
+      className="flex items-center gap-3.5 px-4 py-4 transition-colors active:opacity-70 hover:bg-muted/40 focus-visible:bg-muted/40"
       style={
         hasBorder
-          ? { borderBottom: '0.5px solid rgba(255,255,255,0.06)' }
+          ? { borderBottom: '0.5px solid var(--border)' }
           : {}
       }
     >
-      {/* Color dot */}
       <div
         className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 text-sm font-bold"
         style={{
           background: account.color
             ? `${account.color}22`
-            : 'rgba(255,255,255,0.06)',
+            : 'var(--muted)',
           color: account.color ?? 'var(--muted-foreground)',
           border: `0.5px solid ${account.color ?? 'transparent'}44`,
         }}
+        aria-hidden="true"
       >
         {account.name.charAt(0).toUpperCase()}
       </div>
 
-      {/* Name + type */}
       <div className="flex-1 min-w-0">
         <p className="text-sm font-semibold text-foreground truncate leading-tight">
           {account.name}
@@ -280,12 +269,11 @@ function AccountRow({
         <p className="text-[11px] text-muted-foreground mt-0.5">
           {account.currency}
           {!account.include_in_net_worth && (
-            <span className="ml-1.5 text-muted-foreground/50">· excluded</span>
+            <span className="ml-1.5 text-muted-foreground/70">· excluded</span>
           )}
         </p>
       </div>
 
-      {/* Balance + chevron */}
       <div className="flex items-center gap-2 shrink-0">
         <p
           className={`text-sm font-bold tabular-nums ${
@@ -300,6 +288,7 @@ function AccountRow({
           viewBox="0 0 6 10"
           fill="none"
           className="text-muted-foreground/40"
+          aria-hidden="true"
         >
           <path
             d="M1 1l4 4-4 4"
@@ -321,11 +310,11 @@ function EmptyState() {
     <div
       className="rounded-2xl px-6 py-14 text-center"
       style={{
-        border: '0.5px solid rgba(255,255,255,0.08)',
+        border: '0.5px solid var(--border)',
         background: 'var(--card)',
       }}
     >
-      <div className="text-4xl mb-4">🏦</div>
+      <div className="text-4xl mb-4" aria-hidden="true">🏦</div>
       <p className="text-sm font-semibold text-foreground mb-1">No accounts yet</p>
       <p className="text-xs text-muted-foreground mb-5">
         Add your first bank account or wallet to start tracking your net worth.

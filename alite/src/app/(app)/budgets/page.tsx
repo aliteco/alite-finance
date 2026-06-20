@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
+import DeleteBudgetButton from '@/components/delete-budget-button'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -21,11 +22,6 @@ interface Profile {
   base_currency: string
 }
 
-interface SpendingRow {
-  category_id: string | null
-  total: number
-}
-
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function formatCurrency(amount: number, currency: string) {
@@ -39,28 +35,6 @@ function formatCurrency(amount: number, currency: string) {
 
 function getPeriodLabel(period: string) {
   return period === 'weekly' ? 'Weekly' : period === 'yearly' ? 'Yearly' : 'Monthly'
-}
-
-function getPeriodDates(period: 'weekly' | 'monthly' | 'yearly') {
-  const now = new Date()
-  if (period === 'weekly') {
-    const day = now.getDay()
-    const start = new Date(now)
-    start.setDate(now.getDate() - day)
-    start.setHours(0, 0, 0, 0)
-    const end = new Date(start)
-    end.setDate(start.getDate() + 6)
-    return { start, end }
-  }
-  if (period === 'yearly') {
-    const start = new Date(now.getFullYear(), 0, 1)
-    const end = new Date(now.getFullYear(), 11, 31)
-    return { start, end }
-  }
-  // monthly
-  const start = new Date(now.getFullYear(), now.getMonth(), 1)
-  const end = new Date(now.getFullYear(), now.getMonth() + 1, 0)
-  return { start, end }
 }
 
 function pct(spent: number, budget: number) {
@@ -98,8 +72,6 @@ export default async function BudgetsPage() {
   const baseCurrency = profileRes.data?.base_currency ?? 'IDR'
   const budgets = (budgetsRes.data as unknown as Budget[]) ?? []
 
-  // For each budget, fetch actual spending within the current period
-  // We batch this into a single query grouped by category
   const now = new Date()
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0, 10)
   const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().slice(0, 10)
@@ -112,7 +84,6 @@ export default async function BudgetsPage() {
   const yearStart = `${now.getFullYear()}-01-01`
   const yearEnd = `${now.getFullYear()}-12-31`
 
-  // Fetch spending per category for each time window in parallel
   const [monthlySpend, weeklySpend, yearlySpend] = await Promise.all([
     supabase
       .from('transactions')
@@ -162,7 +133,6 @@ export default async function BudgetsPage() {
     return map.get(budget.category_id) ?? 0
   }
 
-  // Separate budgets by period
   const monthly = budgets.filter(b => b.period === 'monthly')
   const weekly = budgets.filter(b => b.period === 'weekly')
   const yearly = budgets.filter(b => b.period === 'yearly')
@@ -196,9 +166,7 @@ export default async function BudgetsPage() {
 
         {/* ── Overview card ── */}
         {budgets.length > 0 && (
-          <div
-            className="relative rounded-2xl px-5 py-5 border border-border bg-card overflow-hidden"
-          >
+          <div className="relative rounded-2xl px-5 py-5 border border-border bg-card overflow-hidden">
             <div
               className="absolute inset-0 pointer-events-none"
               style={{
@@ -230,10 +198,14 @@ export default async function BudgetsPage() {
               </div>
             </div>
 
-            {/* Overall progress bar */}
             <div className="mt-4">
               <div
                 className="h-1.5 rounded-full overflow-hidden bg-muted"
+                role="progressbar"
+                aria-valuenow={pct(totalSpent, totalBudgeted)}
+                aria-valuemin={0}
+                aria-valuemax={100}
+                aria-label="Total budget used"
               >
                 <div
                   className="h-full rounded-full transition-all"
@@ -256,28 +228,13 @@ export default async function BudgetsPage() {
         ) : (
           <div className="space-y-6">
             {monthly.length > 0 && (
-              <BudgetGroup
-                title="Monthly"
-                budgets={monthly}
-                baseCurrency={baseCurrency}
-                getSpent={getSpent}
-              />
+              <BudgetGroup title="Monthly" budgets={monthly} baseCurrency={baseCurrency} getSpent={getSpent} />
             )}
             {weekly.length > 0 && (
-              <BudgetGroup
-                title="Weekly"
-                budgets={weekly}
-                baseCurrency={baseCurrency}
-                getSpent={getSpent}
-              />
+              <BudgetGroup title="Weekly" budgets={weekly} baseCurrency={baseCurrency} getSpent={getSpent} />
             )}
             {yearly.length > 0 && (
-              <BudgetGroup
-                title="Yearly"
-                budgets={yearly}
-                baseCurrency={baseCurrency}
-                getSpent={getSpent}
-              />
+              <BudgetGroup title="Yearly" budgets={yearly} baseCurrency={baseCurrency} getSpent={getSpent} />
             )}
           </div>
         )}
@@ -301,13 +258,11 @@ function BudgetGroup({
   getSpent: (b: Budget) => number
 }) {
   return (
-    <section>
-      <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-[0.12em] mb-2.5 px-0.5">
+    <section aria-labelledby={`budget-group-${title}`}>
+      <p id={`budget-group-${title}`} className="text-[10px] font-semibold text-muted-foreground uppercase tracking-[0.12em] mb-2.5 px-0.5">
         {title}
       </p>
-      <div
-        className="rounded-2xl overflow-hidden border border-border bg-card"
-      >
+      <div className="rounded-2xl overflow-hidden border border-border bg-card">
         {budgets.map((budget, i) => (
           <BudgetRow
             key={budget.id}
@@ -346,25 +301,18 @@ function BudgetRow({
     icon: string
   } | null
 
-  const barColor = isOver
-    ? 'var(--expense)'
-    : isWarning
-    ? '#f59e0b'
-    : 'var(--income)'
+  const barColor = isOver ? 'var(--expense)' : isWarning ? '#f59e0b' : 'var(--income)'
 
   return (
-    <div
-      className={`px-4 py-4 ${hasBorder ? 'border-b border-border' : ''}`}
-    >
-      {/* Row header */}
+    <div className={`px-4 py-4 ${hasBorder ? 'border-b border-border' : ''}`}>
       <div className="flex items-start gap-3 mb-3">
-        {/* Category dot */}
         <div
           className="w-8 h-8 rounded-[9px] flex items-center justify-center text-sm shrink-0 mt-0.5"
           style={{
-            background: category?.color ? `${category.color}22` : 'rgba(255,255,255,0.06)',
+            background: category?.color ? `${category.color}22` : 'var(--muted)',
             color: category?.color ?? 'var(--muted-foreground)',
           }}
+          aria-hidden="true"
         >
           {category?.icon ?? (budget.name.charAt(0).toUpperCase())}
         </div>
@@ -374,16 +322,15 @@ function BudgetRow({
             <p className="text-sm font-semibold text-foreground truncate leading-tight">
               {budget.name}
             </p>
-            <p
-              className={`text-xs font-bold tabular-nums shrink-0 ${
-                isOver ? 'text-expense' : 'text-foreground'
-              }`}
-            >
-              {formatCurrency(spent, baseCurrency)}
-              <span className="font-normal text-muted-foreground">
-                {' '}/ {formatCurrency(budget.amount, baseCurrency)}
-              </span>
-            </p>
+            <div className="flex items-center gap-2 shrink-0">
+              <p className={`text-xs font-bold tabular-nums ${isOver ? 'text-expense' : 'text-foreground'}`}>
+                {formatCurrency(spent, baseCurrency)}
+                <span className="font-normal text-muted-foreground">
+                  {' '}/ {formatCurrency(budget.amount, baseCurrency)}
+                </span>
+              </p>
+              <DeleteBudgetButton budgetId={budget.id} />
+            </div>
           </div>
 
           <div className="flex items-center justify-between mt-0.5">
@@ -392,11 +339,7 @@ function BudgetRow({
             </p>
             <p
               className={`text-[10px] font-semibold tabular-nums ${
-                isOver
-                  ? 'text-expense'
-                  : isWarning
-                  ? 'text-[#f59e0b]'
-                  : 'text-muted-foreground'
+                isOver ? 'text-expense' : isWarning ? 'text-[#f59e0b]' : 'text-muted-foreground'
               }`}
             >
               {isOver
@@ -407,36 +350,26 @@ function BudgetRow({
         </div>
       </div>
 
-      {/* Progress bar */}
       <div
         className="h-1.5 rounded-full overflow-hidden bg-muted"
+        role="progressbar"
+        aria-valuenow={percentage}
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-label={`${budget.name} budget used`}
       >
         <div
           className="h-full rounded-full transition-all duration-500"
-          style={{
-            width: `${percentage}%`,
-            background: barColor,
-          }}
+          style={{ width: `${percentage}%`, background: barColor }}
         />
       </div>
 
-      {/* Percentage label */}
       <div className="flex items-center justify-between mt-1.5">
         <div className="flex items-center gap-1">
-          {isOver && (
-            <span className="text-[10px] font-semibold text-expense">
-              ⚠ Over budget
-            </span>
-          )}
-          {isWarning && (
-            <span className="text-[10px] font-semibold text-amber-500">
-              Almost at limit
-            </span>
-          )}
+          {isOver && <span className="text-[10px] font-semibold text-expense">⚠ Over budget</span>}
+          {isWarning && <span className="text-[10px] font-semibold text-amber-500">Almost at limit</span>}
         </div>
-        <p className="text-[10px] text-muted-foreground tabular-nums">
-          {percentage}%
-        </p>
+        <p className="text-[10px] text-muted-foreground tabular-nums">{percentage}%</p>
       </div>
     </div>
   )
@@ -448,12 +381,9 @@ function EmptyState() {
   return (
     <div
       className="rounded-2xl px-6 py-14 text-center"
-      style={{
-        border: '0.5px solid rgba(255,255,255,0.08)',
-        background: 'var(--card)',
-      }}
+      style={{ border: '0.5px solid var(--border)', background: 'var(--card)' }}
     >
-      <div className="text-4xl mb-4">🎯</div>
+      <div className="text-4xl mb-4" aria-hidden="true">🎯</div>
       <p className="text-sm font-semibold text-foreground mb-1">No budgets yet</p>
       <p className="text-xs text-muted-foreground mb-5 max-w-xs mx-auto">
         Set spending limits per category to stay on track with your monthly goals.

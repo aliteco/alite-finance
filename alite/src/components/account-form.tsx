@@ -34,6 +34,7 @@ export default function AccountForm({ defaultCurrency }: AccountFormProps) {
     if (!name.trim()) { setError('Give your account a name.'); return }
     const numBalance = parseFloat(balance || '0')
     if (Number.isNaN(numBalance)) { setError('Enter a valid starting balance.'); return }
+    if (numBalance < 0) { setError('Opening balance cannot be negative.'); return }
 
     startTransition(async () => {
       const result = await createAccount({
@@ -42,7 +43,6 @@ export default function AccountForm({ defaultCurrency }: AccountFormProps) {
         currency,
         balance: numBalance,
       })
-      // createAccount redirects on success; if we get here, something failed.
       if (result?.error) {
         setError(result.error)
       }
@@ -50,19 +50,22 @@ export default function AccountForm({ defaultCurrency }: AccountFormProps) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-3">
+    <form onSubmit={handleSubmit} className="space-y-3" noValidate>
 
       {/* Name */}
       <div className="bg-card border border-border rounded-2xl px-4 py-4">
-        <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest block mb-2">
+        <label htmlFor="account-name" className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest block mb-2">
           Account name
         </label>
         <input
+          id="account-name"
+          name="name"
           type="text"
           value={name}
           onChange={e => setName(e.target.value)}
           placeholder="e.g. BCA Checking"
           maxLength={60}
+          required
           className="w-full bg-transparent text-base font-medium text-foreground placeholder:text-muted-foreground/50 focus:outline-none"
           autoFocus
         />
@@ -70,10 +73,12 @@ export default function AccountForm({ defaultCurrency }: AccountFormProps) {
 
       {/* Type */}
       <div className="bg-card border border-border rounded-2xl px-4 py-4">
-        <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest block mb-2.5">
+        <label htmlFor="account-type" className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest block mb-2.5">
           Type
         </label>
         <select
+          id="account-type"
+          name="type"
           value={type}
           onChange={(e) => setType(e.target.value)}
           className="w-full rounded-xl border border-border bg-background px-3 py-3 text-sm text-foreground focus:outline-none"
@@ -89,10 +94,12 @@ export default function AccountForm({ defaultCurrency }: AccountFormProps) {
       {/* Currency + starting balance */}
       <div className="bg-card border border-border rounded-2xl px-4 py-4 space-y-4">
         <div>
-          <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest block mb-2.5">
+          <label htmlFor="account-currency" className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest block mb-2.5">
             Currency
           </label>
           <select
+            id="account-currency"
+            name="currency"
             value={currency}
             onChange={(e) => setCurrency(e.target.value)}
             className="w-full rounded-xl border border-border bg-background px-3 py-3 text-sm text-foreground focus:outline-none"
@@ -106,12 +113,16 @@ export default function AccountForm({ defaultCurrency }: AccountFormProps) {
         </div>
 
         <div className="border-t border-border pt-4">
-          <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest block mb-2">
+          <label htmlFor="account-balance" className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest block mb-2">
             Starting balance
           </label>
           <input
+            id="account-balance"
+            name="balance"
             type="number"
             inputMode="decimal"
+            min="0"
+            step="0.01"
             placeholder="0"
             value={balance}
             onChange={e => setBalance(e.target.value)}
@@ -121,7 +132,7 @@ export default function AccountForm({ defaultCurrency }: AccountFormProps) {
       </div>
 
       {error && (
-        <p className="text-xs text-expense bg-expense/10 rounded-xl px-4 py-3 border border-expense/20">
+        <p role="alert" className="text-xs text-expense bg-expense/10 rounded-xl px-4 py-3 border border-expense/20">
           {error}
         </p>
       )}
