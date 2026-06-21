@@ -1,3 +1,4 @@
+// filepath: alite/src/app/actions/transactions.ts
 'use server'
 
 import { revalidatePath } from 'next/cache'
@@ -71,12 +72,6 @@ function assertUser(user: { id: string } | null): asserts user is { id: string }
 }
 
 // ─── Exchange rate lookup ──────────────────────────────────────────────────────
-// FIX: schema columns are `base_currency` / `target_currency`, not
-// `from_currency` / `to_currency`. The mismatch made every cross-currency
-// transaction fail (PostgREST returns an error for an unknown column, and
-// `.single()` then throws because no row is returned).
-// Also switched `.single()` → `.maybeSingle()` so "no rate found" is a normal
-// null result instead of a thrown PostgrestError.
 
 export async function getExchangeRate(
   fromCurrency: string,
@@ -210,10 +205,10 @@ export async function createTransaction(
     revalidatePath('/dashboard')
     revalidatePath('/transactions')
     revalidatePath(`/accounts/${input.account_id}`)
+    revalidatePath('/budgets')
     return { success: true, id: rpcResult as string }
   }
 
-  // Two-step fallback (non-atomic, but safe with rollback)
   const { data: tx, error: txError } = await supabase
     .from('transactions')
     .insert({
@@ -252,6 +247,7 @@ export async function createTransaction(
   revalidatePath('/dashboard')
   revalidatePath('/transactions')
   revalidatePath(`/accounts/${input.account_id}`)
+  revalidatePath('/budgets')
 
   return { success: true, id: tx.id }
 }
@@ -322,7 +318,6 @@ export async function createTransfer(
     return { success: true, id: rpcResult as string }
   }
 
-  // Multi-step fallback
   const { data: transfer, error: transferErr } = await supabase
     .from('transfers')
     .insert({
@@ -492,6 +487,7 @@ export async function deleteTransaction(id: string): Promise<ActionResult> {
   revalidatePath('/dashboard')
   revalidatePath('/transactions')
   revalidatePath(`/accounts/${tx.account_id}`)
+  revalidatePath('/budgets')
   return { success: true }
 }
 
@@ -722,11 +718,57 @@ export async function createBudget(
   if (error) return { error: error.message }
 
   revalidatePath('/budgets')
+  revalidatePath('/dashboard')
 
   return {
     success: true,
     id: data.id,
   }
+}
+
+export interface UpdateBudgetInput {
+  name?: string
+  amount?: number
+  period?: 'weekly' | 'monthly' | 'yearly'
+  category_id?: string | null
+  end_date?: string | null
+}
+
+export async function updateBudget(
+  id: string,
+  input: UpdateBudgetInput
+): Promise<ActionResult> {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  assertUser(user)
+
+  const idErr = validateUUID(id, 'Budget ID')
+  if (idErr) return { error: idErr }
+
+  if (input.name !== undefined && !input.name.trim()) {
+    return { error: 'Budget name cannot be empty.' }
+  }
+  if (input.amount !== undefined) {
+    const amtErr = validateAmount(input.amount)
+    if (amtErr) return { error: amtErr }
+  }
+  if (input.end_date) {
+    const endDateErr = validateDate(input.end_date)
+    if (endDateErr) return { error: endDateErr }
+  }
+
+  const { error } = await supabase
+    .from('budgets')
+    .update({ ...input, updated_at: new Date().toISOString() })
+    .eq('id', id)
+    .eq('user_id', user.id)
+
+  if (error) return { error: error.message }
+
+  revalidatePath('/budgets')
+  revalidatePath('/dashboard')
+  revalidatePath(`/budgets/${id}/edit`)
+  return { success: true }
 }
 
 export async function deleteBudget(id: string): Promise<ActionResult> {
@@ -746,6 +788,7 @@ export async function deleteBudget(id: string): Promise<ActionResult> {
   if (error) return { error: error.message }
 
   revalidatePath('/budgets')
+  revalidatePath('/dashboard')
 
   return { success: true }
 }

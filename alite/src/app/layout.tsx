@@ -21,7 +21,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: "Alite — Personal Finance, Simplified",
+    default: "Alite — Personal Finance",
     template: "%s · Alite",
   },
   description:

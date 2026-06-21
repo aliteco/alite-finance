@@ -1,3 +1,4 @@
+// filepath: alite/src/app/(app)/recurring/page.tsx
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
@@ -61,6 +62,18 @@ export default async function RecurringPage() {
   const active = rows.filter(r => r.is_active)
   const paused = rows.filter(r => !r.is_active)
   const overdueCount = active.filter(r => isOverdue(r.next_due_date)).length
+  const monthlyOutflow = active
+    .filter(r => r.type === 'expense')
+    .reduce((sum, r) => {
+      const monthly =
+        r.frequency === 'daily' ? r.amount * 30 :
+        r.frequency === 'weekly' ? r.amount * 4.33 :
+        r.frequency === 'biweekly' ? r.amount * 2.17 :
+        r.frequency === 'quarterly' ? r.amount / 3 :
+        r.frequency === 'yearly' ? r.amount / 12 :
+        r.amount
+      return sum + monthly
+    }, 0)
 
   return (
     <div className="min-h-screen bg-background pb-28">
@@ -82,12 +95,22 @@ export default async function RecurringPage() {
           </div>
           <Link
             href="/recurring/new"
-            className="h-9 w-9 rounded-xl bg-primary text-primary-foreground flex items-center justify-center text-lg font-light hover:opacity-90 transition-opacity shrink-0"
+            className="h-9 w-9 rounded-xl bg-primary text-primary-foreground flex items-center justify-center text-lg font-light hover:opacity-90 transition-opacity shrink-0 focus-visible:ring-2 focus-visible:ring-offset-2"
             aria-label="Create recurring transaction"
           >
             +
           </Link>
         </div>
+
+        {active.length > 0 && monthlyOutflow > 0 && (
+          <div className="rounded-2xl border border-border bg-card px-5 py-4">
+            <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-1">Est. monthly outflow</p>
+            <p className="text-2xl font-extrabold tabular-nums text-expense">
+              −{formatCurrency(monthlyOutflow, rows[0]?.currency ?? 'IDR')}
+            </p>
+            <p className="text-[11px] text-muted-foreground mt-1">Normalized from each rule&apos;s frequency</p>
+          </div>
+        )}
 
         {error && (
           <p role="alert" className="text-xs text-expense bg-expense/10 rounded-xl px-4 py-3 border border-expense/20">
@@ -100,11 +123,12 @@ export default async function RecurringPage() {
             <div className="text-4xl mb-4" aria-hidden="true">🔁</div>
             <p className="text-sm font-semibold text-foreground mb-1">No recurring transactions</p>
             <p className="text-xs text-muted-foreground mb-5 max-w-xs mx-auto">
-              Set up rent, salary, or subscriptions once and log them with one tap each cycle.
+              Set up rent, salary, or subscriptions once and either record them manually each cycle
+              or let the daily server check post them automatically.
             </p>
             <Link
               href="/recurring/new"
-              className="inline-flex items-center gap-2 h-9 px-4 rounded-xl bg-primary text-primary-foreground text-xs font-semibold hover:opacity-90 transition-opacity"
+              className="inline-flex items-center gap-2 h-9 px-4 rounded-xl bg-primary text-primary-foreground text-xs font-semibold hover:opacity-90 transition-opacity focus-visible:ring-2"
             >
               + Add recurring
             </Link>
@@ -140,10 +164,11 @@ export default async function RecurringPage() {
         )}
 
         <div className="rounded-2xl border border-border bg-card px-4 py-4">
-          <p className="text-xs font-medium text-foreground mb-1">Heads up</p>
+          <p className="text-xs font-medium text-foreground mb-1">How auto-generate works</p>
           <p className="text-xs text-muted-foreground leading-relaxed">
-            Recurring entries don&apos;t post automatically yet — tap &quot;Record now&quot; on a due item
-            to create its transaction and advance the schedule.
+            Rules with auto-generate enabled are posted automatically once a day by a scheduled
+            server job. Rules without it stay manual — tap a rule and use &quot;Record now&quot; to
+            post that cycle yourself.
           </p>
         </div>
 
@@ -158,34 +183,37 @@ function RecurringRowItem({ item, hasBorder }: { item: RecurringRow; hasBorder: 
 
   return (
     <div className={`flex items-center gap-3 px-4 py-3.5 ${hasBorder ? 'border-b border-border' : ''}`}>
-      <div
-        className="w-9 h-9 rounded-[9px] flex items-center justify-center text-sm font-bold shrink-0"
-        style={{
-          background: item.categories?.color ? `${item.categories.color}22` : isIncome ? 'var(--income-muted)' : 'var(--expense-muted)',
-          color: item.categories?.color ?? (isIncome ? 'var(--income)' : 'var(--expense)'),
-        }}
-        aria-hidden="true"
-      >
-        {item.categories?.icon ?? item.description.charAt(0).toUpperCase()}
-      </div>
+      <Link href={`/recurring/${item.id}`} className="flex items-center gap-3 flex-1 min-w-0 focus-visible:ring-2 rounded-lg">
+        <div
+          className="w-9 h-9 rounded-[9px] flex items-center justify-center text-sm font-bold shrink-0"
+          style={{
+            background: item.categories?.color ? `${item.categories.color}22` : isIncome ? 'var(--income-muted)' : 'var(--expense-muted)',
+            color: item.categories?.color ?? (isIncome ? 'var(--income)' : 'var(--expense)'),
+          }}
+          aria-hidden="true"
+        >
+          {item.categories?.icon ?? item.description.charAt(0).toUpperCase()}
+        </div>
 
-      <div className="flex-1 min-w-0">
-        <p className="text-sm font-semibold text-foreground truncate leading-tight">
-          {item.description}
-        </p>
-        <p className="text-[11px] text-muted-foreground mt-0.5">
-          {item.accounts?.name ?? '—'} · {FREQUENCY_LABELS[item.frequency] ?? item.frequency}
-        </p>
-      </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-semibold text-foreground truncate leading-tight">
+            {item.description}
+          </p>
+          <p className="text-[11px] text-muted-foreground mt-0.5">
+            {item.accounts?.name ?? '—'} · {FREQUENCY_LABELS[item.frequency] ?? item.frequency}
+            {item.auto_generate && ' · Auto'}
+          </p>
+        </div>
 
-      <div className="text-right shrink-0">
-        <p className={`text-sm font-bold tabular-nums ${isIncome ? 'text-income' : 'text-expense'}`}>
-          {isIncome ? '+' : '−'}{formatCurrency(item.amount, item.currency)}
-        </p>
-        <p className={`text-[10px] mt-0.5 ${overdue ? 'text-expense font-semibold' : 'text-muted-foreground'}`}>
-          {overdue ? 'Overdue' : `Due ${new Date(item.next_due_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`}
-        </p>
-      </div>
+        <div className="text-right shrink-0">
+          <p className={`text-sm font-bold tabular-nums ${isIncome ? 'text-income' : 'text-expense'}`}>
+            {isIncome ? '+' : '−'}{formatCurrency(item.amount, item.currency)}
+          </p>
+          <p className={`text-[10px] mt-0.5 ${overdue ? 'text-expense font-semibold' : 'text-muted-foreground'}`}>
+            {overdue ? 'Overdue' : `Due ${new Date(item.next_due_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`}
+          </p>
+        </div>
+      </Link>
 
       <RecurringActions id={item.id} isActive={item.is_active} />
     </div>

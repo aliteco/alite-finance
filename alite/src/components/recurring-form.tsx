@@ -1,3 +1,4 @@
+// filepath: alite/src/components/recurring-form.tsx
 'use client'
 
 import { useState, useTransition } from 'react'
@@ -76,13 +77,15 @@ export default function RecurringForm({
   return (
     <form onSubmit={handleSubmit} className="space-y-3" noValidate>
 
-      <div className="flex bg-muted rounded-xl p-1 gap-1">
+      <div role="radiogroup" aria-label="Transaction type" className="flex bg-muted rounded-xl p-1 gap-1">
         {(['expense', 'income'] as const).map(t => (
           <button
             key={t}
             type="button"
+            role="radio"
+            aria-checked={type === t}
             onClick={() => { setType(t); setCategoryId(null) }}
-            className={`flex-1 h-9 rounded-lg text-xs font-semibold capitalize transition-colors
+            className={`flex-1 h-9 rounded-lg text-xs font-semibold capitalize transition-colors focus-visible:ring-2
               ${type === t
                 ? t === 'expense' ? 'bg-card text-expense shadow-sm' : 'bg-card text-income shadow-sm'
                 : 'text-muted-foreground'
@@ -142,14 +145,16 @@ export default function RecurringForm({
       </div>
 
       <div className="bg-card border border-border rounded-2xl px-4 py-4">
-        <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest block mb-2.5">
+        <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest block mb-2.5">
           Category (optional)
-        </label>
-        <div className="flex flex-wrap gap-2">
+        </span>
+        <div role="radiogroup" aria-label="Category" className="flex flex-wrap gap-2">
           <button
             type="button"
+            role="radio"
+            aria-checked={categoryId === null}
             onClick={() => setCategoryId(null)}
-            className={`rounded-xl px-3 py-2 text-xs font-medium transition-colors
+            className={`rounded-xl px-3 py-2 text-xs font-medium transition-colors focus-visible:ring-2
               ${categoryId === null ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:text-foreground'}`}
           >
             None
@@ -158,8 +163,10 @@ export default function RecurringForm({
             <button
               key={cat.id}
               type="button"
+              role="radio"
+              aria-checked={categoryId === cat.id}
               onClick={() => setCategoryId(cat.id)}
-              className={`rounded-xl px-3 py-2 text-xs font-medium transition-colors
+              className={`rounded-xl px-3 py-2 text-xs font-medium transition-colors focus-visible:ring-2
                 ${categoryId === cat.id ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:text-foreground'}`}
             >
               {cat.name}
@@ -169,16 +176,18 @@ export default function RecurringForm({
       </div>
 
       <div className="bg-card border border-border rounded-2xl px-4 py-4">
-        <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest block mb-2.5">
+        <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest block mb-2.5">
           Repeats
-        </label>
-        <div className="grid grid-cols-3 gap-1.5">
+        </span>
+        <div role="radiogroup" aria-label="Frequency" className="grid grid-cols-3 gap-1.5">
           {FREQUENCIES.map(f => (
             <button
               key={f.value}
               type="button"
+              role="radio"
+              aria-checked={frequency === f.value}
               onClick={() => setFrequency(f.value)}
-              className={`h-9 rounded-lg text-xs font-semibold transition-colors
+              className={`h-9 rounded-lg text-xs font-semibold transition-colors focus-visible:ring-2
                 ${frequency === f.value ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:text-foreground'}`}
             >
               {f.label}
@@ -218,15 +227,17 @@ export default function RecurringForm({
       <button
         type="button"
         onClick={() => setAutoGenerate(v => !v)}
-        className="w-full bg-card border border-border rounded-2xl px-4 py-4 flex items-center justify-between"
+        aria-pressed={autoGenerate}
+        className="w-full bg-card border border-border rounded-2xl px-4 py-4 flex items-center justify-between focus-visible:ring-2"
       >
         <div className="text-left">
           <p className="text-sm font-medium text-foreground">Auto-generate</p>
           <p className="text-[11px] text-muted-foreground mt-0.5">
-            Reserved for a future scheduled job. For now, use &quot;Record now&quot; manually each cycle.
+            A daily server job posts this transaction automatically when due. Turn off to record each cycle manually.
           </p>
         </div>
         <span
+          aria-hidden="true"
           className={`shrink-0 w-11 h-6 rounded-full relative transition-colors ml-3 ${autoGenerate ? 'bg-income' : 'bg-muted'}`}
         >
           <span
@@ -244,7 +255,7 @@ export default function RecurringForm({
       <button
         type="submit"
         disabled={isPending}
-        className="w-full h-12 rounded-2xl bg-primary text-primary-foreground text-sm font-semibold tracking-tight transition-all active:scale-[0.98] disabled:opacity-50"
+        className="w-full h-12 rounded-2xl bg-primary text-primary-foreground text-sm font-semibold tracking-tight transition-all active:scale-[0.98] disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-offset-2"
       >
         {isPending ? 'Creating…' : 'Create recurring transaction'}
       </button>
