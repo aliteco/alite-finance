@@ -3,6 +3,7 @@ import { redirect, notFound } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import DeleteTransactionButton from '@/components/delete-transaction-button'
+import { renderCategoryIcon } from '@/lib/icons'
 
 interface TxDetail {
   id: string
@@ -53,38 +54,6 @@ export default async function TransactionDetailPage({
 
   if (error || !tx) notFound()
 
-  interface TransferDetail {
-    id: string
-    from_amount: number
-    to_amount: number
-    from_currency: string
-    to_currency: string
-    exchange_rate: number
-    from_account: { name: string; currency: string } | null
-    to_account: { name: string; currency: string } | null
-  }
-
-  let transferDetails: TransferDetail | null = null
-  if (tx.transfer_id) {
-    const { data: tf } = await supabase
-      .from('transfers')
-      .select(`
-        id,
-        from_amount,
-        to_amount,
-        from_currency,
-        to_currency,
-        exchange_rate,
-        from_account:from_account_id ( name, currency ),
-        to_account:to_account_id ( name, currency )
-      `)
-      .eq('id', tx.transfer_id)
-      .maybeSingle()
-    if (tf) {
-      transferDetails = tf as unknown as TransferDetail
-    }
-  }
-
   const { data: profile } = await supabase
     .from('profiles')
     .select('base_currency')
@@ -128,7 +97,7 @@ export default async function TransactionDetailPage({
             }}
             aria-hidden="true"
           >
-            {isTransfer ? '⇄' : (tx.categories?.icon ?? '•')}
+            {isTransfer ? '⇄' : renderCategoryIcon(tx.categories?.icon, tx.categories?.name ?? '•', 'w-5 h-5')}
           </div>
           <p
             className={`text-3xl font-extrabold tabular-nums tracking-tight ${
@@ -154,52 +123,6 @@ export default async function TransactionDetailPage({
           {isTransfer && <Row label="Direction" value={tx.transfer_type === 'debit' ? 'Transfer out' : 'Transfer in'} />}
           {tx.notes && <Row label="Notes" value={tx.notes} />}
         </dl>
-
-        {isTransfer && transferDetails && (
-          <div className="rounded-2xl border border-border bg-card p-5 space-y-4 shadow-sm">
-            <h4 className="text-xs font-bold text-[#818cf8] uppercase tracking-[0.12em]">Transfer Breakdown</h4>
-            <div className="space-y-3 pt-1">
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-muted-foreground">Source Account</span>
-                <span className="font-semibold text-foreground">
-                  {transferDetails.from_account?.name ?? 'Unknown'} ({transferDetails.from_currency})
-                </span>
-              </div>
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-muted-foreground">Destination Account</span>
-                <span className="font-semibold text-foreground">
-                  {transferDetails.to_account?.name ?? 'Unknown'} ({transferDetails.to_currency})
-                </span>
-              </div>
-              <div className="border-t border-border/50 pt-3 flex items-center justify-between text-xs">
-                <span className="text-muted-foreground">Amount Debited</span>
-                <span className="font-bold text-expense tabular-nums">
-                  {formatCurrency(transferDetails.from_amount, transferDetails.from_currency)}
-                </span>
-              </div>
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-muted-foreground">Amount Credited</span>
-                <span className="font-bold text-income tabular-nums">
-                  {formatCurrency(transferDetails.to_amount, transferDetails.to_currency)}
-                </span>
-              </div>
-
-              {transferDetails.from_currency !== transferDetails.to_currency && (
-                <div className="p-3 bg-primary/5 dark:bg-primary/10 rounded-xl border border-primary/10 mt-3 text-center">
-                  <div className="text-xs font-medium text-foreground flex items-center justify-center gap-1.5 flex-wrap">
-                    <span>💱</span>
-                    <span>
-                      Cross-currency rate: <strong>1 {transferDetails.from_currency} = {transferDetails.exchange_rate} {transferDetails.to_currency}</strong>
-                    </span>
-                  </div>
-                  <p className="text-[10px] text-muted-foreground mt-1 leading-snug">
-                    Due to different currencies, the received amount is converted and credited to the target account.
-                  </p>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
 
         <DeleteTransactionButton
           transactionId={tx.id}

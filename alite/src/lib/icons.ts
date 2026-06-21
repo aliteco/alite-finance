@@ -1,3 +1,4 @@
+import * as React from 'react'
 import {
   Tv,
   Car,
@@ -18,7 +19,7 @@ import {
   Building,
 } from 'lucide-react'
 
-export const ICONS: Record<string, any> = {
+export const ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
   building: Building,
   tv: Tv,
   car: Car,
@@ -36,4 +37,19 @@ export const ICONS: Record<string, any> = {
   repeat: Repeat,
   plane: Plane,
   zap: Zap,
+}
+
+export function renderCategoryIcon(
+  iconKey: string | null | undefined,
+  fallbackName?: string,
+  className: string = 'w-4 h-4'
+): React.ReactNode {
+  if (!iconKey) {
+    return (fallbackName ?? 'U').charAt(0).toUpperCase()
+  }
+  const Icon = ICONS[iconKey]
+  if (Icon) {
+    return React.createElement(Icon, { className })
+  }
+  return iconKey
 }

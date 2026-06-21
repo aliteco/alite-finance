@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import InteractiveDashboard from '@/components/interactive-dashboard'
 import DashboardOnboarding from '@/components/dashboard-onboarding'
+import { ICONS } from '@/lib/icons'
 
 // ─── Server Side Types ────────────────────────────────────────────────────────
 
@@ -47,6 +48,32 @@ interface Budget {
   categories: { id: string; name: string; color: string | null; icon: string | null } | null
 }
 
+interface Goal {
+  id: string
+  name: string
+  description: string | null
+  target_amount: number
+  current_amount: number
+  currency: string
+  target_date: string | null
+  icon: string
+  color: string
+  is_completed: boolean
+  is_active: boolean
+  created_at: string
+}
+
+interface GoalContribution {
+  id: string
+  goal_id: string
+  amount: number
+  currency: string
+  exchange_rate: number
+  base_currency_amount: number
+  date: string
+  created_at: string
+}
+
 // ─── Data fetch coordinator ───────────────────────────────────────────────────
 
 async function getDashboardPayload() {
@@ -64,7 +91,7 @@ async function getDashboardPayload() {
   trailingDate.setFullYear(trailingDate.getFullYear() - 1)
   const trailingDateISO = trailingDate.toISOString().slice(0, 10)
 
-  const [profileRes, accountsRes, transactionsRes, budgetsRes] = await Promise.all([
+  const [profileRes, accountsRes, transactionsRes, budgetsRes, goalsRes, contributionsRes] = await Promise.all([
     supabase
       .from('profiles')
       .select('base_currency')
@@ -98,19 +125,35 @@ async function getDashboardPayload() {
         categories ( id, name, color, icon )
       `)
       .eq('user_id', user.id)
-      .eq('is_active', true)
+      .eq('is_active', true),
+
+    supabase
+      .from('goals')
+      .select('id, name, description, target_amount, current_amount, currency, target_date, icon, color, is_completed, is_active, created_at')
+      .eq('user_id', user.id)
+      .eq('is_active', true),
+
+    supabase
+      .from('goal_contributions')
+      .select('id, goal_id, amount, currency, exchange_rate, base_currency_amount, date, created_at')
+      .eq('user_id', user.id)
+      .order('date', { ascending: true })
   ])
 
   const profile = profileRes.data || { base_currency: 'IDR' }
   const accounts: Account[] = (accountsRes.data as unknown as Account[]) || []
   const transactions: Transaction[] = (transactionsRes.data as unknown as Transaction[]) || []
   const budgets: Budget[] = (budgetsRes.data as unknown as Budget[]) || []
+  const goals: Goal[] = (goalsRes.data as unknown as Goal[]) || []
+  const contributions: GoalContribution[] = (contributionsRes.data as unknown as GoalContribution[]) || []
 
   return {
     profile,
     accounts,
     transactions,
     budgets,
+    goals,
+    contributions,
     baseCurrency: profile.base_currency,
   }
 }
@@ -118,7 +161,7 @@ async function getDashboardPayload() {
 // ─── Main Entrance ────────────────────────────────────────────────────────────
 
 export default async function DashboardPage() {
-  const { accounts, transactions, budgets, baseCurrency } = await getDashboardPayload()
+  const { accounts, transactions, budgets, goals, contributions, baseCurrency } = await getDashboardPayload()
 
   // First-run experience: no charts/KPIs on empty data — show actionable
   // onboarding instead of a dashboard full of zeros and broken pie charts.
@@ -136,6 +179,8 @@ export default async function DashboardPage() {
         initialAccounts={accounts}
         initialTransactions={transactions}
         initialBudgets={budgets}
+        initialGoals={goals}
+        initialContributions={contributions}
         baseCurrency={baseCurrency}
       />
     </div>

@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import RecurringActions from '@/components/recurring-actions'
 import CatchUpOverdueButton from '@/components/catch-up-overdue-button'
+import { renderCategoryIcon } from '@/lib/icons'
 
 interface RecurringRow {
   id: string
@@ -211,7 +212,7 @@ function RecurringRowItem({ item, hasBorder }: { item: RecurringRow; hasBorder: 
           }}
           aria-hidden="true"
         >
-          {item.categories?.icon ?? item.description.charAt(0).toUpperCase()}
+          {renderCategoryIcon(item.categories?.icon, item.description ?? 'U', 'w-4.5 h-4.5')}
         </div>
 
         <div className="flex-1 min-w-0">

@@ -111,6 +111,13 @@ export async function addGoalContribution(input: AddContributionInput): Promise<
 
   const baseCurrencyAmount = parseFloat((input.amount * input.exchange_rate).toFixed(2))
 
+  // Fetch account's balance before inserting to prevent trigger duplication
+  const { data: acctBefore } = input.account_id
+    ? await supabase.from('accounts').select('balance').eq('id', input.account_id).single()
+    : { data: null }
+
+  const balanceBefore = acctBefore?.balance ?? 0
+
   const { error: contribErr } = await supabase
     .from('goal_contributions')
     .insert({
@@ -150,12 +157,23 @@ export async function addGoalContribution(input: AddContributionInput): Promise<
     return { error: 'Failed to update goal progress.' }
   }
 
-  // Optionally debit the source account balance
+  // Optionally debit the source account balance with adaptive trigger checking
   if (input.account_id) {
-    await supabase.rpc('increment_account_balance', {
-      p_account_id: input.account_id,
-      p_delta: -input.amount,
-    })
+    const { data: acctAfter } = await supabase
+      .from('accounts')
+      .select('balance')
+      .eq('id', input.account_id)
+      .single()
+
+    const balanceAfter = acctAfter?.balance ?? 0
+    const isBalanceUpdatedByTrigger = Math.abs(balanceAfter - balanceBefore) > 0.001
+
+    if (!isBalanceUpdatedByTrigger && input.amount !== 0) {
+      await supabase.rpc('increment_account_balance', {
+        p_account_id: input.account_id,
+        p_delta: -input.amount,
+      })
+    }
   }
 
   revalidatePath('/goals')

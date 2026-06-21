@@ -212,6 +212,15 @@ export async function generateRecurringNow(recurringId: string): Promise<ActionR
   const baseCurrencyAmount = parseFloat((rule.amount * rate).toFixed(2))
   const today = new Date().toISOString().slice(0, 10)
 
+  // Fetch account's balance before inserting to prevent trigger duplication
+  const { data: acctBefore } = await supabase
+    .from('accounts')
+    .select('balance')
+    .eq('id', rule.account_id)
+    .single()
+
+  const balanceBefore = acctBefore?.balance ?? 0
+
   const { data: tx, error: txError } = await supabase
     .from('transactions')
     .insert({
@@ -233,15 +242,27 @@ export async function generateRecurringNow(recurringId: string): Promise<ActionR
 
   if (txError) return { error: txError.message }
 
-  const balanceDelta = rule.type === 'income' ? rule.amount : -rule.amount
-  const { error: balErr } = await supabase.rpc('increment_account_balance', {
-    p_account_id: rule.account_id,
-    p_delta: balanceDelta,
-  })
+  // Fetch balance after inserting transaction
+  const { data: acctAfter } = await supabase
+    .from('accounts')
+    .select('balance')
+    .eq('id', rule.account_id)
+    .single()
 
-  if (balErr) {
-    await supabase.from('transactions').delete().eq('id', tx.id)
-    return { error: 'Failed to update account balance. Transaction was not recorded.' }
+  const balanceAfter = acctAfter?.balance ?? 0
+  const isBalanceUpdatedByTrigger = Math.abs(balanceAfter - balanceBefore) > 0.001
+
+  if (!isBalanceUpdatedByTrigger && rule.amount !== 0) {
+    const balanceDelta = rule.type === 'income' ? rule.amount : -rule.amount
+    const { error: balErr } = await supabase.rpc('increment_account_balance', {
+      p_account_id: rule.account_id,
+      p_delta: balanceDelta,
+    })
+
+    if (balErr) {
+      await supabase.from('transactions').delete().eq('id', tx.id)
+      return { error: 'Failed to update account balance. Transaction was not recorded.' }
+    }
   }
 
   const newNextDue = nextDueDate(rule.next_due_date, rule.frequency)

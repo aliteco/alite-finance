@@ -32,6 +32,7 @@ import {
   Bar,
   Legend
 } from 'recharts'
+import { renderCategoryIcon } from '@/lib/icons'
 
 // ─── Types & Interfaces ───────────────────────────────────────────────────────
 
@@ -79,10 +80,38 @@ interface Budget {
   categories: Category | null
 }
 
+interface Goal {
+  id: string
+  name: string
+  description: string | null
+  target_amount: number
+  current_amount: number
+  currency: string
+  target_date: string | null
+  icon: string
+  color: string
+  is_completed: boolean
+  is_active: boolean
+  created_at: string
+}
+
+interface GoalContribution {
+  id: string
+  goal_id: string
+  amount: number
+  currency: string
+  exchange_rate: number
+  base_currency_amount: number
+  date: string
+  created_at: string
+}
+
 interface InteractiveDashboardProps {
   initialAccounts: Account[]
   initialTransactions: Transaction[]
   initialBudgets: Budget[]
+  initialGoals?: Goal[]
+  initialContributions?: GoalContribution[]
   baseCurrency: string
 }
 
@@ -147,6 +176,8 @@ export default function InteractiveDashboard({
   initialAccounts,
   initialTransactions,
   initialBudgets,
+  initialGoals = [],
+  initialContributions = [],
   baseCurrency,
 }: InteractiveDashboardProps) {
   const [mounted, setMounted] = useState(false)
@@ -724,6 +755,110 @@ export default function InteractiveDashboard({
                 />
               </div>
 
+              {/* Savings Goals Subsection */}
+              {initialGoals && initialGoals.length > 0 && (
+                <div className="bg-card border border-border/70 rounded-2xl p-4 md:p-5 shadow-sm space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="text-sm font-bold text-foreground flex items-center gap-1.5 leading-none">
+                        <PiggyBank size={15} className="text-primary" /> Savings Goals
+                      </h3>
+                      <p className="text-[11px] text-muted-foreground mt-1">Track intermediate saving progress and actual completion trends</p>
+                    </div>
+                    <Link
+                      href="/goals"
+                      className="text-xs font-semibold text-primary hover:underline flex items-center gap-0.5"
+                    >
+                      <span>Manage Goals</span>
+                      <ChevronRight size={13} />
+                    </Link>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {initialGoals.map((goal) => {
+                      const goalContribs = initialContributions.filter(c => c.goal_id === goal.id)
+                      const totalBaseContributed = goalContribs.reduce((sum, c) => sum + c.base_currency_amount, 0)
+                      
+                      const percentage = Math.min(100, Math.round((goal.current_amount / goal.target_amount) * 100)) || 0
+                      
+                      let projectionText = "No trend data yet (needs contributions)"
+                      let daysToComplete = null
+                      
+                      if (goal.is_completed || goal.current_amount >= goal.target_amount) {
+                        projectionText = "Goal Achieved! 🎉"
+                      } else if (totalBaseContributed > 0 && goalContribs.length > 0) {
+                        const firstDate = new Date(Math.min(...goalContribs.map(c => new Date(c.date).getTime())))
+                        const today = new Date()
+                        const diffTime = Math.max(0, today.getTime() - firstDate.getTime())
+                        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) || 1
+                        
+                        const dailyRateBase = totalBaseContributed / diffDays
+                        
+                        if (dailyRateBase > 0) {
+                          const remainingBase = goal.target_amount - goal.current_amount
+                          daysToComplete = Math.max(1, Math.ceil(remainingBase / dailyRateBase))
+                          
+                          const projectedDate = new Date()
+                          projectedDate.setDate(projectedDate.getDate() + daysToComplete)
+                          const formattedProjected = projectedDate.toLocaleDateString('en-US', {
+                            month: 'short',
+                            day: 'numeric',
+                            year: 'numeric'
+                          })
+                          
+                          projectionText = `Est. Completion: ${formattedProjected} (${daysToComplete} day${daysToComplete !== 1 ? 's' : ''})`
+                        }
+                      }
+
+                      return (
+                        <div key={goal.id} className="relative bg-muted/15 border border-border/40 rounded-xl p-4 flex flex-col justify-between space-y-3 hover:border-border transition-all">
+                          <div className="flex items-start justify-between gap-3 min-w-0">
+                            <div className="flex items-start gap-2.5 min-w-0">
+                              <div
+                                className="w-8 h-8 rounded-[10px] flex items-center justify-center text-xs font-bold shrink-0 shadow-3xs"
+                                style={{ background: `${goal.color}18`, color: goal.color }}
+                              >
+                                {goal.icon || '🎯'}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-xs font-bold text-foreground truncate leading-snug">{goal.name}</p>
+                                {goal.description && (
+                                  <p className="text-[10px] text-muted-foreground truncate leading-normal mt-0.5">{goal.description}</p>
+                                )}
+                              </div>
+                            </div>
+                            <span className="text-[9px] font-mono font-bold tabular-nums bg-background/50 px-1.5 py-0.5 rounded border border-border/40 text-muted-foreground self-start shrink-0">
+                              {percentage}%
+                            </span>
+                          </div>
+
+                          <div className="space-y-1.5">
+                            <div className="w-full h-1.5 bg-muted rounded-full overflow-hidden" aria-label={`${goal.name} progress`}>
+                              <div
+                                className="h-full rounded-full transition-all duration-500"
+                                style={{
+                                  width: `${percentage}%`,
+                                  backgroundColor: goal.is_completed ? '#10b981' : goal.color
+                                }}
+                              />
+                            </div>
+                            <div className="flex justify-between items-center text-[10px] font-medium text-muted-foreground">
+                              <span>Saved {formatCurrency(goal.current_amount, goal.currency)}</span>
+                              <span>Target {formatCurrency(goal.target_amount, goal.currency)}</span>
+                            </div>
+                          </div>
+
+                          <div className="pt-2 border-t border-border/20 flex items-center gap-1.5 text-[10px] font-semibold text-muted-foreground truncate leading-none">
+                            <span className="shrink-0 text-primary">⏱️</span>
+                            <span className="truncate">{projectionText}</span>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              )}
+
               <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
                 <div className="md:col-span-7 bg-card border border-border/70 rounded-2xl p-4 md:p-5 shadow-sm space-y-4">
                   <div className="flex items-center justify-between flex-wrap gap-2">
@@ -929,7 +1064,7 @@ export default function InteractiveDashboard({
                               style={{ backgroundColor: `${color}15`, color }}
                               aria-hidden="true"
                             >
-                              {isTransfer ? '⇄' : (tx.categories?.name || 'U').charAt(0).toUpperCase()}
+                              {isTransfer ? '⇄' : renderCategoryIcon(tx.categories?.icon, tx.categories?.name ?? 'U', 'w-4 h-4')}
                             </div>
                             <div className="min-w-0">
                               <p className="text-xs font-bold text-foreground truncate">
@@ -1055,7 +1190,7 @@ export default function InteractiveDashboard({
                           style={{ backgroundColor: `${color}15`, color }}
                           aria-hidden="true"
                         >
-                          {tx.categories?.name ? tx.categories.name.charAt(0).toUpperCase() : 'U'}
+                          {renderCategoryIcon(tx.categories?.icon, tx.categories?.name ?? 'U', 'w-3.5 h-3.5')}
                         </div>
                         <div className="min-w-0">
                           <p className="text-xs font-bold text-foreground truncate">{tx.description || tx.categories?.name || 'Expense'}</p>

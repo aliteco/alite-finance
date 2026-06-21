@@ -2,6 +2,7 @@
 import { redirect, notFound } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
+import { ICONS } from '@/lib/icons'
 import DeleteTransactionButton from '@/components/delete-transaction-button'
 
 interface TxDetail {

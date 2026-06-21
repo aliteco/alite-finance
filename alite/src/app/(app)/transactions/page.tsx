@@ -2,6 +2,16 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import ExportLedgerButton from '@/components/export-ledger-button'
+import { renderCategoryIcon } from '@/lib/icons'
+
+const ACCOUNT_TYPE_ICONS: Record<string, string> = {
+  cash: '💵',
+  bank: '🏦',
+  savings: '🏛',
+  credit_card: '💳',
+  investment: '📈',
+  other: '🗂',
+}
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -71,7 +81,7 @@ export default async function TransactionsPage({
   const from = (page - 1) * PAGE_SIZE
   const to = from + PAGE_SIZE - 1
 
-  const [profileRes, txRes, accountsRes] = await Promise.all([
+  const [profileRes, txRes, accountsRes, allTxRes] = await Promise.all([
     supabase.from('profiles').select('base_currency').eq('id', user.id).single(),
 
     (() => {
@@ -84,27 +94,50 @@ export default async function TransactionsPage({
           accounts ( name )
         `, { count: 'exact' })
         .eq('user_id', user.id)
-        .order('date', { ascending: false })
-        .order('created_at', { ascending: false })
-        .range(from, to)
 
       if (filterType !== 'all') q = q.eq('type', filterType)
       if (filterAccount) q = q.eq('account_id', filterAccount)
       if (query) q = q.ilike('description', `%${query}%`)
+
+      q = q
+        .order('date', { ascending: false })
+        .order('created_at', { ascending: false })
+        .range(from, to)
 
       return q
     })(),
 
     supabase
       .from('accounts')
-      .select('id, name, currency')
+      .select('id, name, currency, type')
       .eq('user_id', user.id)
       .eq('is_active', true)
       .order('name'),
+
+    (() => {
+      let q = supabase
+        .from('transactions')
+        .select(`
+          id, type, amount, base_currency_amount, currency,
+          description, date, transfer_type,
+          categories ( name ),
+          accounts ( name )
+        `)
+        .eq('user_id', user.id)
+
+      if (filterType !== 'all') q = q.eq('type', filterType)
+      if (filterAccount) q = q.eq('account_id', filterAccount)
+      if (query) q = q.ilike('description', `%${query}%`)
+
+      return q
+        .order('date', { ascending: false })
+        .order('created_at', { ascending: false })
+    })(),
   ])
 
   const baseCurrency = profileRes.data?.base_currency ?? 'IDR'
   const transactions = (txRes.data as unknown as Transaction[]) ?? []
+  const exportTransactions = (allTxRes.data as unknown as Transaction[]) ?? []
   const totalCount = txRes.count ?? 0
   const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE))
   const accounts = accountsRes.data ?? []
@@ -135,7 +168,7 @@ export default async function TransactionsPage({
             </h1>
           </div>
           <div className="flex items-center gap-2 shrink-0">
-            {transactions.length > 0 && <ExportLedgerButton transactions={transactions} />}
+            {exportTransactions.length > 0 && <ExportLedgerButton transactions={exportTransactions} />}
             <Link
               href="/transactions/new"
               className="inline-flex items-center justify-center gap-1.5 h-10 px-4 rounded-xl bg-primary text-primary-foreground text-xs font-semibold hover:opacity-90 transition-opacity shrink-0 focus-visible:ring-2 focus-visible:ring-offset-2"
@@ -248,7 +281,7 @@ export default async function TransactionsPage({
                       <span>🌎 All accounts</span>
                       <span className="text-[10px] opacity-80 font-mono">Total</span>
                     </Link>
-                    {accounts.map(a => (
+                    {accounts.map((a: any) => (
                       <Link
                         key={a.id}
                         href={filterUrl({ account: a.id, page: '1' })}
@@ -258,7 +291,7 @@ export default async function TransactionsPage({
                             ? 'bg-primary/5 border border-primary/20 text-primary font-bold shadow-2xs' 
                             : 'hover:bg-muted text-muted-foreground hover:text-foreground border border-transparent'}`}
                       >
-                        <span className="truncate">{a.currency === 'USD' ? '💵' : a.currency === 'EUR' ? '💶' : '💳'} {a.name}</span>
+                        <span className="truncate">{ACCOUNT_TYPE_ICONS[a.type] ?? '💳'} {a.name}</span>
                         <span className="text-[10px] tabular-nums tracking-wider uppercase font-mono">{a.currency}</span>
                       </Link>
                     ))}
@@ -313,7 +346,7 @@ export default async function TransactionsPage({
                                 color: tx.categories?.color ?? (isIncome ? 'var(--income)' : 'var(--expense)'),
                               }}
                             >
-                              {isTransfer ? '⇄' : (tx.categories?.icon ?? (tx.categories?.name ?? 'U').charAt(0).toUpperCase())}
+                              {isTransfer ? '⇄' : renderCategoryIcon(tx.categories?.icon, tx.categories?.name ?? 'U', 'w-4 h-4')}
                             </div>
 
                             <div className="flex-1 min-w-0">

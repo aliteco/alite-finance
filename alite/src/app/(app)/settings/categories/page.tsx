@@ -2,8 +2,8 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import CategoryForm from '@/components/category-form'
-import { ICONS } from '@/lib/icons'
 import DeleteCategoryButton from '@/components/delete-category-button'
+import { renderCategoryIcon } from '@/lib/icons'
 
 interface Category {
   id: string
@@ -12,13 +12,6 @@ interface Category {
   color: string
   type: 'income' | 'expense' | 'both'
   is_system: boolean
-}
-
-// ✅ helper for rendering Lucide icons safely
-function renderIcon(iconKey: string, color?: string) {
-  const Icon = ICONS[iconKey]
-  if (!Icon) return iconKey
-  return <Icon className="w-4 h-4" style={{ color }} />
 }
 
 export default async function CategoriesPage() {
@@ -35,6 +28,7 @@ export default async function CategoriesPage() {
     .order('name')
 
   const categories: Category[] = data ?? []
+
   const system = categories.filter(c => c.is_system)
   const custom = categories.filter(c => !c.is_system)
 
@@ -42,7 +36,7 @@ export default async function CategoriesPage() {
     <div className="min-h-screen bg-background pb-28">
       <div className="max-w-lg mx-auto px-4 pt-8 space-y-6">
 
-        {/* HEADER */}
+        {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Link
@@ -66,7 +60,7 @@ export default async function CategoriesPage() {
 
         <CategoryForm />
 
-        {/* CUSTOM CATEGORIES */}
+        {/* Custom categories */}
         {custom.length > 0 && (
           <section aria-labelledby="custom-categories">
             <p
@@ -92,7 +86,7 @@ export default async function CategoriesPage() {
                     }}
                     aria-hidden="true"
                   >
-                    {renderIcon(cat.icon, cat.color)}
+                    {renderCategoryIcon(cat.icon, cat.name, 'w-4 h-4')}
                   </div>
 
                   <div className="flex-1 min-w-0">
@@ -111,7 +105,7 @@ export default async function CategoriesPage() {
           </section>
         )}
 
-        {/* SYSTEM CATEGORIES */}
+        {/* System categories */}
         <section aria-labelledby="system-categories">
           <p
             id="system-categories"
@@ -136,7 +130,7 @@ export default async function CategoriesPage() {
                   }}
                   aria-hidden="true"
                 >
-                  {renderIcon(cat.icon, cat.color)}
+                  {renderCategoryIcon(cat.icon, cat.name, 'w-4 h-4')}
                 </div>
 
                 <div className="flex-1 min-w-0">

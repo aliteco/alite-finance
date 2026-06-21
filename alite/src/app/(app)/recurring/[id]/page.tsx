@@ -3,6 +3,7 @@ import { redirect, notFound } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import RecurringActions from '@/components/recurring-actions'
+import { renderCategoryIcon } from '@/lib/icons'
 
 interface RecurringDetail {
   id: string
@@ -94,7 +95,7 @@ export default async function RecurringDetailPage({
             }}
             aria-hidden="true"
           >
-            {data.categories?.icon ?? data.description.charAt(0).toUpperCase()}
+            {renderCategoryIcon(data.categories?.icon, data.description ?? 'U', 'w-5 h-5')}
           </div>
           <p className={`text-3xl font-extrabold tabular-nums tracking-tight ${isIncome ? 'text-income' : 'text-expense'}`}>
             {isIncome ? '+' : '−'}{formatCurrency(data.amount, data.currency)}

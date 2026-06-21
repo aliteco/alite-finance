@@ -2,6 +2,7 @@
 import { redirect, notFound } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
+import { renderCategoryIcon } from '@/lib/icons'
 
 interface AccountDetail {
   id: string
@@ -98,7 +99,7 @@ export default async function AccountDetailPage({
       const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0, 10)
       return supabase
         .from('transactions')
-        .select('type, base_currency_amount, transfer_id')
+        .select('type, amount, base_currency_amount, transfer_id')
         .eq('user_id', user.id)
         .eq('account_id', id)
         .gte('date', monthStart)
@@ -114,10 +115,10 @@ export default async function AccountDetailPage({
   const monthRows = monthRes.data ?? []
   const monthIncome = monthRows
     .filter(r => r.type === 'income' && !r.transfer_id)
-    .reduce((s, r) => s + (r.base_currency_amount || 0), 0)
+    .reduce((s, r) => s + (r.amount || 0), 0)
   const monthExpense = monthRows
     .filter(r => r.type === 'expense' && !r.transfer_id)
-    .reduce((s, r) => s + (r.base_currency_amount || 0), 0)
+    .reduce((s, r) => s + (r.amount || 0), 0)
 
   return (
     <div className="min-h-screen bg-background pb-28">
@@ -227,7 +228,7 @@ export default async function AccountDetailPage({
                       style={{ background: `${color}1c`, color }}
                       aria-hidden="true"
                     >
-                      {isTransfer ? '⇄' : (tx.categories?.icon ?? (tx.categories?.name ?? 'U').charAt(0).toUpperCase())}
+                      {isTransfer ? '⇄' : renderCategoryIcon(tx.categories?.icon, tx.categories?.name ?? 'U', 'w-3.5 h-3.5')}
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-xs font-medium text-foreground truncate">

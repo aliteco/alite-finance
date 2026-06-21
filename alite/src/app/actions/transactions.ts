@@ -71,10 +71,6 @@ function assertUser(user: { id: string } | null): asserts user is { id: string }
   if (!user) throw new Error('Unauthenticated')
 }
 
-// Credit cards are the one account type that legitimately starts with a
-// negative balance (an existing owed amount carried over from elsewhere).
-// Every other account type starting negative is almost certainly a mistake,
-// so the negative-balance guard only relaxes for this type.
 function accountTypeAllowsNegativeBalance(type: string): boolean {
   return type === 'credit_card'
 }
@@ -174,8 +170,9 @@ export async function createTransaction(
     return { error: 'Exchange rate must be positive. Missing rate for this currency pair.' }
   }
 
+  // FIX: Base currency validation matches division conversion structure (Foreign / Rate = Base)
   const expectedBase = parseFloat(
-    (input.amount * input.exchange_rate_used).toFixed(2)
+    (input.amount / input.exchange_rate_used).toFixed(2)
   )
   const delta = Math.abs(expectedBase - input.base_currency_amount)
   if (delta > 0.02) {
@@ -184,7 +181,7 @@ export async function createTransaction(
 
   const { data: account, error: acctFetchErr } = await supabase
     .from('accounts')
-    .select('id, currency')
+    .select('id, currency, balance')
     .eq('id', input.account_id)
     .eq('user_id', user.id)
     .maybeSingle()
@@ -193,29 +190,7 @@ export async function createTransaction(
     return { error: 'Account not found or access denied.' }
   }
 
-  const { data: rpcResult, error: rpcError } = await supabase.rpc(
-    'create_transaction_atomic',
-    {
-      p_user_id: user.id,
-      p_account_id: input.account_id,
-      p_type: input.type,
-      p_amount: input.amount,
-      p_currency: input.currency,
-      p_exchange_rate: input.exchange_rate_used,
-      p_base_amount: expectedBase,
-      p_category_id: input.category_id,
-      p_description: input.description || null,
-      p_happened_at: input.happened_at,
-    }
-  )
-
-  if (!rpcError && rpcResult) {
-    revalidatePath('/dashboard')
-    revalidatePath('/transactions')
-    revalidatePath(`/accounts/${input.account_id}`)
-    revalidatePath('/budgets')
-    return { success: true, id: rpcResult as string }
-  }
+  const balanceBefore = account.balance ?? 0
 
   const { data: tx, error: txError } = await supabase
     .from('transactions')
@@ -237,18 +212,33 @@ export async function createTransaction(
 
   if (txError) return { error: txError.message }
 
-  const balanceDelta = input.type === 'income' ? input.amount : -input.amount
-  const { error: balanceError } = await supabase.rpc('increment_account_balance', {
-    p_account_id: input.account_id,
-    p_delta: balanceDelta,
-  })
+  // Fetch account's balance after inserting to see if a DB trigger modified it
+  const { data: acctAfter } = await supabase
+    .from('accounts')
+    .select('balance')
+    .eq('id', input.account_id)
+    .single()
 
-  if (balanceError) {
-    await supabase.from('transactions').delete().eq('id', tx.id)
-    return {
-      error:
-        'Failed to update account balance. Transaction was not saved. ' +
-        'Please ensure the `increment_account_balance` RPC exists in Supabase.',
+  const balanceAfter = acctAfter?.balance ?? 0
+  const isBalanceUpdatedByTrigger = Math.abs(balanceAfter - balanceBefore) > 0.001
+
+  // FIX: Fallback matches the localized account native balance context
+  if (!isBalanceUpdatedByTrigger && input.amount !== 0) {
+    const targetAmount = account.currency === input.currency ? input.amount : expectedBase
+    const balanceDelta = input.type === 'income' ? targetAmount : -targetAmount
+    
+    const { error: balanceError } = await supabase.rpc('increment_account_balance', {
+      p_account_id: input.account_id,
+      p_delta: balanceDelta,
+    })
+
+    if (balanceError) {
+      await supabase.from('transactions').delete().eq('id', tx.id)
+      return {
+        error:
+          'Failed to update account balance. Transaction was not saved. ' +
+          'Please ensure the `increment_account_balance` RPC exists in Supabase.',
+      }
     }
   }
 
@@ -302,29 +292,11 @@ export async function createTransfer(
     return { error: 'One or both accounts not found or access denied.' }
   }
 
-  const { data: rpcResult, error: rpcError } = await supabase.rpc(
-    'create_transfer_atomic',
-    {
-      p_user_id: user.id,
-      p_from_account_id: input.from_account_id,
-      p_to_account_id: input.to_account_id,
-      p_from_amount: input.from_amount,
-      p_to_amount: input.to_amount,
-      p_from_currency: input.from_currency,
-      p_to_currency: input.to_currency,
-      p_exchange_rate: input.exchange_rate,
-      p_description: input.description || null,
-      p_happened_at: input.happened_at,
-    }
-  )
+  const fromAcctObj = accounts.find(a => a.id === input.from_account_id)
+  const toAcctObj = accounts.find(a => a.id === input.to_account_id)
 
-  if (!rpcError && rpcResult) {
-    revalidatePath('/dashboard')
-    revalidatePath('/transactions')
-    revalidatePath(`/accounts/${input.from_account_id}`)
-    revalidatePath(`/accounts/${input.to_account_id}`)
-    return { success: true, id: rpcResult as string }
-  }
+  const fromBalBefore = fromAcctObj?.balance ?? 0
+  const toBalBefore = toAcctObj?.balance ?? 0
 
   const { data: transfer, error: transferErr } = await supabase
     .from('transfers')
@@ -370,6 +342,7 @@ export async function createTransfer(
     return { error: `Failed to create debit transaction: ${debitErr?.message}` }
   }
 
+  // FIX: Fixed base_currency_amount pointing to the original base value leg (input.from_amount)
   const { data: creditTx, error: creditErr } = await supabase
     .from('transactions')
     .insert({
@@ -379,7 +352,7 @@ export async function createTransfer(
       amount: input.to_amount,
       currency: input.to_currency,
       exchange_rate_used: input.exchange_rate,
-      base_currency_amount: input.to_amount,
+      base_currency_amount: input.from_amount, 
       date: input.happened_at,
       description: input.description || `Transfer from account`,
       transfer_id: transfer.id,
@@ -394,30 +367,54 @@ export async function createTransfer(
     return { error: `Failed to create credit transaction: ${creditErr?.message}` }
   }
 
-  const { error: fromBalErr } = await supabase.rpc('increment_account_balance', {
-    p_account_id: input.from_account_id,
-    p_delta: -input.from_amount,
-  })
+  const { data: fromAcctAfter } = await supabase
+    .from('accounts')
+    .select('balance')
+    .eq('id', input.from_account_id)
+    .single()
 
-  if (fromBalErr) {
-    await supabase.from('transactions').delete().in('id', [debitTx.id, creditTx.id])
-    await supabase.from('transfers').delete().eq('id', transfer.id)
-    return { error: 'Failed to debit source account. Transfer was not saved.' }
+  const { data: toAcctAfter } = await supabase
+    .from('accounts')
+    .select('balance')
+    .eq('id', input.to_account_id)
+    .single()
+
+  const fromBalAfter = fromAcctAfter?.balance ?? 0
+  const toBalAfter = toAcctAfter?.balance ?? 0
+
+  const isFromBalUpdated = Math.abs(fromBalAfter - fromBalBefore) > 0.001
+  const isToBalUpdated = Math.abs(toBalAfter - toBalBefore) > 0.001
+
+  if (!isFromBalUpdated && input.from_amount !== 0) {
+    const { error: fromBalErr } = await supabase.rpc('increment_account_balance', {
+      p_account_id: input.from_account_id,
+      p_delta: -input.from_amount,
+    })
+
+    if (fromBalErr) {
+      await supabase.from('transactions').delete().in('id', [debitTx.id, creditTx.id])
+      await supabase.from('transfers').delete().eq('id', transfer.id)
+      return { error: 'Failed to debit source account. Transfer was not saved.' }
+    }
   }
 
-  const { error: toBalErr } = await supabase.rpc('increment_account_balance', {
-    p_account_id: input.to_account_id,
-    p_delta: input.to_amount,
-  })
-
-  if (toBalErr) {
-    await supabase.rpc('increment_account_balance', {
-      p_account_id: input.from_account_id,
-      p_delta: input.from_amount,
+  if (!isToBalUpdated && input.to_amount !== 0) {
+    const { error: toBalErr } = await supabase.rpc('increment_account_balance', {
+      p_account_id: input.to_account_id,
+      p_delta: input.to_amount,
     })
-    await supabase.from('transactions').delete().in('id', [debitTx.id, creditTx.id])
-    await supabase.from('transfers').delete().eq('id', transfer.id)
-    return { error: 'Failed to credit destination account. Transfer was not saved.' }
+
+    if (toBalErr) {
+      if (!isFromBalUpdated && input.from_amount !== 0) {
+        await supabase.rpc('increment_account_balance', {
+          p_account_id: input.from_account_id,
+          p_delta: input.from_amount,
+        })
+      }
+      await supabase.from('transactions').delete().in('id', [debitTx.id, creditTx.id])
+      await supabase.from('transfers').delete().eq('id', transfer.id)
+      return { error: 'Failed to credit destination account. Transfer was not saved.' }
+    }
   }
 
   await supabase
@@ -448,7 +445,7 @@ export async function deleteTransaction(id: string): Promise<ActionResult> {
 
   const { data: tx, error: fetchError } = await supabase
     .from('transactions')
-    .select('id, account_id, type, amount, transfer_id, transfer_type')
+    .select('id, account_id, type, amount, base_currency_amount, currency, transfer_id, transfer_type')
     .eq('id', id)
     .eq('user_id', user.id)
     .maybeSingle()
@@ -464,19 +461,13 @@ export async function deleteTransaction(id: string): Promise<ActionResult> {
     }
   }
 
-  const balanceDelta = tx.type === 'income' ? -tx.amount : tx.amount
+  const { data: account } = await supabase
+    .from('accounts')
+    .select('balance, currency')
+    .eq('id', tx.account_id)
+    .single()
 
-  const { error: balErr } = await supabase.rpc('increment_account_balance', {
-    p_account_id: tx.account_id,
-    p_delta: balanceDelta,
-  })
-
-  if (balErr) {
-    return {
-      error:
-        'Failed to reverse account balance. Transaction was not deleted to prevent desync.',
-    }
-  }
+  const balanceBefore = account?.balance ?? 0
 
   const { error: delErr } = await supabase
     .from('transactions')
@@ -485,11 +476,33 @@ export async function deleteTransaction(id: string): Promise<ActionResult> {
     .eq('user_id', user.id)
 
   if (delErr) {
-    await supabase.rpc('increment_account_balance', {
-      p_account_id: tx.account_id,
-      p_delta: -balanceDelta,
-    })
     return { error: delErr.message }
+  }
+
+  const { data: acctAfter } = await supabase
+    .from('accounts')
+    .select('balance')
+    .eq('id', tx.account_id)
+    .single()
+
+  const balanceAfter = acctAfter?.balance ?? 0
+  const isBalanceUpdatedByTrigger = Math.abs(balanceAfter - balanceBefore) > 0.001
+
+  if (!isBalanceUpdatedByTrigger && tx.amount !== 0) {
+    const targetAmount = account?.currency === tx.currency ? tx.amount : tx.base_currency_amount
+    const balanceDelta = tx.type === 'income' ? -targetAmount : targetAmount
+    
+    const { error: balErr } = await supabase.rpc('increment_account_balance', {
+      p_account_id: tx.account_id,
+      p_delta: balanceDelta,
+    })
+
+    if (balErr) {
+      return {
+        error:
+          'Failed to update balance manually after transaction deletion. Trigger might be missing.',
+      }
+    }
   }
 
   revalidatePath('/dashboard')
@@ -522,24 +535,20 @@ export async function deleteTransfer(transferId: string): Promise<ActionResult> 
     return { error: 'Transfer not found or access denied.' }
   }
 
-  const { error: fromBalErr } = await supabase.rpc('increment_account_balance', {
-    p_account_id: transfer.from_account_id,
-    p_delta: transfer.from_amount,
-  })
-  if (fromBalErr) return { error: 'Failed to reverse source balance.' }
+  const { data: fromAcctBefore } = await supabase
+    .from('accounts')
+    .select('balance')
+    .eq('id', transfer.from_account_id)
+    .single()
 
-  const { error: toBalErr } = await supabase.rpc('increment_account_balance', {
-    p_account_id: transfer.to_account_id,
-    p_delta: -transfer.to_amount,
-  })
+  const { data: toAcctBefore } = await supabase
+    .from('accounts')
+    .select('balance')
+    .eq('id', transfer.to_account_id)
+    .single()
 
-  if (toBalErr) {
-    await supabase.rpc('increment_account_balance', {
-      p_account_id: transfer.from_account_id,
-      p_delta: -transfer.from_amount,
-    })
-    return { error: 'Failed to reverse destination balance.' }
-  }
+  const fromBalBefore = fromAcctBefore?.balance ?? 0
+  const toBalBefore = toAcctBefore?.balance ?? 0
 
   const legIds = [
     transfer.debit_transaction_id,
@@ -557,6 +566,38 @@ export async function deleteTransfer(transferId: string): Promise<ActionResult> 
     .eq('user_id', user.id)
 
   if (delErr) return { error: delErr.message }
+
+  const { data: fromAcctAfter } = await supabase
+    .from('accounts')
+    .select('balance')
+    .eq('id', transfer.from_account_id)
+    .single()
+
+  const { data: toAcctAfter } = await supabase
+    .from('accounts')
+    .select('balance')
+    .eq('id', transfer.to_account_id)
+    .single()
+
+  const fromBalAfter = fromAcctAfter?.balance ?? 0
+  const toBalAfter = toAcctAfter?.balance ?? 0
+
+  const isFromBalUpdated = Math.abs(fromBalAfter - fromBalBefore) > 0.001
+  const isToBalUpdated = Math.abs(toBalAfter - toBalBefore) > 0.001
+
+  if (!isFromBalUpdated && transfer.from_amount !== 0) {
+    await supabase.rpc('increment_account_balance', {
+      p_account_id: transfer.from_account_id,
+      p_delta: transfer.from_amount,
+    })
+  }
+
+  if (!isToBalUpdated && transfer.to_amount !== 0) {
+    await supabase.rpc('increment_account_balance', {
+      p_account_id: transfer.to_account_id,
+      p_delta: -transfer.to_amount,
+    })
+  }
 
   revalidatePath('/dashboard')
   revalidatePath('/transactions')
@@ -606,9 +647,6 @@ export async function createAccount(fields: {
   if (!fields.name?.trim()) return { error: 'Account name is required.' }
   if (!Number.isFinite(fields.balance)) return { error: 'Enter a valid starting balance.' }
 
-  // FIX: previously blocked ALL negative starting balances, including for
-  // credit_card accounts — which legitimately start negative when carrying
-  // an existing owed balance. Only non-card types are blocked now.
   if (fields.balance < 0 && !accountTypeAllowsNegativeBalance(fields.type)) {
     return { error: 'Opening balance cannot be negative for this account type.' }
   }

@@ -3,9 +3,33 @@
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { createCategory } from '@/app/actions/categories'
+import { renderCategoryIcon } from '@/lib/icons'
 
-const ICONS = ['🏷️', '🍔', '🚗', '🏠', '💡', '🎬', '🛍️', '💊', '📈', '✈️', '🎓', '🐾']
-const COLORS = ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#ec4899', '#84cc16']
+const ICONS = [
+  'shopping-bag',
+  'utensils',
+  'car',
+  'home',
+  'zap',
+  'tv',
+  'gift',
+  'heart-pulse',
+  'laptop',
+  'plane',
+  'graduation-cap',
+  'briefcase',
+] as const
+
+const COLORS = [
+  '#6366f1',
+  '#10b981',
+  '#f59e0b',
+  '#ef4444',
+  '#8b5cf6',
+  '#06b6d4',
+  '#ec4899',
+  '#84cc16',
+]
 
 export default function CategoryForm() {
   const router = useRouter()
@@ -13,25 +37,36 @@ export default function CategoryForm() {
   const [open, setOpen] = useState(false)
 
   const [name, setName] = useState('')
-  const [icon, setIcon] = useState(ICONS[0])
+  const [icon, setIcon] = useState<string>(ICONS[0])
   const [color, setColor] = useState(COLORS[0])
   const [type, setType] = useState<'income' | 'expense' | 'both'>('expense')
   const [error, setError] = useState('')
 
-  async function handleSubmit(e: React.SubmitEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setError('')
-    if (!name.trim()) { setError('Give this category a name.'); return }
+
+    if (!name.trim()) {
+      setError('Give this category a name.')
+      return
+    }
 
     startTransition(async () => {
-      const result = await createCategory({ name: name.trim(), icon, color, type })
-      if (result.error) {
+      const result = await createCategory({
+        name: name.trim(),
+        icon,
+        color,
+        type,
+      })
+
+      if (result?.error) {
         setError(result.error)
-      } else {
-        setName('')
-        setOpen(false)
-        router.refresh()
+        return
       }
+
+      setName('')
+      setOpen(false)
+      router.refresh()
     })
   }
 
@@ -48,13 +83,18 @@ export default function CategoryForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="bg-card border border-border rounded-2xl p-4 space-y-4" noValidate>
+    <form
+      onSubmit={handleSubmit}
+      className="bg-card border border-border rounded-2xl p-4 space-y-4"
+      noValidate
+    >
+      {/* Name */}
       <div>
-        <label htmlFor="cat-name" className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest block mb-2">
+        <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest block mb-2">
           Name
         </label>
+
         <input
-          id="cat-name"
           type="text"
           value={name}
           onChange={e => setName(e.target.value)}
@@ -65,6 +105,7 @@ export default function CategoryForm() {
         />
       </div>
 
+      {/* Type */}
       <div className="flex bg-muted rounded-xl p-1 gap-1">
         {(['expense', 'income', 'both'] as const).map(t => (
           <button
@@ -79,8 +120,12 @@ export default function CategoryForm() {
         ))}
       </div>
 
+      {/* Icon picker (NEW SYSTEM) */}
       <div>
-        <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mb-2">Icon</p>
+        <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mb-2">
+          Icon
+        </p>
+
         <div className="flex flex-wrap gap-2">
           {ICONS.map(i => (
             <button
@@ -89,17 +134,26 @@ export default function CategoryForm() {
               onClick={() => setIcon(i)}
               aria-pressed={icon === i}
               aria-label={`Select icon ${i}`}
-              className={`w-9 h-9 rounded-xl flex items-center justify-center text-base transition-all
-                ${icon === i ? 'bg-primary/15 ring-2 ring-primary' : 'bg-muted hover:bg-muted-foreground/10'}`}
+              className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all
+                ${icon === i
+                  ? 'bg-primary/15 ring-2 ring-primary'
+                  : 'bg-muted hover:bg-muted/70'
+                }`}
             >
-              {i}
+              <span className="text-primary">
+                {renderCategoryIcon(i, 'Category', 'w-5 h-5')}
+              </span>
             </button>
           ))}
         </div>
       </div>
 
+      {/* Colors */}
       <div>
-        <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mb-2">Color</p>
+        <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mb-2">
+          Color
+        </p>
+
         <div className="flex flex-wrap gap-2">
           {COLORS.map(c => (
             <button
@@ -107,7 +161,6 @@ export default function CategoryForm() {
               type="button"
               onClick={() => setColor(c)}
               aria-pressed={color === c}
-              aria-label={`Select color ${c}`}
               className="w-8 h-8 rounded-full transition-all"
               style={{
                 background: c,
@@ -119,20 +172,29 @@ export default function CategoryForm() {
         </div>
       </div>
 
+      {/* Error */}
       {error && (
-        <p role="alert" className="text-xs text-expense bg-expense/10 rounded-xl px-3 py-2 border border-expense/20">
+        <p
+          role="alert"
+          className="text-xs text-expense bg-expense/10 rounded-xl px-3 py-2 border border-expense/20"
+        >
           {error}
         </p>
       )}
 
+      {/* Actions */}
       <div className="flex gap-2">
         <button
           type="button"
-          onClick={() => { setOpen(false); setError('') }}
+          onClick={() => {
+            setOpen(false)
+            setError('')
+          }}
           className="flex-1 h-10 rounded-xl border border-border text-sm text-muted-foreground hover:text-foreground transition-colors"
         >
           Cancel
         </button>
+
         <button
           type="submit"
           disabled={isPending}
