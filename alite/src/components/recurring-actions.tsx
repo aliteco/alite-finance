@@ -31,7 +31,10 @@ export default function RecurringActions({
     setError('')
     startTransition(async () => {
       const result = await pauseRecurring(id, !isActive)
-      if (result.error) setError(result.error)
+      if (result.error) {
+        setError(result.error)
+        return
+      }
       router.refresh()
     })
   }

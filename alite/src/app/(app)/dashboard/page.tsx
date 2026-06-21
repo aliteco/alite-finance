@@ -1,6 +1,8 @@
+// filepath: alite/src/app/(app)/dashboard/page.tsx
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import InteractiveDashboard from '@/components/interactive-dashboard'
+import DashboardOnboarding from '@/components/dashboard-onboarding'
 
 // ─── Server Side Types ────────────────────────────────────────────────────────
 
@@ -53,10 +55,14 @@ async function getDashboardPayload() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  // We want to query trailing 12 months for cashflow historical analysis
+  // Trailing 12 months for historical cashflow analysis.
+  // IMPORTANT: filter on `date` (the user-assigned transaction date), not
+  // `created_at` (the row insert timestamp) — these can diverge whenever
+  // someone backdates a transaction, which previously caused the dashboard's
+  // monthly totals to silently disagree with the trend charts.
   const trailingDate = new Date()
   trailingDate.setFullYear(trailingDate.getFullYear() - 1)
-  const trailingDateISO = trailingDate.toISOString()
+  const trailingDateISO = trailingDate.toISOString().slice(0, 10)
 
   const [profileRes, accountsRes, transactionsRes, budgetsRes] = await Promise.all([
     supabase
@@ -113,6 +119,16 @@ async function getDashboardPayload() {
 
 export default async function DashboardPage() {
   const { accounts, transactions, budgets, baseCurrency } = await getDashboardPayload()
+
+  // First-run experience: no charts/KPIs on empty data — show actionable
+  // onboarding instead of a dashboard full of zeros and broken pie charts.
+  if (accounts.length === 0 || transactions.length === 0) {
+    return (
+      <div className="min-h-screen bg-background pb-12">
+        <DashboardOnboarding hasAccounts={accounts.length > 0} />
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-background pb-12">

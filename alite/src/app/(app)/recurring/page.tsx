@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import RecurringActions from '@/components/recurring-actions'
+import CatchUpOverdueButton from '@/components/catch-up-overdue-button'
 
 interface RecurringRow {
   id: string
@@ -41,6 +42,18 @@ function isOverdue(nextDue: string) {
   return new Date(nextDue) < new Date(new Date().toDateString())
 }
 
+function getYearlyProjection(amount: number, frequency: string) {
+  switch (frequency) {
+    case 'daily': return amount * 365
+    case 'weekly': return amount * 52
+    case 'biweekly': return amount * 26
+    case 'monthly': return amount * 12
+    case 'quarterly': return amount * 4
+    case 'yearly': return amount
+    default: return amount
+  }
+}
+
 export default async function RecurringPage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -61,7 +74,8 @@ export default async function RecurringPage() {
   const rows = (data as unknown as RecurringRow[]) ?? []
   const active = rows.filter(r => r.is_active)
   const paused = rows.filter(r => !r.is_active)
-  const overdueCount = active.filter(r => isOverdue(r.next_due_date)).length
+  const overdueRules = active.filter(r => isOverdue(r.next_due_date))
+  const overdueCount = overdueRules.length
   const monthlyOutflow = active
     .filter(r => r.type === 'expense')
     .reduce((sum, r) => {
@@ -101,6 +115,10 @@ export default async function RecurringPage() {
             +
           </Link>
         </div>
+
+        {overdueCount > 0 && (
+          <CatchUpOverdueButton overdueCount={overdueCount} />
+        )}
 
         {active.length > 0 && monthlyOutflow > 0 && (
           <div className="rounded-2xl border border-border bg-card px-5 py-4">
@@ -168,25 +186,13 @@ export default async function RecurringPage() {
           <p className="text-xs text-muted-foreground leading-relaxed">
             Rules with auto-generate enabled are posted automatically once a day by a scheduled
             server job. Rules without it stay manual — tap a rule and use &quot;Record now&quot; to
-            post that cycle yourself.
+            post that cycle yourself, or use &quot;Catch up&quot; above to post all overdue rules at once.
           </p>
         </div>
 
       </div>
     </div>
   )
-}
-
-function getYearlyProjection(amount: number, frequency: string) {
-  switch (frequency) {
-    case 'daily': return amount * 365
-    case 'weekly': return amount * 52
-    case 'biweekly': return amount * 26
-    case 'monthly': return amount * 12
-    case 'quarterly': return amount * 4
-    case 'yearly': return amount
-    default: return amount
-  }
 }
 
 function RecurringRowItem({ item, hasBorder }: { item: RecurringRow; hasBorder: boolean }) {

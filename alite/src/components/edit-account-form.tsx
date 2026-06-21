@@ -18,6 +18,20 @@ interface EditAccountFormProps {
   initialType: string
   initialIncludeInNetWorth: boolean
   currency: string
+  currentBalance: number
+}
+
+function formatCurrency(amount: number, currency: string) {
+  try {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency,
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 2,
+    }).format(amount)
+  } catch {
+    return `${currency} ${amount.toLocaleString()}`
+  }
 }
 
 export default function EditAccountForm({
@@ -26,6 +40,7 @@ export default function EditAccountForm({
   initialType,
   initialIncludeInNetWorth,
   currency,
+  currentBalance,
 }: EditAccountFormProps) {
   const [isPending, startTransition] = useTransition()
   const [isArchiving, setIsArchiving] = useState(false)
@@ -36,6 +51,8 @@ export default function EditAccountForm({
   const [includeInNetWorth, setIncludeInNetWorth] = useState(initialIncludeInNetWorth)
   const [error, setError] = useState('')
   const [saved, setSaved] = useState(false)
+
+  const hasNonZeroBalance = Math.abs(currentBalance) > 0.01
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault()
@@ -71,14 +88,15 @@ export default function EditAccountForm({
 
   return (
     <div className="space-y-3">
-      <form onSubmit={handleSave} className="space-y-3">
+      <form onSubmit={handleSave} className="space-y-3" noValidate>
 
         {/* Name */}
         <div className="bg-card border border-border rounded-2xl px-4 py-4">
-          <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest block mb-2">
+          <label htmlFor="edit-account-name" className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest block mb-2">
             Account name
           </label>
           <input
+            id="edit-account-name"
             type="text"
             value={name}
             onChange={e => setName(e.target.value)}
@@ -89,16 +107,18 @@ export default function EditAccountForm({
 
         {/* Type */}
         <div className="bg-card border border-border rounded-2xl px-4 py-4">
-          <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest block mb-2.5">
+          <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest block mb-2.5">
             Type
-          </label>
-          <div className="flex flex-wrap gap-2">
+          </span>
+          <div role="radiogroup" aria-label="Account type" className="flex flex-wrap gap-2">
             {ACCOUNT_TYPES.map(t => (
               <button
                 key={t.value}
                 type="button"
+                role="radio"
+                aria-checked={type === t.value}
                 onClick={() => setType(t.value)}
-                className={`rounded-xl px-3 py-2 text-xs font-medium transition-colors
+                className={`rounded-xl px-3 py-2 text-xs font-medium transition-colors focus-visible:ring-2
                   ${type === t.value
                     ? 'bg-primary text-primary-foreground'
                     : 'bg-muted text-muted-foreground hover:text-foreground'
@@ -117,7 +137,8 @@ export default function EditAccountForm({
         <button
           type="button"
           onClick={() => setIncludeInNetWorth(v => !v)}
-          className="w-full bg-card border border-border rounded-2xl px-4 py-4 flex items-center justify-between"
+          aria-pressed={includeInNetWorth}
+          className="w-full bg-card border border-border rounded-2xl px-4 py-4 flex items-center justify-between focus-visible:ring-2"
         >
           <div className="text-left">
             <p className="text-sm font-medium text-foreground">Include in net worth</p>
@@ -126,6 +147,7 @@ export default function EditAccountForm({
             </p>
           </div>
           <span
+            aria-hidden="true"
             className={`shrink-0 w-11 h-6 rounded-full relative transition-colors ml-3
               ${includeInNetWorth ? 'bg-income' : 'bg-muted'}`}
           >
@@ -137,12 +159,12 @@ export default function EditAccountForm({
         </button>
 
         {error && (
-          <p className="text-xs text-expense bg-expense/10 rounded-xl px-4 py-3 border border-expense/20">
+          <p role="alert" className="text-xs text-expense bg-expense/10 rounded-xl px-4 py-3 border border-expense/20">
             {error}
           </p>
         )}
         {saved && (
-          <p className="text-xs text-income bg-income/10 rounded-xl px-4 py-3 border border-income/20">
+          <p role="status" className="text-xs text-income bg-income/10 rounded-xl px-4 py-3 border border-income/20">
             Account updated.
           </p>
         )}
@@ -150,7 +172,7 @@ export default function EditAccountForm({
         <button
           type="submit"
           disabled={isPending}
-          className="w-full h-11 rounded-2xl bg-primary text-primary-foreground text-sm font-semibold tracking-tight transition-all active:scale-[0.98] disabled:opacity-50"
+          className="w-full h-11 rounded-2xl bg-primary text-primary-foreground text-sm font-semibold tracking-tight transition-all active:scale-[0.98] disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-offset-2"
         >
           {isPending ? 'Saving…' : 'Save changes'}
         </button>
@@ -161,11 +183,20 @@ export default function EditAccountForm({
         <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mb-3">
           Danger zone
         </p>
+
+        {hasNonZeroBalance && (
+          <p role="alert" className="text-[11px] text-amber-600 dark:text-amber-400 bg-amber-500/10 rounded-xl px-3 py-2.5 border border-amber-500/20 mb-3">
+            This account still holds a balance of <strong>{formatCurrency(currentBalance, currency)}</strong>.
+            Archiving removes it from your net worth total — transaction history is kept, but
+            the balance will no longer be counted anywhere.
+          </p>
+        )}
+
         <button
           type="button"
           onClick={handleArchive}
           disabled={isArchiving}
-          className="w-full h-10 rounded-xl border border-expense/30 text-expense text-xs font-semibold hover:bg-expense/10 transition-colors disabled:opacity-50"
+          className="w-full h-10 rounded-xl border border-expense/30 text-expense text-xs font-semibold hover:bg-expense/10 transition-colors disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-offset-2"
         >
           {isArchiving
             ? 'Archiving…'
@@ -174,9 +205,13 @@ export default function EditAccountForm({
               : 'Archive account'}
         </button>
         {confirmArchive && !isArchiving && (
-          <p className="text-[11px] text-muted-foreground mt-2 text-center">
-            This hides the account but keeps its transaction history.
-          </p>
+          <button
+            type="button"
+            onClick={() => setConfirmArchive(false)}
+            className="w-full h-9 mt-2 text-xs text-muted-foreground hover:text-foreground transition-colors focus-visible:ring-2 rounded-lg"
+          >
+            Cancel
+          </button>
         )}
       </div>
     </div>

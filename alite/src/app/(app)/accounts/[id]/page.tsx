@@ -1,33 +1,31 @@
-import { redirect } from 'next/navigation'
+// filepath: alite/src/app/(app)/accounts/[id]/page.tsx
+import { redirect, notFound } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 
-// ─── Types ────────────────────────────────────────────────────────────────────
-
-interface Account {
+interface AccountDetail {
   id: string
   name: string
   type: string
   currency: string
   balance: number
   color: string
+  icon: string
   is_active: boolean
   include_in_net_worth: boolean
+  created_at: string
 }
 
-interface Profile {
-  base_currency: string
-}
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
-function formatCurrency(amount: number, currency: string) {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency,
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(amount)
+interface Transaction {
+  id: string
+  type: 'income' | 'expense' | 'transfer'
+  amount: number
+  base_currency_amount: number
+  currency: string
+  description: string | null
+  date: string
+  transfer_type: 'debit' | 'credit' | null
+  categories: { name: string; color: string | null; icon: string | null } | null
 }
 
 const ACCOUNT_TYPE_LABELS: Record<string, string> = {
@@ -39,312 +37,222 @@ const ACCOUNT_TYPE_LABELS: Record<string, string> = {
   other: 'Other',
 }
 
-const ACCOUNT_TYPE_ICONS: Record<string, string> = {
-  cash: '💵',
-  bank: '🏦',
-  savings: '🏛',
-  credit_card: '💳',
-  investment: '📈',
-  other: '🗂',
-}
-
-// Group accounts by type for a cleaner layout
-function groupByType(accounts: Account[]): Map<string, Account[]> {
-  const map = new Map<string, Account[]>()
-  const order = ['bank', 'savings', 'cash', 'credit_card', 'investment', 'other']
-  for (const type of order) {
-    const group = accounts.filter(a => a.type === type)
-    if (group.length > 0) map.set(type, group)
+function formatCurrency(amount: number, currency: string) {
+  try {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency,
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 2,
+    }).format(amount)
+  } catch {
+    return `${currency} ${amount.toLocaleString()}`
   }
-  return map
 }
 
-// ─── Page ─────────────────────────────────────────────────────────────────────
+function formatDate(iso: string) {
+  const d = new Date(iso)
+  const today = new Date()
+  const yesterday = new Date(today)
+  yesterday.setDate(today.getDate() - 1)
+  if (d.toDateString() === today.toDateString()) return 'Today'
+  if (d.toDateString() === yesterday.toDateString()) return 'Yesterday'
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+}
 
-export default async function AccountsPage() {
+export default async function AccountDetailPage({
+  params,
+}: {
+  params: Promise<{ id: string }>
+}) {
+  const { id } = await params
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  const [profileRes, accountsRes] = await Promise.all([
-    supabase
-      .from('profiles')
-      .select('base_currency')
-      .eq('id', user.id)
-      .single(),
-
+  const [accountRes, profileRes, txRes, monthRes] = await Promise.all([
     supabase
       .from('accounts')
-      .select('id, name, type, currency, balance, color, is_active, include_in_net_worth')
+      .select('id, name, type, currency, balance, color, icon, is_active, include_in_net_worth, created_at')
+      .eq('id', id)
       .eq('user_id', user.id)
-      .order('type')
-      .order('name'),
+      .single<AccountDetail>(),
+
+    supabase.from('profiles').select('base_currency').eq('id', user.id).single(),
+
+    supabase
+      .from('transactions')
+      .select(`
+        id, type, amount, base_currency_amount, currency,
+        description, date, transfer_type,
+        categories ( name, color, icon )
+      `)
+      .eq('user_id', user.id)
+      .eq('account_id', id)
+      .order('date', { ascending: false })
+      .order('created_at', { ascending: false })
+      .limit(25),
+
+    (() => {
+      const now = new Date()
+      const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0, 10)
+      return supabase
+        .from('transactions')
+        .select('type, base_currency_amount, transfer_id')
+        .eq('user_id', user.id)
+        .eq('account_id', id)
+        .gte('date', monthStart)
+    })(),
   ])
 
-  const baseCurrency = (profileRes.data as unknown as Profile)?.base_currency ?? 'IDR'
-  const accounts: Account[] = accountsRes.data ?? []
+  if (accountRes.error || !accountRes.data) notFound()
 
-  const activeAccounts = accounts.filter(a => a.is_active)
-  const netWorthAccounts = activeAccounts.filter(a => a.include_in_net_worth)
+  const account = accountRes.data
+  const baseCurrency = profileRes.data?.base_currency ?? 'IDR'
+  const transactions = (txRes.data as unknown as Transaction[]) ?? []
 
-  // NOTE: This is a simplified sum in account currency (not converted to base).
-  // For multi-currency accuracy across mixed-currency accounts, the dashboard's
-  // base_currency_amount-derived net worth is authoritative; this is a quick view.
-  const netWorth = netWorthAccounts.reduce((sum, a) => sum + (a.balance ?? 0), 0)
-
-  const grouped = groupByType(activeAccounts)
-  const hasMixedCurrencies = new Set(netWorthAccounts.map(a => a.currency)).size > 1
+  const monthRows = monthRes.data ?? []
+  const monthIncome = monthRows
+    .filter(r => r.type === 'income' && !r.transfer_id)
+    .reduce((s, r) => s + (r.base_currency_amount || 0), 0)
+  const monthExpense = monthRows
+    .filter(r => r.type === 'expense' && !r.transfer_id)
+    .reduce((s, r) => s + (r.base_currency_amount || 0), 0)
 
   return (
     <div className="min-h-screen bg-background pb-28">
-      <div className="max-w-md md:max-w-5xl lg:max-w-6xl mx-auto px-4 pt-8 space-y-6 md:space-y-8">
+      <div className="max-w-lg mx-auto px-4 pt-8 space-y-5">
 
-        {/* ── Header ── */}
-        <div className="flex items-end justify-between border-b border-border/40 pb-4">
-          <div>
-            <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-[0.12em] mb-1">
-              Accounts
-            </p>
-            <h1 className="text-3xl font-bold tracking-tight text-foreground leading-none">
-              {activeAccounts.length} wallet{activeAccounts.length !== 1 ? 's' : ''}
-            </h1>
-          </div>
+        {/* Header */}
+        <div className="flex items-center justify-between">
           <Link
-            href="/accounts/new"
-            className="inline-flex items-center justify-center gap-1.5 h-10 px-4 rounded-xl bg-primary text-primary-foreground text-xs font-semibold hover:opacity-90 transition-opacity shrink-0 focus-visible:ring-2 focus-visible:ring-offset-2"
-            aria-label="Add account"
+            href="/accounts"
+            className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors focus-visible:ring-2 rounded-lg"
           >
-            <span>+</span>
-            <span className="hidden sm:inline">Add Wallet</span>
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+              <path d="M9 2L4 7l5 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+            Accounts
+          </Link>
+          <Link
+            href={`/accounts/${account.id}/edit`}
+            className="text-xs font-medium text-muted-foreground hover:text-foreground transition-colors px-3 py-1.5 rounded-lg border border-border focus-visible:ring-2"
+          >
+            Edit
           </Link>
         </div>
 
-        {accounts.length === 0 ? (
-          <EmptyState />
-        ) : (
-          /* Desktop responsive split grid */
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-6 md:gap-8 items-start">
-            
-            {/* Left side panel: Net Worth & summary subtotals (sticky on desktop) */}
-            <div className="md:col-span-5 md:sticky md:top-6 space-y-6">
-              
-              {/* Net Worth Summary */}
-              <div
-                className="rounded-2xl border px-6 py-6 relative overflow-hidden shadow-sm"
-                style={{ borderColor: 'var(--border)', background: 'var(--card)' }}
-              >
-                <div
-                  className="absolute inset-0 pointer-events-none"
-                  style={{
-                    background:
-                      'radial-gradient(ellipse 65% 55% at 80% -10%, rgba(52,211,153,0.08) 0%, transparent 70%)',
-                  }}
-                />
-
-                <p className="text-[10px] font-semibold uppercase tracking-[0.12em] mb-1 text-muted-foreground">
-                  Net Worth
-                </p>
-                <p className="text-4xl font-extrabold tracking-tight tabular-nums leading-none text-foreground">
-                  {formatCurrency(netWorth, baseCurrency)}
-                </p>
-                <p className="text-xs text-muted-foreground mt-2">
-                  {baseCurrency} · {netWorthAccounts.length} account{netWorthAccounts.length !== 1 ? 's' : ''} in net worth
-                  {hasMixedCurrencies && ' · mixed currencies, not converted'}
-                </p>
-
-                {activeAccounts.length > 0 && (
-                  <div
-                    className="mt-6 pt-5 grid grid-cols-2 gap-x-4 gap-y-4"
-                    style={{ borderTop: '0.5px solid var(--border)' }}
-                  >
-                    {Array.from(grouped.entries()).map(([type, group]) => {
-                      const subtotal = group.reduce((s, a) => s + (a.balance ?? 0), 0)
-                      return (
-                        <div key={type} className="bg-muted/10 p-2.5 rounded-xl border border-border/40">
-                          <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-0.5 font-medium truncate">
-                            {ACCOUNT_TYPE_LABELS[type] ?? type}
-                          </p>
-                          <p className="text-sm font-bold tabular-nums text-foreground">
-                            {formatCurrency(subtotal, baseCurrency)}
-                          </p>
-                        </div>
-                      )
-                    })}
-                  </div>
-                )}
-              </div>
-              
-              <div className="hidden md:block rounded-2xl bg-muted/20 border border-border/30 p-5">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground mb-1.5">Asset Allocation Mode</p>
-                <p className="text-xs text-muted-foreground leading-relaxed">
-                  These summaries reflect your active financial balances. Keep accounts updated by recording new bank transfers, income items, and expenses.
-                </p>
-              </div>
-
-            </div>
-
-            {/* Right side list: Account Groups */}
-            <div className="md:col-span-7 space-y-6">
-              <div className="space-y-6">
-                {Array.from(grouped.entries()).map(([type, group]) => (
-                  <AccountGroup
-                    key={type}
-                    type={type}
-                    accounts={group}
-                    baseCurrency={baseCurrency}
-                  />
-                ))}
-              </div>
-            </div>
-
+        {/* Hero balance card */}
+        <div className="rounded-2xl border border-border bg-card px-5 py-6 text-center relative overflow-hidden">
+          <div
+            className="absolute inset-0 pointer-events-none"
+            style={{ background: `radial-gradient(ellipse 70% 50% at 50% -10%, ${account.color || '#6366f1'}18 0%, transparent 70%)` }}
+            aria-hidden="true"
+          />
+          <div
+            className="w-12 h-12 rounded-2xl mx-auto mb-3 flex items-center justify-center text-lg font-bold"
+            style={{ background: `${account.color || '#6366f1'}22`, color: account.color || '#6366f1' }}
+            aria-hidden="true"
+          >
+            {account.name.charAt(0).toUpperCase()}
           </div>
-        )}
+          <h1 className="text-sm font-semibold text-foreground">{account.name}</h1>
+          <p className="text-[11px] text-muted-foreground mt-0.5">
+            {ACCOUNT_TYPE_LABELS[account.type] ?? account.type} · {account.currency}
+            {!account.is_active && <span className="ml-1.5 text-expense">· Archived</span>}
+            {!account.include_in_net_worth && <span className="ml-1.5">· Excluded from net worth</span>}
+          </p>
+          <p className={`text-4xl font-extrabold tabular-nums tracking-tight mt-4 ${account.balance < 0 ? 'text-expense' : 'text-foreground'}`}>
+            {formatCurrency(account.balance, account.currency)}
+          </p>
+        </div>
 
-      </div>
-    </div>
-  )
-}
+        {/* This month summary */}
+        <div className="grid grid-cols-2 gap-2">
+          <div className="bg-card border border-border rounded-2xl px-4 py-3">
+            <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-1">Income (mo.)</p>
+            <p className="text-sm font-bold tabular-nums text-income">
+              +{formatCurrency(monthIncome, account.currency)}
+            </p>
+          </div>
+          <div className="bg-card border border-border rounded-2xl px-4 py-3">
+            <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-1">Expense (mo.)</p>
+            <p className="text-sm font-bold tabular-nums text-expense">
+              −{formatCurrency(monthExpense, account.currency)}
+            </p>
+          </div>
+        </div>
 
-// ─── Account Group ─────────────────────────────────────────────────────────────
+        {/* Quick actions */}
+        <div className="grid grid-cols-2 gap-2">
+          <Link
+            href={`/transactions/new?account=${account.id}`}
+            className="h-11 rounded-xl bg-primary text-primary-foreground text-xs font-semibold flex items-center justify-center hover:opacity-90 transition-opacity focus-visible:ring-2 focus-visible:ring-offset-2"
+          >
+            + New transaction
+          </Link>
+          <Link
+            href={`/transactions?account=${account.id}`}
+            className="h-11 rounded-xl border border-border text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors flex items-center justify-center focus-visible:ring-2"
+          >
+            View all activity
+          </Link>
+        </div>
 
-function AccountGroup({
-  type,
-  accounts,
-  baseCurrency,
-}: {
-  type: string
-  accounts: Account[]
-  baseCurrency: string
-}) {
-  return (
-    <section aria-labelledby={`group-${type}`}>
-      <div className="flex items-center gap-2 mb-2.5 px-0.5">
-        <span className="text-base leading-none" aria-hidden="true">{ACCOUNT_TYPE_ICONS[type] ?? '🗂'}</span>
-        <p id={`group-${type}`} className="text-[10px] font-semibold text-muted-foreground uppercase tracking-[0.12em]">
-          {ACCOUNT_TYPE_LABELS[type] ?? type}
-        </p>
-      </div>
-
-      <div
-        className="rounded-2xl overflow-hidden"
-        style={{
-          border: '0.5px solid var(--border)',
-          background: 'var(--card)',
-        }}
-      >
-        {accounts.map((account, i) => (
-          <AccountRow
-            key={account.id}
-            account={account}
-            baseCurrency={baseCurrency}
-            hasBorder={i < accounts.length - 1}
-          />
-        ))}
-      </div>
-    </section>
-  )
-}
-
-// ─── Account Row ───────────────────────────────────────────────────────────────
-
-function AccountRow({
-  account,
-  baseCurrency,
-  hasBorder,
-}: {
-  account: Account
-  baseCurrency: string
-  hasBorder: boolean
-}) {
-  const isNegative = account.balance < 0
-
-  return (
-    <Link
-      href={`/accounts/${account.id}`}
-      className="flex items-center gap-3.5 px-4 py-4 transition-colors active:opacity-70 hover:bg-muted/40 focus-visible:bg-muted/40"
-      style={
-        hasBorder
-          ? { borderBottom: '0.5px solid var(--border)' }
-          : {}
-      }
-    >
-      <div
-        className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 text-sm font-bold"
-        style={{
-          background: account.color
-            ? `${account.color}22`
-            : 'var(--muted)',
-          color: account.color ?? 'var(--muted-foreground)',
-          border: `0.5px solid ${account.color ?? 'transparent'}44`,
-        }}
-        aria-hidden="true"
-      >
-        {account.name.charAt(0).toUpperCase()}
-      </div>
-
-      <div className="flex-1 min-w-0">
-        <p className="text-sm font-semibold text-foreground truncate leading-tight">
-          {account.name}
-        </p>
-        <p className="text-[11px] text-muted-foreground mt-0.5">
-          {account.currency}
-          {!account.include_in_net_worth && (
-            <span className="ml-1.5 text-muted-foreground/70">· excluded</span>
+        {/* Recent transactions */}
+        <section>
+          <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-[0.12em] mb-2.5 px-0.5">
+            Recent activity
+          </p>
+          {transactions.length === 0 ? (
+            <div className="rounded-2xl border border-border bg-card px-4 py-10 text-center">
+              <p className="text-sm text-muted-foreground mb-2">No transactions on this account yet.</p>
+              <Link href={`/transactions/new?account=${account.id}`} className="text-xs text-primary font-medium">
+                Add the first one →
+              </Link>
+            </div>
+          ) : (
+            <div className="rounded-2xl border border-border bg-card overflow-hidden">
+              {transactions.map((tx, i) => {
+                const isIncome = tx.type === 'income' || (tx.type === 'transfer' && tx.transfer_type === 'credit')
+                const isTransfer = tx.type === 'transfer'
+                const color = tx.categories?.color || (isIncome ? 'var(--income)' : 'var(--expense)')
+                return (
+                  <div
+                    key={tx.id}
+                    className={`flex items-center gap-3 px-4 py-3.5 ${i < transactions.length - 1 ? 'border-b border-border' : ''}`}
+                  >
+                    <div
+                      className="w-8 h-8 rounded-[9px] flex items-center justify-center text-xs font-bold shrink-0"
+                      style={{ background: `${color}1c`, color }}
+                      aria-hidden="true"
+                    >
+                      {isTransfer ? '⇄' : (tx.categories?.icon ?? (tx.categories?.name ?? 'U').charAt(0).toUpperCase())}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-medium text-foreground truncate">
+                        {tx.description ?? tx.categories?.name ?? 'Transaction'}
+                      </p>
+                      <p className="text-[10px] text-muted-foreground">{formatDate(tx.date)}</p>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <p className={`text-xs font-semibold tabular-nums ${isIncome ? 'text-income' : isTransfer ? 'text-[#818cf8]' : 'text-expense'}`}>
+                        {isIncome ? '+' : '−'}{formatCurrency(tx.amount, tx.currency)}
+                      </p>
+                      {tx.currency !== baseCurrency && (
+                        <p className="text-[10px] text-muted-foreground tabular-nums">
+                          {formatCurrency(tx.base_currency_amount, baseCurrency)}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
           )}
-        </p>
+        </section>
+
       </div>
-
-      <div className="flex items-center gap-2 shrink-0">
-        <p
-          className={`text-sm font-bold tabular-nums ${
-            isNegative ? 'text-expense' : 'text-foreground'
-          }`}
-        >
-          {formatCurrency(account.balance, account.currency)}
-        </p>
-        <svg
-          width="6"
-          height="10"
-          viewBox="0 0 6 10"
-          fill="none"
-          className="text-muted-foreground/40"
-          aria-hidden="true"
-        >
-          <path
-            d="M1 1l4 4-4 4"
-            stroke="currentColor"
-            strokeWidth="1.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        </svg>
-      </div>
-    </Link>
-  )
-}
-
-// ─── Empty State ───────────────────────────────────────────────────────────────
-
-function EmptyState() {
-  return (
-    <div
-      className="rounded-2xl px-6 py-14 text-center"
-      style={{
-        border: '0.5px solid var(--border)',
-        background: 'var(--card)',
-      }}
-    >
-      <div className="text-4xl mb-4" aria-hidden="true">🏦</div>
-      <p className="text-sm font-semibold text-foreground mb-1">No accounts yet</p>
-      <p className="text-xs text-muted-foreground mb-5">
-        Add your first bank account or wallet to start tracking your net worth.
-      </p>
-      <Link
-        href="/accounts/new"
-        className="inline-flex items-center gap-2 h-9 px-4 rounded-xl bg-primary text-primary-foreground text-xs font-semibold hover:opacity-90 transition-opacity"
-      >
-        + Add account
-      </Link>
     </div>
   )
 }

@@ -71,6 +71,14 @@ function assertUser(user: { id: string } | null): asserts user is { id: string }
   if (!user) throw new Error('Unauthenticated')
 }
 
+// Credit cards are the one account type that legitimately starts with a
+// negative balance (an existing owed amount carried over from elsewhere).
+// Every other account type starting negative is almost certainly a mistake,
+// so the negative-balance guard only relaxes for this type.
+function accountTypeAllowsNegativeBalance(type: string): boolean {
+  return type === 'credit_card'
+}
+
 // ─── Exchange rate lookup ──────────────────────────────────────────────────────
 
 export async function getExchangeRate(
@@ -596,8 +604,14 @@ export async function createAccount(fields: {
   assertUser(user)
 
   if (!fields.name?.trim()) return { error: 'Account name is required.' }
-  if (fields.balance < 0) return { error: 'Opening balance cannot be negative.' }
   if (!Number.isFinite(fields.balance)) return { error: 'Enter a valid starting balance.' }
+
+  // FIX: previously blocked ALL negative starting balances, including for
+  // credit_card accounts — which legitimately start negative when carrying
+  // an existing owed balance. Only non-card types are blocked now.
+  if (fields.balance < 0 && !accountTypeAllowsNegativeBalance(fields.type)) {
+    return { error: 'Opening balance cannot be negative for this account type.' }
+  }
 
   const { data, error } = await supabase
     .from('accounts')

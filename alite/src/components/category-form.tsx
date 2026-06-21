@@ -18,7 +18,7 @@ export default function CategoryForm() {
   const [type, setType] = useState<'income' | 'expense' | 'both'>('expense')
   const [error, setError] = useState('')
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.SubmitEvent) {
     e.preventDefault()
     setError('')
     if (!name.trim()) { setError('Give this category a name.'); return }

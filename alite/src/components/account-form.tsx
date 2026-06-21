@@ -27,6 +27,11 @@ export default function AccountForm({ defaultCurrency }: AccountFormProps) {
   const [balance, setBalance] = useState('')
   const [error, setError] = useState('')
 
+  // Credit cards legitimately start with a negative balance (an existing
+  // owed amount). Every other account type starting negative is almost
+  // certainly a data-entry mistake, so we only relax the guard for cards.
+  const allowsNegativeBalance = type === 'credit_card'
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setError('')
@@ -34,7 +39,10 @@ export default function AccountForm({ defaultCurrency }: AccountFormProps) {
     if (!name.trim()) { setError('Give your account a name.'); return }
     const numBalance = parseFloat(balance || '0')
     if (Number.isNaN(numBalance)) { setError('Enter a valid starting balance.'); return }
-    if (numBalance < 0) { setError('Opening balance cannot be negative.'); return }
+    if (numBalance < 0 && !allowsNegativeBalance) {
+      setError('Opening balance cannot be negative for this account type.')
+      return
+    }
 
     startTransition(async () => {
       const result = await createAccount({
@@ -121,13 +129,17 @@ export default function AccountForm({ defaultCurrency }: AccountFormProps) {
             name="balance"
             type="number"
             inputMode="decimal"
-            min="0"
             step="0.01"
             placeholder="0"
             value={balance}
             onChange={e => setBalance(e.target.value)}
             className="w-full bg-transparent text-2xl font-bold tabular-nums text-foreground placeholder:text-muted-foreground/40 focus:outline-none"
           />
+          {allowsNegativeBalance && (
+            <p className="text-[11px] text-muted-foreground mt-2">
+              Enter a negative number if you already carry a balance owed on this card.
+            </p>
+          )}
         </div>
       </div>
 

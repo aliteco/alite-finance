@@ -12,7 +12,7 @@ export default async function NewBudgetPage() {
 
   if (!user) redirect('/login')
 
-  const [profileRes, categoriesRes] = await Promise.all([
+  const [profileRes, categoriesRes, existingBudgetsRes] = await Promise.all([
     supabase
       .from('profiles')
       .select('base_currency')
@@ -24,10 +24,17 @@ export default async function NewBudgetPage() {
       .select('id, name, type')
       .or(`user_id.is.null,user_id.eq.${user.id}`)
       .order('name'),
+
+    supabase
+      .from('budgets')
+      .select('category_id, period')
+      .eq('user_id', user.id)
+      .eq('is_active', true),
   ])
 
   const baseCurrency = profileRes.data?.base_currency ?? 'IDR'
   const categories = categoriesRes.data ?? []
+  const existingBudgets = existingBudgetsRes.data ?? []
 
   return (
     <div className="min-h-screen bg-background pb-28">
@@ -49,7 +56,7 @@ export default async function NewBudgetPage() {
           </div>
         </div>
 
-        <BudgetForm categories={categories} baseCurrency={baseCurrency} />
+        <BudgetForm categories={categories} baseCurrency={baseCurrency} existingBudgets={existingBudgets} />
       </div>
     </div>
   )
