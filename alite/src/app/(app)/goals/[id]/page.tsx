@@ -83,9 +83,10 @@ export default async function GoalDetailPage({
 
   let monthlyNeeded: number | null = null
   if (goal.target_date && !goal.is_completed) {
+    const nowMs = new Date().getTime()
     const months = Math.max(
       1,
-      (new Date(goal.target_date).getTime() - Date.now()) / (1000 * 60 * 60 * 24 * 30)
+      (new Date(goal.target_date).getTime() - nowMs) / (1000 * 60 * 60 * 24 * 30)
     )
     monthlyNeeded = remaining / months
   }

@@ -84,7 +84,7 @@ export async function createRecurring(input: CreateRecurringInput): Promise<Acti
 
   if (acctErr || !account) return { error: 'Account not found or access denied.' }
 
-  const { data, error } = await supabase
+  const { error } = await supabase
     .from('recurring_transactions')
     .insert({
       user_id: user.id,

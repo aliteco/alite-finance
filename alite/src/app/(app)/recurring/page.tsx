@@ -177,12 +177,25 @@ export default async function RecurringPage() {
   )
 }
 
+function getYearlyProjection(amount: number, frequency: string) {
+  switch (frequency) {
+    case 'daily': return amount * 365
+    case 'weekly': return amount * 52
+    case 'biweekly': return amount * 26
+    case 'monthly': return amount * 12
+    case 'quarterly': return amount * 4
+    case 'yearly': return amount
+    default: return amount
+  }
+}
+
 function RecurringRowItem({ item, hasBorder }: { item: RecurringRow; hasBorder: boolean }) {
   const overdue = item.is_active && isOverdue(item.next_due_date)
   const isIncome = item.type === 'income'
+  const yearlyProj = getYearlyProjection(item.amount, item.frequency)
 
   return (
-    <div className={`flex items-center gap-3 px-4 py-3.5 ${hasBorder ? 'border-b border-border' : ''}`}>
+    <div className={`flex items-center gap-3 px-4 py-3.5 hover:bg-muted/10 transition-colors ${hasBorder ? 'border-b border-border' : ''}`}>
       <Link href={`/recurring/${item.id}`} className="flex items-center gap-3 flex-1 min-w-0 focus-visible:ring-2 rounded-lg">
         <div
           className="w-9 h-9 rounded-[9px] flex items-center justify-center text-sm font-bold shrink-0"
@@ -203,6 +216,11 @@ function RecurringRowItem({ item, hasBorder }: { item: RecurringRow; hasBorder: 
             {item.accounts?.name ?? '—'} · {FREQUENCY_LABELS[item.frequency] ?? item.frequency}
             {item.auto_generate && ' · Auto'}
           </p>
+          {yearlyProj > 0 && (
+            <p className="text-[10px] text-muted-foreground/80 mt-0.5">
+              Proj. yearly: <span className="font-medium text-foreground/90 tabular-nums">{formatCurrency(yearlyProj, item.currency)}</span>
+            </p>
+          )}
         </div>
 
         <div className="text-right shrink-0">

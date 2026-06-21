@@ -1,7 +1,9 @@
 'use client'
 
+import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { ThemeToggle } from './theme-toggle'
 
 const NAV_ITEMS = [
   {
@@ -73,10 +75,10 @@ const NAV_ITEMS = [
         <path d="M17 2.1l4 4-4 4" />
         <path d="M3 12.7V12a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3" />
         <path d="M7 21.9l-4-4 4-4" />
-        <path d="M21 11.3V12a9 9 0 0 1-9 9 9 9 0 0 1-6-2.3" />
+        <path d="M21 11.3V12a9 9 0 0 1-9 9 9 0 0 1-6-2.3" />
       </svg>
     ),
-},
+  },
   {
     href: '/settings',
     label: 'Settings',
@@ -92,51 +94,134 @@ const NAV_ITEMS = [
 
 export default function Navigation() {
   const pathname = usePathname()
+  const [isMoreOpen, setIsMoreOpen] = useState(false)
 
   const isActive = (href: string) =>
     href === '/dashboard' ? pathname === href : pathname.startsWith(href)
 
+  // Core items for mobile bottom row (Exactly 3, spacious + 1 More item = 4 items count)
+  const mobileCoreItems = [
+    NAV_ITEMS[0], // Home (/dashboard)
+    NAV_ITEMS[2], // Transactions (/transactions)
+    NAV_ITEMS[3], // Budgets (/budgets)
+  ]
+
+  // More items inside overlay sheet (Now including Wallets / Accounts)
+  const mobileMoreItems = [
+    NAV_ITEMS[1], // Accounts (/accounts)
+    NAV_ITEMS[4], // Goals (/goals)
+    NAV_ITEMS[5], // Recurring (/recurring)
+    NAV_ITEMS[6], // Settings (/settings)
+  ]
+
+  const anyMoreActive = mobileMoreItems.some(item => isActive(item.href))
+
   return (
     <>
-      {/* ── Mobile bottom nav ── */}
+      {/* ── Mobile menu overlay drawer bottom sheet ── */}
+      {isMoreOpen && (
+        <div 
+          className="fixed inset-0 z-40 bg-background/80 backdrop-blur-sm md:hidden"
+          onClick={() => setIsMoreOpen(false)}
+        >
+          <div 
+            className="fixed bottom-22 inset-x-4 bg-card border border-border/70 rounded-2xl p-5 space-y-4 shadow-2xl animate-fade-in-up"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between pb-2 border-b border-border/40">
+              <h3 className="text-xs font-bold text-foreground">More Categories</h3>
+              <button 
+                onClick={() => setIsMoreOpen(false)}
+                className="text-xs font-bold text-muted-foreground hover:text-foreground px-2.5 py-1 rounded-lg bg-muted"
+              >
+                Close
+              </button>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3.5">
+              {mobileMoreItems.map(({ href, label, icon }) => {
+                const active = isActive(href)
+                return (
+                  <Link
+                    key={href}
+                    href={href}
+                    onClick={() => setIsMoreOpen(false)}
+                    className={`flex flex-col items-center justify-center p-3.5 rounded-xl border transition-all duration-200
+                      ${active 
+                        ? 'bg-primary/5 border-primary text-primary font-bold shadow-2xs' 
+                        : 'bg-muted/15 border-border/40 text-muted-foreground hover:bg-muted/40 hover:text-foreground'
+                      }`}
+                  >
+                    <div className="mb-2 shrink-0">{icon(active)}</div>
+                    <span className="text-[11px] font-semibold text-center leading-tight truncate w-full">{label}</span>
+                  </Link>
+                )
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Mobile bottom nav floating pill capsule ── */}
       <nav
-        className="fixed bottom-0 left-0 right-0 z-50 md:hidden bg-card border-t border-border"
+        className="fixed bottom-4 left-4 right-4 z-40 md:hidden bg-card/85 backdrop-blur-md border border-border/80 rounded-2xl shadow-xl transition-all duration-300"
         aria-label="Primary"
       >
-        <div className="flex items-stretch h-16 safe-pb overflow-x-auto">
-          {NAV_ITEMS.map(({ href, label, icon }) => {
+        <div className="flex items-center justify-around h-14 px-2">
+          {mobileCoreItems.map(({ href, label, icon }) => {
             const active = isActive(href)
             return (
               <Link
                 key={href}
                 href={href}
                 aria-current={active ? 'page' : undefined}
-                className={`flex flex-col items-center justify-center flex-1 gap-0.5 transition-colors min-w-[56px]
+                className={`flex flex-col items-center justify-center flex-1 gap-0.5 transition-colors min-w-[56px] py-1.5
                   ${active
-                    ? 'text-primary'
+                    ? 'text-primary font-medium'
                     : 'text-muted-foreground active:text-foreground'
                   }`}
               >
                 {icon(active)}
-                <span className={`text-[10px] font-medium leading-none ${active ? 'text-primary' : ''}`}>
-                  {label}
+                <span className={`text-[9.5px] font-semibold leading-none mt-0.5 ${active ? 'text-primary' : ''}`}>
+                  {label === 'Transactions' ? 'Ledger' : label}
                 </span>
               </Link>
             )
           })}
+
+          {/* More Trigger Button */}
+          <button
+            onClick={() => setIsMoreOpen(!isMoreOpen)}
+            aria-label="More options"
+            aria-expanded={isMoreOpen}
+            className={`flex flex-col items-center justify-center flex-1 gap-0.5 transition-colors min-w-[56px] py-1.5 focus:outline-none
+              ${isMoreOpen || anyMoreActive
+                ? 'text-primary font-medium'
+                : 'text-muted-foreground active:text-foreground'
+              }`}
+          >
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              strokeWidth={(isMoreOpen || anyMoreActive) ? 2.2 : 1.8} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <circle cx="12" cy="5" r="1.5" />
+              <circle cx="12" cy="12" r="1.5" />
+              <circle cx="12" cy="19" r="1.5" />
+            </svg>
+            <span className="text-[9.5px] font-semibold leading-none mt-0.5">More</span>
+          </button>
         </div>
       </nav>
 
       {/* ── Desktop sidebar ── */}
       <aside className="hidden md:flex flex-col fixed left-0 top-0 h-screen w-56 bg-card border-r border-border z-40">
         {/* Wordmark */}
-        <div className="px-5 py-6 border-b border-border">
-          <Link href="/dashboard" className="flex items-center gap-2.5">
+        <div className="px-5 py-6 border-b border-border flex items-center justify-between gap-2">
+          <Link href="/dashboard" className="flex items-center gap-2.5 min-w-0">
             <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center shrink-0">
               <span className="text-primary-foreground font-bold text-sm">A</span>
             </div>
-            <span className="text-base font-semibold tracking-tight text-foreground">Alite</span>
+            <span className="text-base font-semibold tracking-tight text-foreground truncate">Alite</span>
           </Link>
+          <ThemeToggle className="shrink-0 scale-90" />
         </div>
 
         {/* Nav items */}

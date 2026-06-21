@@ -122,7 +122,7 @@ export default function EditAccountForm({
           <div className="text-left">
             <p className="text-sm font-medium text-foreground">Include in net worth</p>
             <p className="text-[11px] text-muted-foreground mt-0.5">
-              Turn off for accounts you don't want counted, like a shared or external account.
+              Turn off for accounts you don&apos;t want counted, like a shared or external account.
             </p>
           </div>
           <span

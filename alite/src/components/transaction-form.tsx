@@ -97,21 +97,34 @@ export default function TransactionForm({
     c => c.type === mode || c.type === 'both'
   )
   const toAccount = accounts.find(a => a.id === toAccountId)
+  const fromAccount = accounts.find(a => a.id === accountId)
+  const fromCurrency = fromAccount?.currency ?? currency
+  const toCurrency = toAccount?.currency ?? fromCurrency
+  const isCrossCurrency = mode === 'transfer' && fromCurrency !== toCurrency
 
   useEffect(() => {
-    const account = accounts.find(a => a.id === accountId)
-    if (account) setCurrency(account.currency)
+    const timer = setTimeout(() => {
+      const account = accounts.find(a => a.id === accountId)
+      if (account) setCurrency(account.currency)
+    }, 0)
+    return () => clearTimeout(timer)
   }, [accountId, accounts])
 
   useEffect(() => {
-    setCategoryId('')
+    const timer = setTimeout(() => {
+      setCategoryId('')
+    }, 0)
+    return () => clearTimeout(timer)
   }, [mode])
 
   useEffect(() => {
-    if (mode === 'transfer') {
-      const other = accounts.find(a => a.id !== accountId)
-      if (other) setToAccountId(other.id)
-    }
+    const timer = setTimeout(() => {
+      if (mode === 'transfer') {
+        const other = accounts.find(a => a.id !== accountId)
+        if (other) setToAccountId(other.id)
+      }
+    }, 0)
+    return () => clearTimeout(timer)
   }, [mode, accountId, accounts])
 
   const fetchRate = useCallback(
@@ -139,8 +152,37 @@ export default function TransactionForm({
   )
 
   useEffect(() => {
-    fetchRate(currency, baseCurrency)
-  }, [currency, baseCurrency, fetchRate])
+    const timer = setTimeout(() => {
+      if (mode === 'transfer') {
+        fetchRate(fromCurrency, toCurrency)
+      } else {
+        fetchRate(currency, baseCurrency)
+      }
+    }, 0)
+    return () => clearTimeout(timer)
+  }, [mode, currency, fromCurrency, toCurrency, baseCurrency, fetchRate])
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (mode === 'transfer') {
+        const parsed = parseFloat(amount || '0')
+        if (parsed > 0) {
+          if (isCrossCurrency) {
+            if (exchangeRate > 0) {
+              setToAmount((parsed * exchangeRate).toFixed(2))
+            } else {
+              setToAmount('')
+            }
+          } else {
+            setToAmount(amount)
+          }
+        } else {
+          setToAmount('')
+        }
+      }
+    }, 0)
+    return () => clearTimeout(timer)
+  }, [isCrossCurrency, mode, amount, exchangeRate])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -213,11 +255,6 @@ export default function TransactionForm({
       }
     })
   }
-
-  const fromAccount = accounts.find(a => a.id === accountId)
-  const fromCurrency = fromAccount?.currency ?? currency
-  const toCurrency = toAccount?.currency ?? fromCurrency
-  const isCrossCurrency = mode === 'transfer' && fromCurrency !== toCurrency
 
   return (
     <form onSubmit={handleSubmit} className="space-y-3" noValidate>
@@ -390,24 +427,45 @@ export default function TransactionForm({
             />
           </div>
 
-          {isCrossCurrency && (
-            <div className="pt-3" style={{ borderTop: '0.5px solid rgba(255,255,255,0.06)' }}>
-              <label htmlFor="dest-amount" className="text-[10px] font-semibold text-muted-foreground uppercase tracking-[0.12em] block mb-2">
-                Destination amount ({toCurrency})
-              </label>
-              <input
-                id="dest-amount"
-                type="number"
-                inputMode="decimal"
-                min="0"
-                step="0.01"
-                placeholder={`Amount in ${toCurrency}`}
-                value={toAmount}
-                onChange={e => setToAmount(e.target.value)}
-                className="w-full bg-transparent text-base font-bold tabular-nums text-foreground placeholder:text-muted-foreground/40 focus:outline-none"
-              />
-              <p className="text-[10px] text-muted-foreground mt-1.5">
-                Leave blank to use same amount (for same-currency transfers).
+          {mode === 'transfer' && (
+            <div className="pt-3 space-y-3" style={{ borderTop: '0.5px solid rgba(255,255,255,0.06)' }}>
+              <div>
+                <label htmlFor="dest-amount" className="text-[10px] font-semibold text-muted-foreground uppercase tracking-[0.12em] block mb-2">
+                  Destination Amount ({toCurrency})
+                </label>
+                <input
+                  id="dest-amount"
+                  type="number"
+                  inputMode="decimal"
+                  min="0"
+                  step="0.01"
+                  placeholder={`Amount in ${toCurrency}`}
+                  value={toAmount}
+                  onChange={e => setToAmount(e.target.value)}
+                  className="w-full bg-transparent text-base font-bold tabular-nums text-foreground placeholder:text-muted-foreground/40 focus:outline-none"
+                />
+              </div>
+
+              {isCrossCurrency ? (
+                rateLoading ? (
+                  <p className="text-[10px] text-muted-foreground">Fetching live transfer exchange rate…</p>
+                ) : rateError ? (
+                  <p className="text-[10px] text-expense">⚠ {rateError}</p>
+                ) : (
+                  <div className="flex items-center justify-between text-[11px] text-muted-foreground bg-muted/15 px-3 py-2 rounded-xl border border-border/25">
+                    <span>Transfer Rate:</span>
+                    <span className="font-semibold text-foreground tabular-nums">1 {fromCurrency} = {exchangeRate} {toCurrency}</span>
+                  </div>
+                )
+              ) : (
+                <div className="flex items-center justify-between text-[11px] text-muted-foreground bg-muted/15 px-3 py-2 rounded-xl border border-border/25">
+                  <span>Transfer Rate:</span>
+                  <span className="font-semibold text-foreground tabular-nums">1 {fromCurrency} = 1.00 {toCurrency}</span>
+                </div>
+              )}
+
+              <p className="text-[10px] text-muted-foreground">
+                Amount is automatically populated. You can edit the destination amount if needed.
               </p>
             </div>
           )}

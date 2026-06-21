@@ -156,11 +156,22 @@ export default function InteractiveDashboard({
   const [selectedTxType, setSelectedTxType] = useState<string>('all')
   const [searchQuery, setSearchQuery] = useState<string>('')
   const [hoveredCategory, setHoveredCategory] = useState<string | null>(null)
+  const [selectedPieMonth, setSelectedPieMonth] = useState<string>('all')
   const [currentPage, setCurrentPage] = useState<number>(1)
   const itemsPerPage = 8
 
   useEffect(() => {
-    setMounted(true)
+    const timer = setTimeout(() => {
+      setSelectedPieMonth('all')
+    }, 0)
+    return () => clearTimeout(timer)
+  }, [selectedTimeframe, selectedAccount])
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setMounted(true)
+    }, 0)
+    return () => clearTimeout(timer)
   }, [])
 
   // Reset to page 1 whenever filters change, so users never land on an
@@ -204,6 +215,16 @@ export default function InteractiveDashboard({
       return true
     })
   }, [initialTransactions, dateLimit, selectedAccount, selectedTxType, searchQuery])
+
+  const availableMonths = useMemo(() => {
+    const monthsSet = new Set<string>()
+    filteredTxs.forEach(tx => {
+      if (tx.type !== 'expense' || tx.transfer_id) return
+      const date = new Date(tx.date || tx.created_at)
+      monthsSet.add(`${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`)
+    })
+    return Array.from(monthsSet).sort().reverse()
+  }, [filteredTxs])
 
   const previousDateLimit = useMemo(() => {
     const today = new Date()
@@ -354,6 +375,11 @@ export default function InteractiveDashboard({
     const map: Record<string, { name: string; value: number; color: string; count: number }> = {}
     filteredTxs.forEach((tx) => {
       if (tx.type !== 'expense' || tx.transfer_id) return
+      
+      const tDate = new Date(tx.date || tx.created_at)
+      const tMonth = `${tDate.getFullYear()}-${String(tDate.getMonth() + 1).padStart(2, '0')}`
+      if (selectedPieMonth !== 'all' && tMonth !== selectedPieMonth) return
+
       const catId = tx.categories?.id || 'uncategorized'
       const catName = tx.categories?.name || 'Uncategorized'
       const catColor = tx.categories?.color || CATEGORY_DEFAULT_COLORS[catName] || '#6b7280'
@@ -364,7 +390,7 @@ export default function InteractiveDashboard({
     const result = Object.values(map).sort((a, b) => b.value - a.value)
     const totalExpenses = result.reduce((sum, item) => sum + item.value, 0)
     return result.map(item => ({ ...item, percentage: totalExpenses > 0 ? (item.value / totalExpenses) * 100 : 0 }))
-  }, [filteredTxs])
+  }, [filteredTxs, selectedPieMonth])
 
   const topExpenses = useMemo(() => {
     return filteredTxs
@@ -750,9 +776,33 @@ export default function InteractiveDashboard({
                 </div>
 
                 <div className="md:col-span-5 bg-card border border-border/70 rounded-2xl p-4 md:p-5 shadow-sm flex flex-col justify-between space-y-4">
-                  <div>
-                    <h3 className="text-sm font-bold text-foreground">Expense Breakdown</h3>
-                    <p className="text-[11px] text-muted-foreground">Selected range</p>
+                  <div className="flex items-center justify-between gap-2">
+                    <div>
+                      <h3 className="text-sm font-bold text-foreground">Expense Breakdown</h3>
+                      <p className="text-[11px] text-muted-foreground">Selected range</p>
+                    </div>
+
+                    {availableMonths.length > 1 && (
+                      <div>
+                        <label htmlFor="pie-month-select" className="sr-only">Select Month</label>
+                        <select
+                          id="pie-month-select"
+                          value={selectedPieMonth}
+                          onChange={(e) => setSelectedPieMonth(e.target.value)}
+                          className="bg-muted border border-border rounded-xl px-2.5 py-1 text-[10px] font-semibold text-foreground focus:outline-none"
+                        >
+                          <option value="all">All Months</option>
+                          {availableMonths.map(m => {
+                            const [yr, mo] = m.split('-')
+                            const date = new Date(parseInt(yr), parseInt(mo) - 1, 1)
+                            const label = date.toLocaleString('en-US', { month: 'short', year: '2-digit' })
+                            return (
+                              <option key={m} value={m}>{label}</option>
+                            )
+                          })}
+                        </select>
+                      </div>
+                    )}
                   </div>
 
                   {categorySpending.length === 0 ? (
@@ -794,7 +844,7 @@ export default function InteractiveDashboard({
                       </div>
 
                       <ul className="flex flex-col gap-1 mt-2 max-h-[110px] overflow-y-auto pr-1">
-                        {categorySpending.slice(0, 3).map((item) => (
+                        {categorySpending.map((item) => (
                           <li
                             key={item.name}
                             className="flex items-center justify-between text-xs p-1 rounded-lg hover:bg-muted/30 transition cursor-default"

@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { usePathname } from 'next/navigation'
 import Link from 'next/link'
-import { Plus, X, TrendingUp, TrendingDown, Shuffle } from 'lucide-react'
+import { Plus, TrendingUp, TrendingDown, Shuffle } from 'lucide-react'
 
 export default function FloatingActionButton() {
   const pathname = usePathname()

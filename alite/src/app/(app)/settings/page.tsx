@@ -2,7 +2,6 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import SettingsForm from '@/components/settings-form'
-import { ThemeToggle } from '@/components/theme-toggle'
 
 export default async function SettingsPage() {
   const supabase = await createClient()
@@ -25,7 +24,6 @@ export default async function SettingsPage() {
             <h1 className="text-xl font-bold tracking-tight">Settings</h1>
             <p className="text-xs text-muted-foreground mt-0.5">{user.email}</p>
           </div>
-          <ThemeToggle />
         </div>
 
         {/* Quick links */}
