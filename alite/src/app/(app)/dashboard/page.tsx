@@ -3,7 +3,8 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import InteractiveDashboard from '@/components/interactive-dashboard'
 import DashboardOnboarding from '@/components/dashboard-onboarding'
-import { ICONS } from '@/lib/icons'
+import DashboardInsights from '@/components/dashboard-insights'
+import { getBudgetProgress } from '@/app/actions/budgets'
 
 // ─── Server Side Types ────────────────────────────────────────────────────────
 
@@ -82,16 +83,21 @@ async function getDashboardPayload() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  // Trailing 12 months for historical cashflow analysis.
-  // IMPORTANT: filter on `date` (the user-assigned transaction date), not
-  // `created_at` (the row insert timestamp) — these can diverge whenever
-  // someone backdates a transaction, which previously caused the dashboard's
-  // monthly totals to silently disagree with the trend charts.
   const trailingDate = new Date()
   trailingDate.setFullYear(trailingDate.getFullYear() - 1)
   const trailingDateISO = trailingDate.toISOString().slice(0, 10)
+  const today = new Date().toISOString().slice(0, 10)
 
-  const [profileRes, accountsRes, transactionsRes, budgetsRes, goalsRes, contributionsRes] = await Promise.all([
+  const [
+    profileRes,
+    accountsRes,
+    transactionsRes,
+    budgetsRes,
+    goalsRes,
+    contributionsRes,
+    budgetProgress,
+    overdueRecurringRes,
+  ] = await Promise.all([
     supabase
       .from('profiles')
       .select('base_currency')
@@ -137,7 +143,16 @@ async function getDashboardPayload() {
       .from('goal_contributions')
       .select('id, goal_id, amount, currency, exchange_rate, base_currency_amount, date, created_at')
       .eq('user_id', user.id)
-      .order('date', { ascending: true })
+      .order('date', { ascending: true }),
+
+    getBudgetProgress(),
+
+    supabase
+      .from('recurring_transactions')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', user.id)
+      .eq('is_active', true)
+      .lte('next_due_date', today),
   ])
 
   const profile = profileRes.data || { base_currency: 'IDR' }
@@ -146,6 +161,7 @@ async function getDashboardPayload() {
   const budgets: Budget[] = (budgetsRes.data as unknown as Budget[]) || []
   const goals: Goal[] = (goalsRes.data as unknown as Goal[]) || []
   const contributions: GoalContribution[] = (contributionsRes.data as unknown as GoalContribution[]) || []
+  const overdueRecurringCount = overdueRecurringRes.count ?? 0
 
   return {
     profile,
@@ -154,6 +170,8 @@ async function getDashboardPayload() {
     budgets,
     goals,
     contributions,
+    budgetProgress,
+    overdueRecurringCount,
     baseCurrency: profile.base_currency,
   }
 }
@@ -161,10 +179,17 @@ async function getDashboardPayload() {
 // ─── Main Entrance ────────────────────────────────────────────────────────────
 
 export default async function DashboardPage() {
-  const { accounts, transactions, budgets, goals, contributions, baseCurrency } = await getDashboardPayload()
+  const {
+    accounts,
+    transactions,
+    budgets,
+    goals,
+    contributions,
+    budgetProgress,
+    overdueRecurringCount,
+    baseCurrency,
+  } = await getDashboardPayload()
 
-  // First-run experience: no charts/KPIs on empty data — show actionable
-  // onboarding instead of a dashboard full of zeros and broken pie charts.
   if (accounts.length === 0 || transactions.length === 0) {
     return (
       <div className="min-h-screen bg-background pb-12">
@@ -173,8 +198,40 @@ export default async function DashboardPage() {
     )
   }
 
+  const overBudgets = budgetProgress
+    .filter(b => b.is_over)
+    .map(b => ({
+      id: b.budget_id,
+      name: b.name,
+      spent: b.spent,
+      amount: b.amount,
+      currency: b.currency,
+      is_over: b.is_over,
+      percentage: b.percentage,
+    }))
+
+  const nearLimitBudgets = budgetProgress
+    .filter(b => !b.is_over && b.percentage >= 80)
+    .map(b => ({
+      id: b.budget_id,
+      name: b.name,
+      spent: b.spent,
+      amount: b.amount,
+      currency: b.currency,
+      is_over: b.is_over,
+      percentage: b.percentage,
+    }))
+
   return (
     <div className="min-h-screen bg-background pb-12">
+      <div className="w-full max-w-7xl mx-auto px-4 pt-6">
+        <DashboardInsights
+          accounts={accounts}
+          overBudgets={overBudgets}
+          nearLimitBudgets={nearLimitBudgets}
+          overdueRecurringCount={overdueRecurringCount}
+        />
+      </div>
       <InteractiveDashboard
         initialAccounts={accounts}
         initialTransactions={transactions}

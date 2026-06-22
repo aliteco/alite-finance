@@ -95,15 +95,25 @@ export default async function GoalDetailPage({
     <div className="min-h-screen bg-background pb-28">
       <div className="max-w-lg mx-auto px-4 pt-8 space-y-5">
 
-        <Link
-          href="/goals"
-          className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
-        >
-          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-            <path d="M9 2L4 7l5 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-          </svg>
-          Goals
-        </Link>
+        <div className="flex items-center justify-between">
+          <Link
+            href="/goals"
+            className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors focus-visible:ring-2 rounded-lg"
+          >
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+              <path d="M9 2L4 7l5 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+            Goals
+          </Link>
+          {!goal.is_completed && (
+            <Link
+              href={`/goals/${id}/edit`}
+              className="text-xs font-medium text-muted-foreground hover:text-foreground transition-colors px-3 py-1.5 rounded-lg border border-border focus-visible:ring-2"
+            >
+              Edit
+            </Link>
+          )}
+        </div>
 
         {/* Hero */}
         <div className="rounded-2xl border border-border bg-card px-5 py-6 text-center relative overflow-hidden">

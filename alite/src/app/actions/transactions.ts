@@ -76,7 +76,7 @@ function accountTypeAllowsNegativeBalance(type: string): boolean {
 }
 
 // ─── Exchange rate lookup ──────────────────────────────────────────────────────
-
+// Returns the multiplicative rate such that: amount_in_from * rate = amount_in_to
 export async function getExchangeRate(
   fromCurrency: string,
   toCurrency: string
@@ -141,7 +141,7 @@ export async function getCategories(type?: TransactionType) {
   return data ?? []
 }
 
-// ─── Create transaction (atomic via RPC) ──────────────────────────────────────
+// ─── Create transaction (atomic via trigger, RPC fallback) ──────────────────
 
 export async function createTransaction(
   input: CreateTransactionInput
@@ -170,9 +170,13 @@ export async function createTransaction(
     return { error: 'Exchange rate must be positive. Missing rate for this currency pair.' }
   }
 
-  // FIX: Base currency validation matches division conversion structure (Foreign / Rate = Base)
+  // FIX: was dividing (input.amount / input.exchange_rate_used). The rate is
+  // defined as "currency -> base" (matches getExchangeRate's contract and the
+  // client's calculation in transaction-form.tsx), so the correct conversion
+  // is amount * rate, not amount / rate. The previous version rejected nearly
+  // every cross-currency transaction with a false "mismatch" error.
   const expectedBase = parseFloat(
-    (input.amount / input.exchange_rate_used).toFixed(2)
+    (input.amount * input.exchange_rate_used).toFixed(2)
   )
   const delta = Math.abs(expectedBase - input.base_currency_amount)
   if (delta > 0.02) {
@@ -212,7 +216,7 @@ export async function createTransaction(
 
   if (txError) return { error: txError.message }
 
-  // Fetch account's balance after inserting to see if a DB trigger modified it
+  // Fetch account's balance after inserting to see if a DB trigger modified it.
   const { data: acctAfter } = await supabase
     .from('accounts')
     .select('balance')
@@ -222,11 +226,10 @@ export async function createTransaction(
   const balanceAfter = acctAfter?.balance ?? 0
   const isBalanceUpdatedByTrigger = Math.abs(balanceAfter - balanceBefore) > 0.001
 
-  // FIX: Fallback matches the localized account native balance context
   if (!isBalanceUpdatedByTrigger && input.amount !== 0) {
     const targetAmount = account.currency === input.currency ? input.amount : expectedBase
     const balanceDelta = input.type === 'income' ? targetAmount : -targetAmount
-    
+
     const { error: balanceError } = await supabase.rpc('increment_account_balance', {
       p_account_id: input.account_id,
       p_delta: balanceDelta,
@@ -342,7 +345,6 @@ export async function createTransfer(
     return { error: `Failed to create debit transaction: ${debitErr?.message}` }
   }
 
-  // FIX: Fixed base_currency_amount pointing to the original base value leg (input.from_amount)
   const { data: creditTx, error: creditErr } = await supabase
     .from('transactions')
     .insert({
@@ -352,7 +354,7 @@ export async function createTransfer(
       amount: input.to_amount,
       currency: input.to_currency,
       exchange_rate_used: input.exchange_rate,
-      base_currency_amount: input.from_amount, 
+      base_currency_amount: input.from_amount,
       date: input.happened_at,
       description: input.description || `Transfer from account`,
       transfer_id: transfer.id,
@@ -491,7 +493,7 @@ export async function deleteTransaction(id: string): Promise<ActionResult> {
   if (!isBalanceUpdatedByTrigger && tx.amount !== 0) {
     const targetAmount = account?.currency === tx.currency ? tx.amount : tx.base_currency_amount
     const balanceDelta = tx.type === 'income' ? -targetAmount : targetAmount
-    
+
     const { error: balErr } = await supabase.rpc('increment_account_balance', {
       p_account_id: tx.account_id,
       p_delta: balanceDelta,
