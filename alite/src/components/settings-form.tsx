@@ -4,6 +4,7 @@ import React, { useState, useTransition, useRef, useEffect } from 'react'
 import { updateProfile } from '@/app/actions/transactions'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
+import { useCurrency } from '@/components/currency-provider'
 
 const CURRENCIES = [
   { code: 'IDR', label: 'Indonesian Rupiah', flag: '🇮🇩' },
@@ -26,6 +27,7 @@ export default function SettingsForm({ initialName, initialCurrency, email }: Se
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
   const [isSigningOut, setIsSigningOut] = useState(false)
+  const { displayCurrency, setDisplayCurrency } = useCurrency()
 
   const [fullName, setFullName] = useState(initialName)
   const [baseCurrency, setBaseCurrency] = useState(initialCurrency)
@@ -95,13 +97,13 @@ export default function SettingsForm({ initialName, initialCurrency, email }: Se
 
       {/* Base currency */}
       <div className="bg-card border border-border rounded-2xl px-4 py-4">
-        <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mb-1">
-          Base currency
+        <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mb-1 font-mono">
+          Base currency (Reporting)
         </p>
         <p className="text-[11px] text-muted-foreground mb-3">
-          All amounts are converted to this currency for metrics. Historical transactions are not affected.
+          All values are hard-recorded in Supabase Database in terms of this currency for normalization.
         </p>
-        <div role="radiogroup" aria-label="Base currency" className="space-y-1">
+        <div role="radiogroup" aria-label="Base currency" className="grid grid-cols-2 gap-2">
           {CURRENCIES.map(c => (
             <button
               key={c.code}
@@ -109,25 +111,43 @@ export default function SettingsForm({ initialName, initialCurrency, email }: Se
               role="radio"
               aria-checked={baseCurrency === c.code}
               onClick={() => setBaseCurrency(c.code)}
-              className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm transition-colors focus-visible:ring-2
+              className={`flex items-center justify-between px-3 py-2 rounded-xl text-xs transition-colors focus-visible:ring-2
                 ${baseCurrency === c.code
-                  ? 'bg-primary/10 text-foreground'
-                  : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                  ? 'bg-primary/10 text-foreground border border-primary/50'
+                  : 'text-muted-foreground hover:bg-muted hover:text-foreground border border-transparent'
                 }`}
             >
-              <span className="font-medium">{c.label}</span>
+              <span className="font-semibold">{c.code}</span>
+              <span className="text-sm" aria-hidden="true">{c.flag}</span>
+            </button>
+          ))}
+        </div>
+      </div>
 
-              <div className="flex items-center gap-2">
-                <span className="text-base leading-none" aria-hidden="true">{c.flag}</span>
-
-                <span className="text-xs text-muted-foreground font-mono">
-                  {c.code}
-                </span>
-
-                {baseCurrency === c.code && (
-                  <span aria-hidden="true" className="w-1.5 h-1.5 rounded-full bg-income" />
-                )}
-              </div>
+      {/* Display currency */}
+      <div className="bg-card border border-border rounded-2xl px-4 py-4">
+        <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mb-1 font-mono">
+          Display Currency (Visual Only)
+        </p>
+        <p className="text-[11px] text-muted-foreground mb-3">
+          On-the-fly visual converter. Does not alter transactions or database rates. Toggles in real-time.
+        </p>
+        <div role="radiogroup" aria-label="Display currency" className="grid grid-cols-2 gap-2">
+          {CURRENCIES.map(c => (
+            <button
+              key={c.code}
+              type="button"
+              role="radio"
+              aria-checked={displayCurrency === c.code}
+              onClick={() => setDisplayCurrency(c.code)}
+              className={`flex items-center justify-between px-3 py-2 rounded-xl text-xs transition-colors focus-visible:ring-2
+                ${displayCurrency === c.code
+                  ? 'bg-primary/10 text-foreground border border-primary/50'
+                  : 'text-muted-foreground hover:bg-muted hover:text-foreground border border-transparent'
+                }`}
+            >
+              <span className="font-semibold">{c.code}</span>
+              <span className="text-sm" aria-hidden="true">{c.flag}</span>
             </button>
           ))}
         </div>

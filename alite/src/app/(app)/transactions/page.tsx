@@ -281,7 +281,7 @@ export default async function TransactionsPage({
                       <span>🌎 All accounts</span>
                       <span className="text-[10px] opacity-80 font-mono">Total</span>
                     </Link>
-                    {accounts.map((a: any) => (
+                    {accounts.map((a: { id: string; name: string; type: string; currency: string }) => (
                       <Link
                         key={a.id}
                         href={filterUrl({ account: a.id, page: '1' })}

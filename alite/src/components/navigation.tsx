@@ -241,7 +241,7 @@ export default function Navigation() {
         </nav>
 
         <div className="px-5 py-4 border-t border-border text-xs text-muted-foreground">
-          ALITE · Personal Finance
+          Alite · Personal Finance
         </div>
       </aside>
     </>
