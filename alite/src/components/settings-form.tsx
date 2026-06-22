@@ -7,40 +7,57 @@ import { useRouter } from 'next/navigation'
 import { useCurrency } from '@/components/currency-provider'
 
 const CURRENCIES = [
-  { code: 'IDR', label: 'Indonesian Rupiah', flag: '🇮🇩' },
   { code: 'USD', label: 'US Dollar', flag: '🇺🇸' },
   { code: 'EUR', label: 'Euro', flag: '🇪🇺' },
-  { code: 'SGD', label: 'Singapore Dollar', flag: '🇸🇬' },
   { code: 'JPY', label: 'Japanese Yen', flag: '🇯🇵' },
+  { code: 'TWD', label: 'New Taiwan Dollar', flag: '🇹🇼' },
+  { code: 'SGD', label: 'Singapore Dollar', flag: '🇸🇬' },
   { code: 'GBP', label: 'British Pound', flag: '🇬🇧' },
   { code: 'AUD', label: 'Australian Dollar', flag: '🇦🇺' },
+  { code: 'CNY', label: 'Chinese Yuan', flag: '🇨🇳' },
+  { code: 'HKD', label: 'Hong Kong Dollar', flag: '🇭🇰' },
+  { code: 'KRW', label: 'South Korean Won', flag: '🇰🇷' },
   { code: 'MYR', label: 'Malaysian Ringgit', flag: '🇲🇾' },
+  { code: 'THB', label: 'Thai Baht', flag: '🇹🇭' },
+  { code: 'PHP', label: 'Philippine Peso', flag: '🇵🇭' },
+  { code: 'VND', label: 'Vietnamese Dong', flag: '🇻🇳' },
+  { code: 'IDR', label: 'Indonesian Rupiah', flag: '🇮🇩' }
 ]
 
 interface SettingsFormProps {
   initialName: string
-  initialCurrency: string
+  initialDisplayCurrency: string
   email: string
 }
 
-export default function SettingsForm({ initialName, initialCurrency, email }: SettingsFormProps) {
+export default function SettingsForm({
+  initialName,
+  initialDisplayCurrency,
+  email,
+}: SettingsFormProps) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
   const [isSigningOut, setIsSigningOut] = useState(false)
+
   const { displayCurrency, setDisplayCurrency } = useCurrency()
 
   const [fullName, setFullName] = useState(initialName)
-  const [baseCurrency, setBaseCurrency] = useState(initialCurrency)
   const [saved, setSaved] = useState(false)
   const [error, setError] = useState('')
+
   const errorRef = useRef<HTMLParagraphElement>(null)
 
   useEffect(() => {
     if (error) errorRef.current?.focus()
   }, [error])
 
-  // FIX: was typed `React.SubmitEvent` (not a real React type — would fail
-  // type-checking under strict mode); correct type is React.FormEvent.
+  // sync initial value once (safe hydration)
+  useEffect(() => {
+    if (initialDisplayCurrency && !displayCurrency) {
+      setDisplayCurrency(initialDisplayCurrency)
+    }
+  }, [initialDisplayCurrency])
+
   async function handleSave(e: React.FormEvent) {
     e.preventDefault()
     setError('')
@@ -52,13 +69,17 @@ export default function SettingsForm({ initialName, initialCurrency, email }: Se
     }
 
     startTransition(async () => {
-      const result = await updateProfile({ full_name: fullName.trim(), base_currency: baseCurrency })
-      if (result.error) {
+      const result = await updateProfile({
+        full_name: fullName.trim(),
+      })
+
+      if (result?.error) {
         setError(result.error)
-      } else {
-        setSaved(true)
-        setTimeout(() => setSaved(false), 2500)
+        return
       }
+
+      setSaved(true)
+      setTimeout(() => setSaved(false), 2000)
     })
   }
 
@@ -70,126 +91,92 @@ export default function SettingsForm({ initialName, initialCurrency, email }: Se
   }
 
   return (
-    <form onSubmit={handleSave} className="space-y-3" noValidate>
+    <form
+      onSubmit={handleSave}
+      noValidate
+      className="space-y-4 md:space-y-6 max-w-xl mx-auto w-full"
+    >
 
       {/* Profile */}
-      <div className="bg-card border border-border rounded-2xl px-4 py-4 space-y-4">
-        <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest">Profile</p>
+      <div className="bg-card border border-border rounded-2xl md:rounded-3xl px-4 py-4 md:px-5 md:py-5">
+        <p className="text-[10px] uppercase text-muted-foreground mb-3">
+          Profile
+        </p>
 
-        <div>
-          <label htmlFor="full-name" className="text-[10px] font-medium text-muted-foreground block mb-1.5">Full name</label>
-          <input
-            id="full-name"
-            type="text"
-            value={fullName}
-            onChange={e => setFullName(e.target.value)}
-            placeholder="Your name"
-            aria-invalid={!!error}
-            className="w-full bg-transparent text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none"
-          />
-        </div>
+        <input
+          value={fullName}
+          onChange={e => setFullName(e.target.value)}
+          className="w-full text-sm bg-transparent outline-none"
+          placeholder="Full name"
+        />
 
-        <div className="border-t border-border pt-4">
-          <span id="email-label" className="text-[10px] font-medium text-muted-foreground block mb-1.5">Email</span>
-          <p aria-labelledby="email-label" className="text-sm text-muted-foreground">{email}</p>
-        </div>
+        <p className="text-xs text-muted-foreground mt-3">
+          {email}
+        </p>
       </div>
 
-      {/* Base currency */}
-      <div className="bg-card border border-border rounded-2xl px-4 py-4">
-        <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mb-1 font-mono">
-          Base currency (Reporting)
-        </p>
-        <p className="text-[11px] text-muted-foreground mb-3">
-          All values are hard-recorded in Supabase Database in terms of this currency for normalization.
-        </p>
-        <div role="radiogroup" aria-label="Base currency" className="grid grid-cols-2 gap-2">
-          {CURRENCIES.map(c => (
-            <button
-              key={c.code}
-              type="button"
-              role="radio"
-              aria-checked={baseCurrency === c.code}
-              onClick={() => setBaseCurrency(c.code)}
-              className={`flex items-center justify-between px-3 py-2 rounded-xl text-xs transition-colors focus-visible:ring-2
-                ${baseCurrency === c.code
-                  ? 'bg-primary/10 text-foreground border border-primary/50'
-                  : 'text-muted-foreground hover:bg-muted hover:text-foreground border border-transparent'
-                }`}
-            >
-              <span className="font-semibold">{c.code}</span>
-              <span className="text-sm" aria-hidden="true">{c.flag}</span>
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Display currency */}
-      <div className="bg-card border border-border rounded-2xl px-4 py-4">
-        <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mb-1 font-mono">
+      {/* Display Currency */}
+      <div className="bg-card border border-border rounded-2xl md:rounded-3xl px-4 py-4 md:px-5 md:py-5">
+        <p className="text-[10px] uppercase text-muted-foreground mb-3">
           Display Currency (Visual Only)
         </p>
-        <p className="text-[11px] text-muted-foreground mb-3">
-          On-the-fly visual converter. Does not alter transactions or database rates. Toggles in real-time.
-        </p>
-        <div role="radiogroup" aria-label="Display currency" className="grid grid-cols-2 gap-2">
+
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
           {CURRENCIES.map(c => (
             <button
               key={c.code}
               type="button"
-              role="radio"
-              aria-checked={displayCurrency === c.code}
               onClick={() => setDisplayCurrency(c.code)}
-              className={`flex items-center justify-between px-3 py-2 rounded-xl text-xs transition-colors focus-visible:ring-2
+              className={`px-3 py-2 rounded-xl text-xs border flex items-center justify-between transition
                 ${displayCurrency === c.code
-                  ? 'bg-primary/10 text-foreground border border-primary/50'
-                  : 'text-muted-foreground hover:bg-muted hover:text-foreground border border-transparent'
+                  ? 'bg-primary/10 border-primary'
+                  : 'border-transparent hover:bg-muted'
                 }`}
             >
               <span className="font-semibold">{c.code}</span>
-              <span className="text-sm" aria-hidden="true">{c.flag}</span>
+              <span>{c.flag}</span>
             </button>
           ))}
         </div>
       </div>
 
-      {/* Error / success */}
+      {/* Error */}
       {error && (
         <p
           ref={errorRef}
           role="alert"
           tabIndex={-1}
-          className="text-xs text-expense bg-expense/10 rounded-xl px-4 py-3 border border-expense/20 focus:outline-none"
+          className="text-xs text-red-500"
         >
           {error}
         </p>
       )}
+
+      {/* Success */}
       {saved && (
-        <p role="status" className="text-xs text-income bg-income/10 rounded-xl px-4 py-3 border border-income/20">
-          Settings saved.
+        <p className="text-xs text-green-600">
+          Settings saved
         </p>
       )}
 
+      {/* Save */}
       <button
         type="submit"
         disabled={isPending}
-        className="w-full h-11 rounded-2xl bg-primary text-primary-foreground text-sm font-semibold tracking-tight transition-all active:scale-[0.98] disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-offset-2"
+        className="w-full h-11 rounded-2xl bg-primary text-white font-medium"
       >
         {isPending ? 'Saving…' : 'Save changes'}
       </button>
 
-      {/* Danger zone */}
-      <div className="bg-card border border-border rounded-2xl px-4 py-4 mt-4">
-        <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mb-3">Account</p>
-        <button
-          type="button"
-          onClick={handleSignOut}
-          disabled={isSigningOut}
-          className="w-full h-10 rounded-xl border border-expense/30 text-expense text-xs font-semibold hover:bg-expense/10 transition-colors disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-offset-2"
-        >
-          {isSigningOut ? 'Signing out…' : 'Sign out'}
-        </button>
-      </div>
+      {/* Sign out */}
+      <button
+        type="button"
+        onClick={handleSignOut}
+        disabled={isSigningOut}
+        className="w-full h-10 border border-red-500 text-red-500 rounded-xl hover:bg-red-500/10 transition"
+      >
+        {isSigningOut ? 'Signing out…' : 'Sign out'}
+      </button>
     </form>
   )
 }

@@ -1,8 +1,10 @@
+// filepath: alite/src/app/actions/recurring.ts
 'use server'
 
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
+import { ExchangeRateService } from '@/lib/services/exchange-rate-service'
 
 export interface ActionResult {
   error?: string
@@ -169,8 +171,7 @@ export async function deleteRecurring(id: string): Promise<ActionResult> {
 
 // ─── Generate a transaction now from a recurring rule ───────────────────────
 // Used both by the "Record now" button and could be called from a cron/edge
-// function for auto_generate=true rules (not wired to a scheduler here —
-// see SUMMARY.md deployment note).
+// function for auto_generate=true rules.
 
 export async function generateRecurringNow(recurringId: string): Promise<ActionResult> {
   const supabase = await createClient()
@@ -187,8 +188,6 @@ export async function generateRecurringNow(recurringId: string): Promise<ActionR
   if (ruleErr || !rule) return { error: 'Recurring rule not found or access denied.' }
   if (!rule.is_active) return { error: 'This recurring rule is paused.' }
 
-  // Base currency conversion: use rate 1 if currency matches profile base,
-  // otherwise look up the latest rate (fallback to 1 with a warning if missing).
   const { data: profile } = await supabase
     .from('profiles')
     .select('base_currency')
@@ -196,23 +195,13 @@ export async function generateRecurringNow(recurringId: string): Promise<ActionR
     .single()
 
   const baseCurrency = profile?.base_currency ?? rule.currency
-  let rate = 1
-  if (rule.currency !== baseCurrency) {
-    const { data: rateData } = await supabase
-      .from('exchange_rates')
-      .select('rate')
-      .eq('base_currency', rule.currency)
-      .eq('target_currency', baseCurrency)
-      .order('date', { ascending: false })
-      .limit(1)
-      .single()
-    rate = rateData?.rate ?? 1
-  }
+
+  // Centralized: single rate-resolution algorithm for the whole app.
+  const { rate } = await ExchangeRateService.getRate(rule.currency, baseCurrency, undefined, supabase)
 
   const baseCurrencyAmount = parseFloat((rule.amount * rate).toFixed(2))
   const today = new Date().toISOString().slice(0, 10)
 
-  // Fetch account's balance before inserting to prevent trigger duplication
   const { data: acctBefore } = await supabase
     .from('accounts')
     .select('balance')
@@ -242,7 +231,6 @@ export async function generateRecurringNow(recurringId: string): Promise<ActionR
 
   if (txError) return { error: txError.message }
 
-  // Fetch balance after inserting transaction
   const { data: acctAfter } = await supabase
     .from('accounts')
     .select('balance')

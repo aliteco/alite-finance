@@ -4,6 +4,7 @@
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
+import { ExchangeRateService } from '@/lib/services/exchange-rate-service'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -76,48 +77,16 @@ function accountTypeAllowsNegativeBalance(type: string): boolean {
 }
 
 // ─── Exchange rate lookup ──────────────────────────────────────────────────────
-// Returns the multiplicative rate such that: amount_in_from * rate = amount_in_to
+// Returns the multiplicative rate such that: amount_in_from * rate = amount_in_to.
+// Delegates entirely to the centralized ExchangeRateService — this app has
+// exactly one rate-resolution algorithm (DB → inverse DB → live → static).
 export async function getExchangeRate(
   fromCurrency: string,
   toCurrency: string
 ): Promise<{ rate: number; error?: string }> {
-  if (fromCurrency === toCurrency) return { rate: 1 }
-
   const supabase = await createClient()
-  const { data, error } = await supabase
-    .from('exchange_rates')
-    .select('rate')
-    .eq('base_currency', fromCurrency)
-    .eq('target_currency', toCurrency)
-    .order('date', { ascending: false })
-    .limit(1)
-    .maybeSingle()
-
-  if (error) {
-    return { rate: 0, error: `Exchange rate lookup failed: ${error.message}` }
-  }
-
-  if (!data) {
-    const { data: inverseData, error: inverseError } = await supabase
-      .from('exchange_rates')
-      .select('rate')
-      .eq('base_currency', toCurrency)
-      .eq('target_currency', fromCurrency)
-      .order('date', { ascending: false })
-      .limit(1)
-      .maybeSingle()
-
-    if (inverseError || !inverseData || !inverseData.rate) {
-      return {
-        rate: 0,
-        error: `No exchange rate found for ${fromCurrency} → ${toCurrency}. Please add rates in your settings or enter the amount manually.`,
-      }
-    }
-
-    return { rate: parseFloat((1 / inverseData.rate).toFixed(10)) }
-  }
-
-  return { rate: data.rate }
+  const result = await ExchangeRateService.getRateForForm(fromCurrency, toCurrency, supabase)
+  return { rate: result.rate, error: result.error }
 }
 
 // ─── Categories ───────────────────────────────────────────────────────────────
@@ -166,15 +135,10 @@ export async function createTransaction(
     return { error: 'Invalid transaction type.' }
   }
 
-  if (input.exchange_rate_used <= 0) {
-    return { error: 'Exchange rate must be positive. Missing rate for this currency pair.' }
+  if (!Number.isFinite(input.exchange_rate_used) || input.exchange_rate_used <= 0) {
+    return { error: 'Invalid exchange rate.' }
   }
 
-  // FIX: was dividing (input.amount / input.exchange_rate_used). The rate is
-  // defined as "currency -> base" (matches getExchangeRate's contract and the
-  // client's calculation in transaction-form.tsx), so the correct conversion
-  // is amount * rate, not amount / rate. The previous version rejected nearly
-  // every cross-currency transaction with a false "mismatch" error.
   const expectedBase = parseFloat(
     (input.amount * input.exchange_rate_used).toFixed(2)
   )
@@ -216,7 +180,6 @@ export async function createTransaction(
 
   if (txError) return { error: txError.message }
 
-  // Fetch account's balance after inserting to see if a DB trigger modified it.
   const { data: acctAfter } = await supabase
     .from('accounts')
     .select('balance')

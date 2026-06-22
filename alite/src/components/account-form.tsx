@@ -12,33 +12,41 @@ const ACCOUNT_TYPES = [
   { value: 'other', label: 'Other' },
 ]
 
-const COMMON_CURRENCIES = ['IDR', 'USD', 'EUR', 'SGD', 'JPY', 'GBP', 'AUD', 'MYR', 'TWD']
+const COMMON_CURRENCIES = [
+  'IDR', 'USD', 'EUR', 'SGD', 'JPY', 'GBP', 'AUD', 'MYR', 'TWD'
+]
 
 interface AccountFormProps {
-  defaultCurrency: string
+  initialCurrency: string
 }
 
-export default function AccountForm({ defaultCurrency }: AccountFormProps) {
+export default function AccountForm({ initialCurrency }: AccountFormProps) {
   const [isPending, startTransition] = useTransition()
 
   const [name, setName] = useState('')
   const [type, setType] = useState('bank')
-  const [currency, setCurrency] = useState(defaultCurrency)
+  const [currency, setCurrency] = useState(initialCurrency)
   const [balance, setBalance] = useState('')
   const [error, setError] = useState('')
 
-  // Credit cards legitimately start with a negative balance (an existing
-  // owed amount). Every other account type starting negative is almost
-  // certainly a data-entry mistake, so we only relax the guard for cards.
   const allowsNegativeBalance = type === 'credit_card'
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.SubmitEvent) {
     e.preventDefault()
     setError('')
 
-    if (!name.trim()) { setError('Give your account a name.'); return }
+    if (!name.trim()) {
+      setError('Give your account a name.')
+      return
+    }
+
     const numBalance = parseFloat(balance || '0')
-    if (Number.isNaN(numBalance)) { setError('Enter a valid starting balance.'); return }
+
+    if (Number.isNaN(numBalance)) {
+      setError('Enter a valid starting balance.')
+      return
+    }
+
     if (numBalance < 0 && !allowsNegativeBalance) {
       setError('Opening balance cannot be negative for this account type.')
       return
@@ -51,6 +59,7 @@ export default function AccountForm({ defaultCurrency }: AccountFormProps) {
         currency,
         balance: numBalance,
       })
+
       if (result?.error) {
         setError(result.error)
       }
@@ -62,36 +71,32 @@ export default function AccountForm({ defaultCurrency }: AccountFormProps) {
 
       {/* Name */}
       <div className="bg-card border border-border rounded-2xl px-4 py-4">
-        <label htmlFor="account-name" className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest block mb-2">
+        <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest block mb-2">
           Account name
         </label>
+
         <input
-          id="account-name"
-          name="name"
           type="text"
           value={name}
           onChange={e => setName(e.target.value)}
           placeholder="e.g. BCA Checking"
           maxLength={60}
-          required
           className="w-full bg-transparent text-base font-medium text-foreground placeholder:text-muted-foreground/50 focus:outline-none"
-          autoFocus
         />
       </div>
 
       {/* Type */}
       <div className="bg-card border border-border rounded-2xl px-4 py-4">
-        <label htmlFor="account-type" className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest block mb-2.5">
+        <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest block mb-2.5">
           Type
         </label>
+
         <select
-          id="account-type"
-          name="type"
           value={type}
-          onChange={(e) => setType(e.target.value)}
-          className="w-full rounded-xl border border-border bg-background px-3 py-3 text-sm text-foreground focus:outline-none"
+          onChange={e => setType(e.target.value)}
+          className="w-full rounded-xl border border-border bg-background px-3 py-3 text-sm"
         >
-          {ACCOUNT_TYPES.map((t) => (
+          {ACCOUNT_TYPES.map(t => (
             <option key={t.value} value={t.value}>
               {t.label}
             </option>
@@ -99,20 +104,20 @@ export default function AccountForm({ defaultCurrency }: AccountFormProps) {
         </select>
       </div>
 
-      {/* Currency + starting balance */}
+      {/* Currency + Balance */}
       <div className="bg-card border border-border rounded-2xl px-4 py-4 space-y-4">
+
         <div>
-          <label htmlFor="account-currency" className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest block mb-2.5">
+          <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest block mb-2">
             Currency
           </label>
+
           <select
-            id="account-currency"
-            name="currency"
             value={currency}
-            onChange={(e) => setCurrency(e.target.value)}
-            className="w-full rounded-xl border border-border bg-background px-3 py-3 text-sm text-foreground focus:outline-none"
+            onChange={e => setCurrency(e.target.value)}
+            className="w-full rounded-xl border border-border bg-background px-3 py-3 text-sm"
           >
-            {COMMON_CURRENCIES.map((c) => (
+            {COMMON_CURRENCIES.map(c => (
               <option key={c} value={c}>
                 {c}
               </option>
@@ -121,38 +126,39 @@ export default function AccountForm({ defaultCurrency }: AccountFormProps) {
         </div>
 
         <div className="border-t border-border pt-4">
-          <label htmlFor="account-balance" className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest block mb-2">
+          <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest block mb-2">
             Starting balance
           </label>
+
           <input
-            id="account-balance"
-            name="balance"
             type="number"
-            inputMode="decimal"
             step="0.01"
-            placeholder="0"
             value={balance}
             onChange={e => setBalance(e.target.value)}
-            className="w-full bg-transparent text-2xl font-bold tabular-nums text-foreground placeholder:text-muted-foreground/40 focus:outline-none"
+            placeholder="0"
+            className="w-full bg-transparent text-2xl font-bold tabular-nums"
           />
+
           {allowsNegativeBalance && (
             <p className="text-[11px] text-muted-foreground mt-2">
-              Enter a negative number if you already carry a balance owed on this card.
+              Negative balance allowed for credit cards.
             </p>
           )}
         </div>
       </div>
 
+      {/* Error */}
       {error && (
-        <p role="alert" className="text-xs text-expense bg-expense/10 rounded-xl px-4 py-3 border border-expense/20">
+        <p role="alert" className="text-xs text-red-500 bg-red-500/10 p-3 rounded-xl">
           {error}
         </p>
       )}
 
+      {/* Submit */}
       <button
         type="submit"
         disabled={isPending}
-        className="w-full h-12 rounded-2xl bg-primary text-primary-foreground text-sm font-semibold tracking-tight transition-all active:scale-[0.98] disabled:opacity-50"
+        className="w-full h-12 rounded-2xl bg-primary text-primary-foreground font-semibold"
       >
         {isPending ? 'Creating…' : 'Create account'}
       </button>

@@ -1,8 +1,11 @@
+// filepath: alite/src/app/(app)/layout.tsx
+
 import { redirect } from "next/navigation"
 import Link from "next/link"
 import { createClient } from "@/lib/supabase/server"
 import Navigation from "@/components/navigation"
 import { ThemeToggle } from "@/components/theme-toggle"
+import { CurrencyProvider } from "@/components/currency-provider"
 
 export default async function AppLayout({
   children,
@@ -16,6 +19,9 @@ export default async function AppLayout({
   } = await supabase.auth.getUser()
 
   if (!user) redirect("/login")
+
+  // you should fetch this from profile if available
+  const baseCurrency = "USD"
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -43,12 +49,16 @@ export default async function AppLayout({
 
       <Navigation />
 
-      <main
-        id="main-content"
-        className="md:pl-56 pb-28 md:pb-0 min-h-screen"
-      >
-        {children}
-      </main>
+      {/* ✅ ADD PROVIDER HERE */}
+      <CurrencyProvider initialBaseCurrency={baseCurrency}>
+        <main
+          id="main-content"
+          className="pb-28 md:pb-0 min-h-screen transition-[padding] duration-200 ease-out"
+          style={{ paddingLeft: 'var(--sidebar-content-offset, 0px)' }}
+        >
+          {children}
+        </main>
+      </CurrencyProvider>
     </div>
   )
 }
