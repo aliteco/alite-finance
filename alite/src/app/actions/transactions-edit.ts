@@ -19,9 +19,6 @@ export interface UpdateTransactionDetailsInput {
   date: string
 }
 
-// Intentionally only allows editing category/description/date — never
-// amount, currency, or account, since those affect account.balance and
-// must go through the create/delete RPC path to stay consistent.
 export async function updateTransactionDetails(
   id: string,
   input: UpdateTransactionDetailsInput

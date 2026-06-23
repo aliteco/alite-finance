@@ -15,10 +15,6 @@ function assertUser(user: { id: string } | null): asserts user is { id: string }
   if (!user) throw new Error('Unauthenticated')
 }
 
-// Generates a transaction for every active, overdue recurring rule owned by
-// the current user. Used by the "Catch up overdue" bulk action on /recurring.
-// Each rule still goes through generateRecurringNow so the same balance
-// and rate logic is reused — no duplicated business logic.
 export async function generateAllOverdueRecurring(): Promise<BatchResult> {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()

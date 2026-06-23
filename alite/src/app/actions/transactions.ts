@@ -77,15 +77,15 @@ function accountTypeAllowsNegativeBalance(type: string): boolean {
 }
 
 // ─── Exchange rate lookup ──────────────────────────────────────────────────────
-// Returns the multiplicative rate such that: amount_in_from * rate = amount_in_to.
-// Delegates entirely to the centralized ExchangeRateService — this app has
-// exactly one rate-resolution algorithm (DB → inverse DB → live → static).
 export async function getExchangeRate(
   fromCurrency: string,
   toCurrency: string
 ): Promise<{ rate: number; error?: string }> {
   const supabase = await createClient()
-  const result = await ExchangeRateService.getRateForForm(fromCurrency, toCurrency, supabase)
+  const result = await ExchangeRateService.getRateForForm(
+    fromCurrency,
+    toCurrency
+  )  
   return { rate: result.rate, error: result.error }
 }
 
