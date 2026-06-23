@@ -196,9 +196,10 @@ export async function generateRecurringNow(recurringId: string): Promise<ActionR
 
   const baseCurrency = profile?.base_currency ?? rule.currency
 
-  // Centralized: single rate-resolution algorithm for the whole app.
-  const { rate } = await ExchangeRateService.getRate(rule.currency, baseCurrency, undefined, supabase)
-
+  const { rate } = await ExchangeRateService.getRate(
+    rule.currency,
+    baseCurrency
+  )
   const baseCurrencyAmount = parseFloat((rule.amount * rate).toFixed(2))
   const today = new Date().toISOString().slice(0, 10)
 
