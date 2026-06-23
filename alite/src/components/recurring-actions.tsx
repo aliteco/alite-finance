@@ -1,3 +1,4 @@
+// filepath: alite/src/components/recurring-actions.tsx
 'use client'
 
 import { useState, useTransition } from 'react'
@@ -15,7 +16,9 @@ export default function RecurringActions({
   const [isPending, startTransition] = useTransition()
   const [error, setError] = useState('')
 
-  function handleRecordNow() {
+  function handleRecordNow(e: React.MouseEvent) {
+    e.preventDefault()
+    e.stopPropagation()
     setError('')
     startTransition(async () => {
       const result = await generateRecurringNow(id)
@@ -27,7 +30,9 @@ export default function RecurringActions({
     })
   }
 
-  function handleToggle() {
+  function handleToggle(e: React.MouseEvent) {
+    e.preventDefault()
+    e.stopPropagation()
     setError('')
     startTransition(async () => {
       const result = await pauseRecurring(id, !isActive)
@@ -47,7 +52,7 @@ export default function RecurringActions({
             type="button"
             onClick={handleRecordNow}
             disabled={isPending}
-            className="text-[10px] font-semibold px-2 py-1 rounded-lg bg-primary/10 text-primary hover:bg-primary/15 transition-colors disabled:opacity-50"
+            className="text-[10px] font-semibold px-2 py-1 rounded-lg bg-primary/10 text-primary hover:bg-primary/15 transition-colors disabled:opacity-50 focus-visible:ring-2"
             aria-label="Record this transaction now"
           >
             {isPending ? '…' : 'Record'}
@@ -57,7 +62,7 @@ export default function RecurringActions({
           type="button"
           onClick={handleToggle}
           disabled={isPending}
-          className="text-[10px] font-semibold px-2 py-1 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors disabled:opacity-50"
+          className="text-[10px] font-semibold px-2 py-1 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors disabled:opacity-50 focus-visible:ring-2"
           aria-label={isActive ? 'Pause this recurring transaction' : 'Resume this recurring transaction'}
         >
           {isActive ? 'Pause' : 'Resume'}

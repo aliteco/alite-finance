@@ -56,6 +56,7 @@ export default function RecurringForm({
     if (!numAmount || numAmount <= 0) { setError('Enter a valid amount.'); return }
     if (!description.trim()) { setError('Give this a description.'); return }
     if (!accountId) { setError('Select an account.'); return }
+    if (endDate && endDate < startDate) { setError('End date must be after the start date.'); return }
 
     startTransition(async () => {
       const result = await createRecurring({
@@ -128,21 +129,27 @@ export default function RecurringForm({
         />
       </div>
 
-      <div className="bg-card border border-border rounded-2xl px-4 py-4">
-        <label htmlFor="rec-account" className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest block mb-2.5">
-          Account
-        </label>
-        <select
-          id="rec-account"
-          value={accountId}
-          onChange={e => setAccountId(e.target.value)}
-          className="w-full rounded-xl border border-border bg-background px-3 py-3 text-sm text-foreground focus:outline-none"
-        >
-          {accounts.map(a => (
-            <option key={a.id} value={a.id}>{a.name} ({a.currency})</option>
-          ))}
-        </select>
-      </div>
+      {accounts.length === 0 ? (
+        <p className="text-xs text-expense bg-expense/10 rounded-xl px-4 py-3 border border-expense/20">
+          You need at least one account before creating a recurring rule.
+        </p>
+      ) : (
+        <div className="bg-card border border-border rounded-2xl px-4 py-4">
+          <label htmlFor="rec-account" className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest block mb-2.5">
+            Account
+          </label>
+          <select
+            id="rec-account"
+            value={accountId}
+            onChange={e => setAccountId(e.target.value)}
+            className="w-full rounded-xl border border-border bg-background px-3 py-3 text-sm text-foreground focus:outline-none"
+          >
+            {accounts.map(a => (
+              <option key={a.id} value={a.id}>{a.name} ({a.currency})</option>
+            ))}
+          </select>
+        </div>
+      )}
 
       <div className="bg-card border border-border rounded-2xl px-4 py-4">
         <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest block mb-2.5">
@@ -233,7 +240,7 @@ export default function RecurringForm({
         <div className="text-left">
           <p className="text-sm font-medium text-foreground">Auto-generate</p>
           <p className="text-[11px] text-muted-foreground mt-0.5">
-            A daily server job posts this transaction automatically when due. Turn off to record each cycle manually.
+            A daily scheduled job posts this transaction automatically when due. Turn off to record each cycle manually.
           </p>
         </div>
         <span
@@ -254,7 +261,7 @@ export default function RecurringForm({
 
       <button
         type="submit"
-        disabled={isPending}
+        disabled={isPending || accounts.length === 0}
         className="w-full h-12 rounded-2xl bg-primary text-primary-foreground text-sm font-semibold tracking-tight transition-all active:scale-[0.98] disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-offset-2"
       >
         {isPending ? 'Creating…' : 'Create recurring transaction'}

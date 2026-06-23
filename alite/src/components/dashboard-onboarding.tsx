@@ -1,3 +1,4 @@
+// filepath: alite/src/components/dashboard-onboarding.tsx
 'use client'
 
 import Link from 'next/link'
