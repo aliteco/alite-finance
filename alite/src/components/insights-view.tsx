@@ -1,7 +1,8 @@
 // filepath: alite/src/components/insights-view.tsx
 'use client'
 
-import { TrendingUp, TrendingDown, PiggyBank, Flame } from 'lucide-react'
+import React, { useState, useEffect, useMemo } from 'react'
+import { TrendingUp, TrendingDown, PiggyBank, Flame, Sparkles, Smile, ShieldAlert, BadgeInfo } from 'lucide-react'
 import {
   ResponsiveContainer,
   BarChart,
@@ -23,45 +24,233 @@ interface InsightsViewProps {
   burn: BurnRateResult
 }
 
-function formatCurrency(amount: number, currency: string) {
-  try {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency,
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(amount)
-  } catch {
-    return `${currency} ${Math.round(amount).toLocaleString()}`
-  }
-}
-
 export default function InsightsView({ baseCurrency, cashflow, spending, savings, burn }: InsightsViewProps) {
+  const [privacyEnabled, setPrivacyEnabled] = useState(false)
+  const [savingsTarget, setSavingsTarget] = useState(20)
+  const [lifestyleDiscount, setLifestyleDiscount] = useState(0) // slider percentage (0 to 50%)
+
+  useEffect(() => {
+    const checkPrivacy = () => {
+      setPrivacyEnabled(localStorage.getItem('alite_privacy_mode') === 'true')
+    }
+    const checkSavingsTarget = () => {
+      const stored = localStorage.getItem('alite_savings_target')
+      if (stored) setSavingsTarget(parseInt(stored, 10))
+    }
+    
+    checkPrivacy()
+    checkSavingsTarget()
+    
+    window.addEventListener('alite_privacy_changed', checkPrivacy)
+    window.addEventListener('alite_savings_target_changed', checkSavingsTarget)
+    return () => {
+      window.removeEventListener('alite_privacy_changed', checkPrivacy)
+      window.removeEventListener('alite_savings_target_changed', checkSavingsTarget)
+    }
+  }, [])
+
+  const wrapPrivacy = (val: string) => {
+    return privacyEnabled ? '••••' : val
+  }
+
+  function formatCurrency(amount: number, currency: string) {
+    try {
+      return new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency,
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0,
+      }).format(amount)
+    } catch {
+      return `${currency} ${Math.round(amount).toLocaleString()}`
+    }
+  }
+
   const isRunwayInfinite = !Number.isFinite(burn.runwayMonths)
+
+  // 50/30/20 classification
+  const allocationBreakdown = useMemo(() => {
+    let needsSum = 0
+    let wantsSum = 0
+
+    spending.forEach(item => {
+      const name = item.name.toLowerCase()
+      // Classify as needs vs wants
+      if (
+        name.includes('rent') ||
+        name.includes('utilit') ||
+        name.includes('bill') ||
+        name.includes('tax') ||
+        name.includes('grocer') ||
+        name.includes('gas') ||
+        name.includes('health') ||
+        name.includes('medi') ||
+        name.includes('insur') ||
+        name.includes('transport') ||
+        name.includes('commut')
+      ) {
+        needsSum += item.value
+      } else {
+        wantsSum += item.value
+      }
+    })
+
+    const totalExp = needsSum + wantsSum
+    const netIncomeDef = savings.income || (totalExp + savings.net)
+    const netSavings = Math.max(0, netIncomeDef - totalExp)
+
+    const needsPct = netIncomeDef > 0 ? (needsSum / netIncomeDef) * 100 : 0
+    const wantsPct = netIncomeDef > 0 ? (wantsSum / netIncomeDef) * 100 : 0
+    const savingsPct = netIncomeDef > 0 ? (netSavings / netIncomeDef) * 100 : 0
+
+    return {
+      needs: needsSum,
+      needsPct,
+      wants: wantsSum,
+      wantsPct,
+      savings: netSavings,
+      savingsPct,
+      totalIncome: netIncomeDef,
+      totalExp
+    }
+  }, [spending, savings])
+
+  // Dynamic Health Rating Score (0 to 100)
+  const healthScore = useMemo(() => {
+    let score = 50 // baseline
+    
+    // 1. Savings rate component (max +25 points, penalty for negative savings)
+    const currentRate = savings.savingsRate
+    if (currentRate >= savingsTarget) score += 25
+    else if (currentRate > 0) score += (currentRate / savingsTarget) * 25
+    else score -= 30 // saving rate below 0 drops rating
+
+    // 2. Runway level component (max +25 points)
+    if (isRunwayInfinite) score += 25
+    else if (burn.runwayMonths >= 12) score += 25
+    else if (burn.runwayMonths >= 6) score += 15
+    else if (burn.runwayMonths >= 3) score += 5
+    else score -= 15 // extremely low runway drops score
+
+    // 3. Wants/lifestyle ratio component (max +25 points)
+    if (allocationBreakdown.wantsPct <= 30) score += 25
+    else if (allocationBreakdown.wantsPct <= 45) score += 15
+    else score -= 10
+
+    // 4. Overdue/Liability penalty (if any)
+    score = Math.min(100, Math.max(10, Math.round(score)))
+    return score
+  }, [savings, burn, savingsTarget, isRunwayInfinite, allocationBreakdown])
+
+  // Runway discount slider multiplier:
+  const simulatedExpenses = useMemo(() => {
+    // reduce wants by the lifestyleDiscount percent
+    const wantsReduced = allocationBreakdown.wants * (1 - lifestyleDiscount / 100)
+    return allocationBreakdown.needs + wantsReduced
+  }, [allocationBreakdown, lifestyleDiscount])
+
+  const simulatedRunway = useMemo(() => {
+    if (savings.income >= simulatedExpenses) return Infinity
+    const monthlyNetBurn = simulatedExpenses - savings.income
+    // assuming reserve amount is monthlyBurn * runwayMonths
+    const currentReserves = burn.monthlyBurn * burn.runwayMonths
+    if (monthlyNetBurn <= 0) return Infinity
+    return currentReserves / monthlyNetBurn
+  }, [savings.income, simulatedExpenses, burn])
 
   return (
     <div className="min-h-screen bg-background pb-28">
       <div className="max-w-md md:max-w-5xl lg:max-w-6xl mx-auto px-4 pt-8 space-y-6 md:space-y-8">
 
-        <div className="border-b border-border/40 pb-4">
-          <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-[0.12em] mb-1">
-            Insights
-          </p>
-          <h1 className="text-3xl font-bold tracking-tight text-foreground leading-none">
-            Your money, analyzed
-          </h1>
+        <div className="border-b border-border/40 pb-4 flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+          <div>
+            <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-[0.12em] mb-1">
+              Insights
+            </p>
+            <h1 className="text-3xl font-bold tracking-tight text-foreground leading-none">
+              Financial Intelligence
+            </h1>
+          </div>
+          <div className="flex gap-2">
+            <span className="text-[11px] bg-muted px-3 py-1.5 rounded-xl border border-border/70 font-semibold flex items-center gap-1 text-muted-foreground">
+              <Sparkles size={11} className="text-primary animate-pulse" />
+              Intelligence Engine Active
+            </span>
+          </div>
         </div>
 
+        {/* Financial health scorecard index banner */}
+        <section className="bg-card border border-border rounded-3xl p-5 shadow-sm grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
+          <div className="md:col-span-4 flex flex-col items-center justify-center space-y-2 border-b md:border-b-0 md:border-r border-border pb-5 md:pb-0 md:pr-6">
+            <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground text-center">
+              Wealth Health Score
+            </span>
+            <div className="relative w-28 h-28 flex items-center justify-center">
+              <svg className="absolute inset-0 w-full h-full transform -rotate-90">
+                <circle cx="56" cy="56" r="48" stroke="var(--muted)" strokeWidth="6" fill="transparent" />
+                <circle 
+                  cx="56" 
+                  cy="56" 
+                  r="48" 
+                  stroke="var(--primary)" 
+                  strokeWidth="8" 
+                  fill="transparent" 
+                  strokeDasharray={2 * Math.PI * 48}
+                  strokeDashoffset={2 * Math.PI * 48 * (1 - healthScore / 100)}
+                  strokeLinecap="round"
+                  className="transition-all duration-500"
+                />
+              </svg>
+              <div className="flex flex-col items-center">
+                <span className="text-3xl font-black text-foreground tracking-tight">{healthScore}</span>
+                <span className="text-[9px] uppercase font-bold text-muted-foreground">Index</span>
+              </div>
+            </div>
+            <span className={`text-[11px] font-bold uppercase px-3 py-1 rounded-full 
+              ${healthScore >= 80 
+                ? 'bg-emerald-500/10 text-emerald-500' 
+                : healthScore >= 55 
+                ? 'bg-amber-500/10 text-amber-500' 
+                : 'bg-red-500/10 text-red-500'}`}>
+              {healthScore >= 80 ? 'Excellent' : healthScore >= 55 ? 'Good' : 'Needs Optimization'}
+            </span>
+          </div>
+
+          <div className="md:col-span-8 space-y-3.5">
+            <h3 className="text-sm font-bold text-foreground flex items-center gap-1.5 leading-none">
+              <Smile size={16} className="text-primary" /> Advice Diagnostic
+            </h3>
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              {healthScore >= 80 
+                ? `Exceptional structure! Your outstanding savings rate of ${Math.round(savings.savingsRate)}% easily secures your ${savingsTarget}% custom financial target. Keep deploying assets to high-yield or brokerage accounts.`
+                : healthScore >= 55
+                ? `Decent financial shield. Your savings stand at ${Math.round(savings.savingsRate)}%. Consider optimizing non-essential expenses like leisure subscriptions and restaurant visits to hit your target of ${savingsTarget}%.`
+                : `Active optimization recommended. Your savings index has dropped below sustainable standards. Prioritize structuring tight spending constraints, lowering subscription bleed, or configuring liquid backup safeguards.`}
+            </p>
+            <div className="grid grid-cols-2 gap-3 text-[11px] font-medium text-foreground pt-1.5">
+              <div className="flex items-center gap-1.5">
+                <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${savings.savingsRate >= savingsTarget ? 'bg-emerald-500' : 'bg-amber-500'}`} />
+                <span>Savings target: <strong className="font-mono">{savingsTarget}%</strong></span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${isRunwayInfinite || burn.runwayMonths >= 6 ? 'bg-emerald-500' : 'bg-red-500'}`} />
+                <span>Safe runway cushion: <strong className="font-mono">{isRunwayInfinite ? 'Infinite' : 'Healthy'}</strong></span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* KPI Core Row */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           <KpiCard
             label="Income (mo.)"
-            value={`+${formatCurrency(savings.income, baseCurrency)}`}
+            value={`+${wrapPrivacy(formatCurrency(savings.income, baseCurrency))}`}
             icon={<TrendingUp className="w-4 h-4 text-income" aria-hidden="true" />}
             accent="income"
           />
           <KpiCard
             label="Expenses (mo.)"
-            value={`−${formatCurrency(savings.expense, baseCurrency)}`}
+            value={`−${wrapPrivacy(formatCurrency(savings.expense, baseCurrency))}`}
             icon={<TrendingDown className="w-4 h-4 text-expense" aria-hidden="true" />}
             accent="expense"
           />
@@ -79,6 +268,7 @@ export default function InsightsView({ baseCurrency, cashflow, spending, savings
           />
         </div>
 
+        {/* Two-Column Chart Matrix */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <section className="bg-card border border-border rounded-2xl p-5 shadow-sm space-y-4">
             <div>
@@ -93,7 +283,7 @@ export default function InsightsView({ baseCurrency, cashflow, spending, savings
                     tickFormatter={v => (v >= 1000 ? `${(v / 1000).toFixed(0)}k` : String(v))} />
                   <Tooltip
                     contentStyle={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 12, fontSize: 11 }}
-                    formatter={(value) => [formatCurrency(Number(value ?? 0), baseCurrency), '']}
+                    formatter={(value) => [wrapPrivacy(formatCurrency(Number(value ?? 0), baseCurrency)), '']}
                   />
                   <Bar dataKey="income" fill="#10b981" radius={[4, 4, 0, 0]} name="Income" />
                   <Bar dataKey="expense" fill="#ef4444" radius={[4, 4, 0, 0]} name="Expense" />
@@ -121,13 +311,13 @@ export default function InsightsView({ baseCurrency, cashflow, spending, savings
                           <Cell key={i} fill={entry.color} />
                         ))}
                       </Pie>
-                      <Tooltip formatter={(value) => [formatCurrency(Number(value ?? 0), baseCurrency), '']} />
+                      <Tooltip formatter={(value) => [wrapPrivacy(formatCurrency(Number(value ?? 0), baseCurrency)), '']} />
                     </PieChart>
                   </ResponsiveContainer>
                   <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
                     <span className="text-[10px] uppercase font-bold text-muted-foreground">Total</span>
                     <span className="text-sm font-bold text-foreground tabular-nums">
-                      {formatCurrency(spending.reduce((s, c) => s + c.value, 0), baseCurrency)}
+                      {wrapPrivacy(formatCurrency(spending.reduce((s, c) => s + c.value, 0), baseCurrency))}
                     </span>
                   </div>
                 </div>
@@ -147,13 +337,95 @@ export default function InsightsView({ baseCurrency, cashflow, spending, savings
           </section>
         </div>
 
-        <section className="bg-card border border-border rounded-2xl p-5 shadow-sm space-y-2">
-          <h2 className="text-sm font-bold text-foreground">Burn Rate</h2>
-          <p className="text-xs text-muted-foreground leading-relaxed">
-            {isRunwayInfinite
-              ? 'Your average income covers your average expenses — reserves are not depleting at the current pace.'
-              : `At your recent average spend of ${formatCurrency(burn.monthlyBurn, baseCurrency)}/mo net of income, your current reserves would last about ${burn.runwayMonths.toFixed(1)} months.`}
-          </p>
+        {/* 50/30/20 standard split card */}
+        <section className="bg-card border border-border rounded-2xl p-5 shadow-sm space-y-4">
+          <div>
+            <h2 className="text-sm font-bold text-foreground flex items-center gap-1.5">
+              <BadgeInfo size={15} className="text-indigo-400" />
+              The 50/30/20 Budgeting Diagnostic
+            </h2>
+            <p className="text-xs text-muted-foreground">
+              Evaluates how much of your total incoming capital funds Needs (survival), Wants (lifestyle), and Savings (net reserve).
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <BudgetBar
+              label="Needs (Rent, Bills, Gas)"
+              target="50%"
+              actual={`${Math.round(allocationBreakdown.needsPct)}%`}
+              amount={wrapPrivacy(formatCurrency(allocationBreakdown.needs, baseCurrency))}
+              color="bg-amber-500"
+              percentage={allocationBreakdown.needsPct}
+            />
+            <BudgetBar
+              label="Wants (Dining out, Luxury)"
+              target="30%"
+              actual={`${Math.round(allocationBreakdown.wantsPct)}%`}
+              amount={wrapPrivacy(formatCurrency(allocationBreakdown.wants, baseCurrency))}
+              color="bg-rose-500"
+              percentage={allocationBreakdown.wantsPct}
+            />
+            <BudgetBar
+              label="Savings & Excess Surplus"
+              target="20%"
+              actual={`${Math.round(allocationBreakdown.savingsPct)}%`}
+              amount={wrapPrivacy(formatCurrency(allocationBreakdown.savings, baseCurrency))}
+              color="bg-emerald-500"
+              percentage={allocationBreakdown.savingsPct}
+            />
+          </div>
+        </section>
+
+        {/* Runway & Expense cut slider simulator */}
+        <section className="bg-card border border-border rounded-2xl p-5 shadow-sm space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div>
+              <h2 className="text-sm font-bold text-foreground flex items-center gap-1.5">
+                <Flame size={15} className="text-orange-400" />
+                Live Runway & Burn Rate Simulator
+              </h2>
+              <p className="text-xs text-muted-foreground">
+                Slide to simulate cutting non-essential lifestyle wants and see how it pushes your runway further.
+              </p>
+            </div>
+            <div className="text-xs bg-orange-500/10 text-orange-500 font-bold px-2 py-1 rounded-lg">
+              Wants discount: {lifestyleDiscount}%
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            <input 
+              type="range"
+              min="0"
+              max="60"
+              step="5"
+              value={lifestyleDiscount}
+              onChange={(e) => setLifestyleDiscount(parseInt(e.target.value, 10))}
+              className="w-full accent-orange-500 cursor-pointer h-1.5"
+            />
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+              <div className="bg-muted/15 p-3.5 rounded-xl border border-border/40">
+                <div className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">Simulated Monthly Burn</div>
+                <div className="text-lg font-extrabold text-foreground font-mono mt-0.5">
+                  {wrapPrivacy(formatCurrency(simulatedExpenses, baseCurrency))}
+                </div>
+              </div>
+              <div className="bg-muted/15 p-3.5 rounded-xl border border-border/40">
+                <div className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">Simulated Runway Duration</div>
+                <div className="text-lg font-extrabold text-orange-500 font-mono mt-0.5">
+                  {!Number.isFinite(simulatedRunway) ? 'Infinite (Income covers spend)' : `${simulatedRunway.toFixed(1)} Months`}
+                </div>
+              </div>
+            </div>
+
+            <p className="text-xs text-muted-foreground leading-relaxed italic">
+              {isRunwayInfinite
+                ? 'Your average income completely covers your average expenses — your reserves are protected.'
+                : `By cutting wants spending by ${lifestyleDiscount}%, you reduce estimated monthly expenses from ${formatCurrency(allocationBreakdown.totalExp, baseCurrency)} down to ${formatCurrency(simulatedExpenses, baseCurrency)}, giving you ${!Number.isFinite(simulatedRunway) ? 'unbounded' : simulatedRunway.toFixed(1)} months of emergency buffer.`}
+            </p>
+          </div>
         </section>
 
       </div>
@@ -174,12 +446,49 @@ function KpiCard({
 }) {
   const valueColor = accent === 'income' ? 'text-income' : accent === 'expense' ? 'text-expense' : 'text-foreground'
   return (
-    <div className="bg-card border border-border rounded-2xl p-4 flex flex-col justify-between shadow-sm">
+    <div className="bg-card border border-border rounded-2xl p-4 flex flex-col justify-between shadow-sm relative overflow-hidden">
       <div className="flex items-center justify-between text-muted-foreground mb-2">
-        <span className="text-[10px] font-semibold uppercase tracking-wider">{label}</span>
+        <span className="text-[10px] font-bold uppercase tracking-wider">{label}</span>
         {icon}
       </div>
       <p className={`text-lg font-bold tabular-nums ${valueColor}`}>{value}</p>
+    </div>
+  )
+}
+
+function BudgetBar({
+  label,
+  target,
+  actual,
+  amount,
+  color,
+  percentage,
+}: {
+  label: string
+  target: string
+  actual: string
+  amount: string
+  color: string
+  percentage: number
+}) {
+  return (
+    <div className="space-y-1.5 bg-muted/15 border border-border/40 p-3 rounded-xl flex flex-col justify-between">
+      <div>
+        <p className="text-[11px] font-bold text-foreground line-clamp-1">{label}</p>
+        <p className="text-[10px] text-muted-foreground">Standard target is: <strong className="font-mono text-foreground/80">{target}</strong></p>
+      </div>
+      <div className="space-y-1 pt-1">
+        <div className="flex justify-between items-baseline text-xs font-mono">
+          <span className="font-black text-foreground">{amount}</span>
+          <span className="font-semibold text-muted-foreground">({actual})</span>
+        </div>
+        <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
+          <div 
+            className={`h-full rounded-full ${color} transition-all duration-500`}
+            style={{ width: `${Math.min(100, Math.max(0, percentage))}%` }}
+          />
+        </div>
+      </div>
     </div>
   )
 }

@@ -41,6 +41,13 @@ export default function PortfolioPage() {
   const [expectedReturn, setExpectedReturn] = useState(8)
   const [years, setYears] = useState(10)
 
+  // Extra state features
+  const [privacyEnabled, setPrivacyEnabled] = useState(false)
+  const [showScheduleTable, setShowScheduleTable] = useState(false)
+  
+  // FIRE simulation states
+  const [annualExpenseTarget, setAnnualExpenseTarget] = useState(36000)
+
   useEffect(() => {
     async function fetchAccounts() {
       const supabase = createClient()
@@ -57,7 +64,22 @@ export default function PortfolioPage() {
       setLoading(false)
     }
     fetchAccounts()
+
+    // Setup privacy listener
+    const checkPrivacy = () => {
+      setPrivacyEnabled(localStorage.getItem('alite_privacy_mode') === 'true')
+    }
+    checkPrivacy()
+    window.addEventListener('alite_privacy_changed', checkPrivacy)
+    return () => {
+      window.removeEventListener('alite_privacy_changed', checkPrivacy)
+    }
   }, [])
+
+  // Helper helper to obscure value when privacy mode is active
+  const wrapPrivacy = (formatted: string) => {
+    return privacyEnabled ? '••••' : formatted
+  }
 
   // 1. Group by Asset Types
   const allocationData = useMemo(() => {
@@ -167,35 +189,70 @@ export default function PortfolioPage() {
 
       {/* Bento Stats row */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-card border border-border/65 rounded-2xl p-5 shadow-sm space-y-2">
+        <div className="bg-card border border-border/60 rounded-2xl p-5 shadow-sm space-y-2 relative overflow-hidden">
           <div className="flex justify-between items-center text-muted-foreground">
             <span className="text-[10px] uppercase font-bold tracking-wider">Gross Assets</span>
             <Coins className="w-4 h-4 text-emerald-500" />
           </div>
-          <p className="text-2xl font-black text-foreground tabular-nums">{format(totalAssetsValue)}</p>
+          <p className="text-2xl font-black text-foreground tabular-nums">{wrapPrivacy(format(totalAssetsValue))}</p>
           <p className="text-[10px] text-muted-foreground">Total cash reserves, banks, shares</p>
         </div>
 
-        <div className="bg-card border border-border/65 rounded-2xl p-5 shadow-sm space-y-2">
+        <div className="bg-card border border-border/60 rounded-2xl p-5 shadow-sm space-y-2 relative overflow-hidden">
           <div className="flex justify-between items-center text-muted-foreground">
             <span className="text-[10px] uppercase font-bold tracking-wider">Gross Liabilities</span>
             <TrendingDown className="w-4 h-4 text-expense" />
           </div>
-          <p className="text-2xl font-black text-expense tabular-nums">{format(totalLiabilitiesValue)}</p>
+          <p className="text-2xl font-black text-expense tabular-nums">{wrapPrivacy(format(totalLiabilitiesValue))}</p>
           <p className="text-[10px] text-muted-foreground">Credit cards and unpaid debts</p>
         </div>
 
-        <div className="bg-card border border-border/65 rounded-2xl p-5 shadow-sm space-y-2">
+        <div className="bg-card border border-border/60 rounded-2xl p-5 shadow-sm space-y-2 relative overflow-hidden">
           <div className="flex justify-between items-center text-muted-foreground">
             <span className="text-[10px] uppercase font-bold tracking-wider">Net Equity Worth</span>
             <TrendingUp className="w-4 h-4 text-primary" />
           </div>
           <p className="text-2xl font-black text-primary tabular-nums">
-            {format(totalAssetsValue - totalLiabilitiesValue)}
+            {wrapPrivacy(format(totalAssetsValue - totalLiabilitiesValue))}
           </p>
           <p className="text-[10px] text-muted-foreground">Ownership interest converted</p>
         </div>
       </div>
+
+      {/* Debt Quality Lever Gauge */}
+      {totalAssetsValue > 0 && (
+        <div className="bg-card border border-border/50 rounded-2xl p-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="space-y-0.5">
+            <h4 className="text-xs font-bold text-foreground">Debt Leverage Index</h4>
+            <p className="text-xs text-muted-foreground max-w-xl">
+              Your liabilities swallow <span className="font-bold text-foreground font-mono">{((totalLiabilitiesValue / totalAssetsValue) * 100).toFixed(1)}%</span> of your total holdings. 
+              {totalLiabilitiesValue / totalAssetsValue > 0.4 
+                ? ' High gearing ratio represents severe financial risk. Prioritize structural consumer credit card payoffs.'
+                : totalLiabilitiesValue / totalAssetsValue > 0.15 
+                ? ' Moderate gearing is healthy for short-term liquidity, but pay attention to outstanding card rates.'
+                : ' Pristine liquidity cushion. Excellent wealth health shielding.'}
+            </p>
+          </div>
+          <div className="w-full md:w-56 space-y-1">
+            <div className="flex justify-between text-[10px] font-bold text-muted-foreground">
+              <span>LEVERAGE SPEED</span>
+              <span className={totalLiabilitiesValue / totalAssetsValue > 0.4 ? 'text-expense' : 'text-emerald-500'}>
+                {totalLiabilitiesValue / totalAssetsValue > 0.4 ? 'CRITICAL' : totalLiabilitiesValue / totalAssetsValue > 0.15 ? 'WARNING' : 'SECURE'}
+              </span>
+            </div>
+            <div className="h-2 w-full rounded-full bg-muted overflow-hidden flex">
+              <div 
+                className="h-full rounded-l-full bg-emerald-500 transition-all" 
+                style={{ width: `${Math.min(100, Math.max(0, 100 - ((totalLiabilitiesValue / totalAssetsValue) * 100)))}%` }} 
+              />
+              <div 
+                className="h-full rounded-r-full bg-expense transition-all" 
+                style={{ width: `${Math.min(100, (totalLiabilitiesValue / totalAssetsValue) * 100)}%` }} 
+              />
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         {/* Allocation Pie Chart */}
@@ -227,7 +284,7 @@ export default function PortfolioPage() {
                         <Cell key={`cell-${index}`} fill={entry.color} />
                       ))}
                     </Pie>
-                    <Tooltip formatter={(v) => [format(Number(v)), '']} />
+                    <Tooltip formatter={(v) => [wrapPrivacy(format(Number(v))), '']} />
                   </RechartsPieChart>
                 </ResponsiveContainer>
                 <div className="absolute inset-x-0 bottom-1 flex flex-col items-center justify-center pointer-events-none">
@@ -245,7 +302,7 @@ export default function PortfolioPage() {
                         <span className="truncate pr-1 text-foreground font-bold">{item.name}</span>
                       </div>
                       <div className="text-right shrink-0">
-                        <span className="font-bold tabular-nums text-foreground">{format(item.value)}</span>
+                        <span className="font-bold tabular-nums text-foreground">{wrapPrivacy(format(item.value))}</span>
                         <span className="text-[10px] text-muted-foreground ml-1 font-mono">({Math.round(pct)}%)</span>
                       </div>
                     </div>
@@ -263,8 +320,14 @@ export default function PortfolioPage() {
               <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-1.5">
                 <LineIcon size={14} className="text-primary" /> ROI Compound Projection
               </h3>
-              <p className="text-[11px] text-muted-foreground mt-0.5">Asset compounding over time with customized monthly additions</p>
+              <p className="text-[11px] text-muted-foreground mt-0.5">Asset compounding over time with customized annual additions</p>
             </div>
+            <button 
+              onClick={() => setShowScheduleTable(!showScheduleTable)}
+              className="text-xs bg-muted hover:bg-muted-foreground/10 px-3 py-1.5 rounded-xl border border-border transition-colors font-semibold shadow-sm text-foreground shrink-0"
+            >
+              {showScheduleTable ? 'View Chart' : 'View Yearly Schedule'}
+            </button>
           </div>
 
           {/* Controls bento */}
@@ -318,27 +381,116 @@ export default function PortfolioPage() {
             </div>
           </div>
 
-          <div className="h-64 w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={compoundedGrowthTimeline} margin={{ top: 10, right: 15, left: -20, bottom: 0 }}>
-                <defs>
-                  <linearGradient id="colorComp" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.2}/>
-                    <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0}/>
-                  </linearGradient>
-                </defs>
-                <XAxis dataKey="year" tickLine={false} axisLine={false} tick={{ fontSize: 10, fill: '#888' }} />
-                <YAxis tickLine={false} axisLine={false} tick={{ fontSize: 9, fill: '#888' }}
-                  tickFormatter={(v) => `${v >= 1000 ? (v / 1000).toFixed(0) + 'k' : v}`} />
-                <Tooltip
-                  contentStyle={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', borderRadius: '12px' }}
-                  formatter={(value) => [format(Number(value)), '']}
-                />
-                <Area type="monotone" dataKey="Portfolio Future" stroke="#8b5cf6" strokeWidth={3} fillOpacity={1} fill="url(#colorComp)" />
-              </AreaChart>
-            </ResponsiveContainer>
+          {showScheduleTable ? (
+            <div className="border border-border/60 rounded-xl overflow-x-auto max-h-[260px]">
+              <table className="w-full text-xs text-left text-muted-foreground">
+                <thead className="text-[10px] uppercase font-bold text-muted-foreground bg-muted/30 border-b border-border">
+                  <tr>
+                    <th scope="col" className="px-4 py-2.5">Timeline</th>
+                    <th scope="col" className="px-4 py-2.5 text-right">Projected Wealth</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border/40">
+                  {compoundedGrowthTimeline.map((item, idx) => (
+                    <tr key={idx} className="hover:bg-muted/10">
+                      <td className="px-4 py-2.5 font-semibold text-foreground">{item.year}</td>
+                      <td className="px-4 py-2.5 text-right font-bold text-primary font-mono tabular-nums">
+                        {wrapPrivacy(format(item['Portfolio Future']))}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div className="h-64 w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={compoundedGrowthTimeline} margin={{ top: 10, right: 15, left: -20, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="colorComp" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.2}/>
+                      <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0}/>
+                    </linearGradient>
+                  </defs>
+                  <XAxis dataKey="year" tickLine={false} axisLine={false} tick={{ fontSize: 10, fill: '#888' }} />
+                  <YAxis tickLine={false} axisLine={false} tick={{ fontSize: 9, fill: '#888' }}
+                    tickFormatter={(v) => `${v >= 1000 ? (v / 1000).toFixed(0) + 'k' : v}`} />
+                  <Tooltip
+                    contentStyle={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', borderRadius: '12px' }}
+                    formatter={(value) => [wrapPrivacy(format(Number(value))), '']}
+                  />
+                  <Area type="monotone" dataKey="Portfolio Future" stroke="#8b5cf6" strokeWidth={3} fillOpacity={1} fill="url(#colorComp)" />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* FIRE Retire Early Financial Independence Simulator */}
+      <div className="bg-card border border-border/60 rounded-3xl p-5 md:p-6 shadow-sm space-y-4">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="space-y-0.5">
+            <h3 className="text-sm font-bold tracking-tight text-foreground flex items-center gap-1.5">
+              <span>🔥</span> FIRE (Financial Independence, Retire Early) Indicator
+            </h3>
+            <p className="text-xs text-muted-foreground mr-4">
+              Determine when your liquid nest egg represents complete monetary immunity using the standard 4% Safe Withdrawal Rule.
+            </p>
+          </div>
+          <div className="flex items-center gap-2 bg-muted/20 border border-border/40 p-2 rounded-xl text-xs font-semibold tabular-nums text-foreground">
+            <span>Target Expenses:</span>
+            <input 
+              type="number"
+              min="1000"
+              max="500000"
+              step="1000"
+              value={annualExpenseTarget}
+              onChange={(e) => setAnnualExpenseTarget(Number(e.target.value) || 0)}
+              className="w-24 bg-transparent text-primary font-bold focus:outline-none text-right font-mono"
+            />
+            <span className="text-muted-foreground">/ yr</span>
           </div>
         </div>
+
+        {(() => {
+          const netWorth = totalAssetsValue - totalLiabilitiesValue
+          const targetNeeded = annualExpenseTarget * 25
+          const firePct = targetNeeded > 0 ? Math.min(100, Math.round((netWorth / targetNeeded) * 100)) : 0
+          
+          return (
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="bg-muted/10 p-3.5 rounded-xl border border-border/30">
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Combined Nest Egg</p>
+                  <p className="text-lg font-extrabold text-foreground font-mono mt-0.5">{wrapPrivacy(format(netWorth))}</p>
+                </div>
+                <div className="bg-muted/10 p-3.5 rounded-xl border border-border/30">
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Needed for 4% rule (25x)</p>
+                  <p className="text-lg font-extrabold text-indigo-500 font-mono mt-0.5">{wrapPrivacy(format(targetNeeded))}</p>
+                </div>
+                <div className="bg-muted/10 p-3.5 rounded-xl border border-border/30">
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-wide">FIRE Milestone Ratio</p>
+                  <p className="text-lg font-extrabold text-primary font-mono mt-0.5">{firePct}%</p>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
+                  <div 
+                    className="h-full rounded-full bg-gradient-to-r from-indigo-500 to-primary transition-all duration-500" 
+                    style={{ width: `${firePct}%` }}
+                  />
+                </div>
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  {firePct >= 100 
+                    ? '🎉 Incredible! You have attained total financial separation with the 4% rule. Your investment portfolio generate-capacity entirely shields your yearly lifestyle expense!'
+                    : `You have successfully structured ${firePct}% of your FIRE target egg. To retire securely and draw down ${format(annualExpenseTarget)} index-adjusted per year, you need an extra ${wrapPrivacy(format(Math.max(0, targetNeeded - netWorth)))}.`}
+                </p>
+              </div>
+            </div>
+          )
+        })()}
       </div>
     </div>
   )

@@ -46,7 +46,7 @@ export default async function SettingsPage() {
 
         <SettingsForm
           initialName={profile?.full_name ?? ''}
-          initialCurrency={profile?.base_currency ?? 'IDR'}
+          initialDisplayCurrency={profile?.base_currency ?? 'IDR'}
           email={user.email ?? ''}
         />
       </div>
