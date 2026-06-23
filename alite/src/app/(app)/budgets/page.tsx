@@ -1,317 +1,254 @@
-// filepath: alite/src/app/(app)/budgets/page.tsx
+// filepath: alite/src/app/(app)/recurring/page.tsx
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
-import { getBudgetProgress, type BudgetProgress } from '@/app/actions/budgets'
-import DeleteBudgetButton from '@/components/delete-budget-button'
-import BudgetChart from '@/components/budget-chart'
+import RecurringActions from '@/components/recurring-actions'
+import CatchUpOverdueButton from '@/components/catch-up-overdue-button'
+import RecurringImpactSummary from '@/components/recurring-impact-summary'
+import EmptyState from '@/components/empty-state'
+import { renderCategoryIcon } from '@/lib/icons'
+
+interface RecurringRow {
+  id: string
+  type: 'income' | 'expense'
+  amount: number
+  currency: string
+  description: string
+  frequency: string
+  next_due_date: string
+  end_date: string | null
+  is_active: boolean
+  auto_generate: boolean
+  accounts: { name: string } | null
+  categories: { name: string; color: string | null; icon: string | null } | null
+}
 
 function formatCurrency(amount: number, currency: string) {
-  try {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency,
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(amount)
-  } catch {
-    return `${currency} ${Math.round(amount).toLocaleString()}`
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency,
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+  }).format(amount)
+}
+
+const FREQUENCY_LABELS: Record<string, string> = {
+  daily: 'Daily',
+  weekly: 'Weekly',
+  biweekly: 'Biweekly',
+  monthly: 'Monthly',
+  quarterly: 'Quarterly',
+  yearly: 'Yearly',
+}
+
+function isOverdue(nextDue: string) {
+  return new Date(nextDue) < new Date(new Date().toDateString())
+}
+
+function monthlyEquivalent(amount: number, frequency: string) {
+  switch (frequency) {
+    case 'daily': return amount * 30.44
+    case 'weekly': return amount * 4.345
+    case 'biweekly': return amount * 2.17
+    case 'monthly': return amount
+    case 'quarterly': return amount / 3
+    case 'yearly': return amount / 12
+    default: return amount
   }
 }
 
-function getPeriodLabel(period: string) {
-  return period === 'weekly' ? 'Weekly' : period === 'yearly' ? 'Yearly' : 'Monthly'
+function getYearlyProjection(amount: number, frequency: string) {
+  switch (frequency) {
+    case 'daily': return amount * 365
+    case 'weekly': return amount * 52
+    case 'biweekly': return amount * 26
+    case 'monthly': return amount * 12
+    case 'quarterly': return amount * 4
+    case 'yearly': return amount
+    default: return amount
+  }
 }
 
-export default async function BudgetsPage() {
+export default async function RecurringPage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  const [profileRes, budgets] = await Promise.all([
+  const [profileRes, recurringRes] = await Promise.all([
     supabase.from('profiles').select('base_currency').eq('id', user.id).single(),
-    getBudgetProgress(),
+    supabase
+      .from('recurring_transactions')
+      .select(`
+        id, type, amount, currency, description, frequency,
+        next_due_date, end_date, is_active, auto_generate,
+        accounts ( name ),
+        categories ( name, color, icon )
+      `)
+      .eq('user_id', user.id)
+      .order('is_active', { ascending: false })
+      .order('next_due_date', { ascending: true }),
   ])
 
   const baseCurrency = profileRes.data?.base_currency ?? 'IDR'
+  const rows = (recurringRes.data as unknown as RecurringRow[]) ?? []
+  const error = recurringRes.error
+  const active = rows.filter(r => r.is_active)
+  const paused = rows.filter(r => !r.is_active)
+  const overdueRules = active.filter(r => isOverdue(r.next_due_date))
+  const overdueCount = overdueRules.length
 
-  const monthly = budgets.filter(b => b.period === 'monthly')
-  const weekly = budgets.filter(b => b.period === 'weekly')
-  const yearly = budgets.filter(b => b.period === 'yearly')
+  // Note: this aggregates raw amounts per-currency without FX conversion to
+  // base currency for simplicity in the same-currency common case; mixed
+  // currencies will under/overstate slightly until normalized server-side.
+  const monthlyOutflow = active
+    .filter(r => r.type === 'expense' && r.currency === baseCurrency)
+    .reduce((sum, r) => sum + monthlyEquivalent(r.amount, r.frequency), 0)
 
-  const totalBudgeted = budgets.reduce((s, b) => s + b.amount, 0)
-  const totalSpent = budgets.reduce((s, b) => s + b.spent, 0)
-  const overBudgetCount = budgets.filter(b => b.is_over).length
-  const totalPct = totalBudgeted > 0 ? Math.min(100, Math.round((totalSpent / totalBudgeted) * 100)) : 0
+  const monthlyInflow = active
+    .filter(r => r.type === 'income' && r.currency === baseCurrency)
+    .reduce((sum, r) => sum + monthlyEquivalent(r.amount, r.frequency), 0)
 
   return (
     <div className="min-h-screen bg-background pb-28">
       <div className="max-w-md md:max-w-5xl lg:max-w-6xl mx-auto px-4 pt-8 space-y-6 md:space-y-8">
 
-        {/* ── Header ── */}
         <div className="flex items-end justify-between border-b border-border/40 pb-4">
           <div>
             <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-[0.12em] mb-1">
-              Budgets
+              Recurring
             </p>
             <h1 className="text-3xl font-bold tracking-tight text-foreground leading-none">
-              {budgets.length} limit{budgets.length !== 1 ? 's' : ''}
+              {active.length} active
             </h1>
+            {overdueCount > 0 && (
+              <p className="text-xs text-expense font-medium mt-1.5">
+                {overdueCount} due or overdue
+              </p>
+            )}
           </div>
           <Link
-            href="/budgets/new"
+            href="/recurring/new"
             className="inline-flex items-center justify-center gap-1.5 h-10 px-4 rounded-xl bg-primary text-primary-foreground text-xs font-semibold hover:opacity-90 transition-opacity shrink-0 focus-visible:ring-2 focus-visible:ring-offset-2"
-            aria-label="Create budget"
+            aria-label="Create recurring transaction"
           >
             <span>+</span>
-            <span className="hidden sm:inline">New Limit</span>
+            <span className="hidden sm:inline">New Rule</span>
           </Link>
         </div>
 
-        {budgets.length === 0 ? (
-          <EmptyState />
+        {overdueCount > 0 && <CatchUpOverdueButton overdueCount={overdueCount} />}
+
+        {active.length > 0 && (monthlyOutflow > 0 || monthlyInflow > 0) && (
+          <RecurringImpactSummary
+            monthlyIncome={monthlyInflow}
+            monthlyExpense={monthlyOutflow}
+            currency={baseCurrency}
+          />
+        )}
+
+        {error && (
+          <p role="alert" className="text-xs text-expense bg-expense/10 rounded-xl px-4 py-3 border border-expense/20">
+            Couldn&apos;t load recurring transactions: {error.message}
+          </p>
+        )}
+
+        {rows.length === 0 && !error ? (
+          <EmptyState
+            icon="🔁"
+            title="No recurring transactions"
+            description="Set up rent, salary, or subscriptions once and either record them manually each cycle or let the daily server check post them automatically."
+            actionHref="/recurring/new"
+            actionLabel="+ Add recurring"
+          />
         ) : (
-          /* Responsive split layout grid */
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-6 md:gap-8 items-start">
-            
-            {/* Left Col: Aggregated Statistics Panel */}
-            <div className="md:col-span-5 md:sticky md:top-6 space-y-6">
-              <div className="relative rounded-2xl px-6 py-6 border border-border bg-card overflow-hidden shadow-sm">
-                <div
-                  className="absolute inset-0 pointer-events-none"
-                  style={{
-                    background:
-                      overBudgetCount > 0
-                        ? 'radial-gradient(ellipse 65% 55% at 80% -10%, rgba(248,113,113,0.08) 0%, transparent 70%)'
-                        : 'radial-gradient(ellipse 65% 55% at 80% -10%, rgba(52,211,153,0.08) 0%, transparent 70%)',
-                  }}
-                />
-                
-                <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-4">Combined Spending Health</h3>
-
-                <div className="grid grid-cols-3 gap-4 mb-6">
-                  <div>
-                    <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-1">Budgeted</p>
-                    <p className="text-sm font-bold tabular-nums text-foreground">
-                      {formatCurrency(totalBudgeted, baseCurrency)}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-1">Spent</p>
-                    <p className={`text-sm font-bold tabular-nums ${totalSpent > totalBudgeted ? 'text-expense' : 'text-foreground'}`}>
-                      {formatCurrency(totalSpent, baseCurrency)}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-1">Over limit</p>
-                    <p className={`text-sm font-bold ${overBudgetCount > 0 ? 'text-expense' : 'text-income'}`}>
-                      {overBudgetCount > 0 ? `${overBudgetCount} active` : 'None ✓'}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="pt-4 border-t border-border/50">
-                  <div className="flex justify-between items-center mb-1.5">
-                    <span className="text-[10px] font-semibold text-muted-foreground uppercase">Overall Usage</span>
-                    <span className="text-xs font-bold text-foreground tabular-nums">{totalPct}%</span>
-                  </div>
-                  <div
-                    className="h-2 rounded-full overflow-hidden bg-muted"
-                    role="progressbar"
-                    aria-valuenow={totalPct}
-                    aria-valuemin={0}
-                    aria-valuemax={100}
-                    aria-label="Total budget used"
-                  >
-                    <div
-                      className="h-full rounded-full transition-all duration-500"
-                      style={{
-                        width: `${totalPct}%`,
-                        background: totalSpent > totalBudgeted ? 'var(--expense)' : 'var(--income)',
-                      }}
-                    />
-                  </div>
-                  <p className="text-[10px] text-muted-foreground/85 mt-2 leading-relaxed">
-                    Across all limits, you have consumed {formatCurrency(totalSpent, baseCurrency)} of your aggregate allowance.
-                  </p>
-                </div>
-              </div>
-
-              {/* Dynamic Budget Utilization Chart */}
-              <BudgetChart data={budgets} baseCurrency={baseCurrency} />
-
-              <div className="hidden md:block rounded-2xl bg-muted/20 border border-border/25 p-5">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground mb-1.5">Daily Allowance Guidance</p>
-                <p className="text-xs text-muted-foreground leading-relaxed">
-                  The recommended maximum spending per day adjusts automatically based on the cycle period, remaining funds, and the current date. Stay green by staying under suggested amounts.
+          <div className="space-y-5">
+            {active.length > 0 && (
+              <section aria-labelledby="active-recurring">
+                <p id="active-recurring" className="text-[10px] font-semibold text-muted-foreground uppercase tracking-[0.12em] mb-2.5 px-0.5">
+                  Active
                 </p>
-              </div>
-            </div>
+                <div className="rounded-2xl overflow-hidden border border-border bg-card">
+                  {active.map((r, i) => (
+                    <RecurringRowItem key={r.id} item={r} hasBorder={i < active.length - 1} />
+                  ))}
+                </div>
+              </section>
+            )}
 
-            {/* Right Col: Interactive Budget Groups and Lists */}
-            <div className="md:col-span-7 space-y-6">
-              <div className="space-y-6">
-                {monthly.length > 0 && <BudgetGroup title="Monthly Limits" budgets={monthly} baseCurrency={baseCurrency} />}
-                {weekly.length > 0 && <BudgetGroup title="Weekly Limits" budgets={weekly} baseCurrency={baseCurrency} />}
-                {yearly.length > 0 && <BudgetGroup title="Yearly Limits" budgets={yearly} baseCurrency={baseCurrency} />}
-              </div>
-            </div>
-
+            {paused.length > 0 && (
+              <section aria-labelledby="paused-recurring">
+                <p id="paused-recurring" className="text-[10px] font-semibold text-muted-foreground uppercase tracking-[0.12em] mb-2.5 px-0.5">
+                  Paused
+                </p>
+                <div className="rounded-2xl overflow-hidden border border-border bg-card opacity-60">
+                  {paused.map((r, i) => (
+                    <RecurringRowItem key={r.id} item={r} hasBorder={i < paused.length - 1} />
+                  ))}
+                </div>
+              </section>
+            )}
           </div>
         )}
 
+        <div className="rounded-2xl border border-border bg-card px-4 py-4">
+          <p className="text-xs font-medium text-foreground mb-1">How auto-generate works</p>
+          <p className="text-xs text-muted-foreground leading-relaxed">
+            Rules with auto-generate enabled are posted automatically once a day by a scheduled
+            database job (pg_cron → fn_generate_due_recurring). Rules without it stay manual —
+            open a rule and use &quot;Record now&quot;, or use &quot;Catch up&quot; above to post all overdue rules.
+          </p>
+        </div>
+
       </div>
     </div>
   )
 }
 
-function BudgetGroup({
-  title,
-  budgets,
-  baseCurrency,
-}: {
-  title: string
-  budgets: BudgetProgress[]
-  baseCurrency: string
-}) {
-  return (
-    <section aria-labelledby={`budget-group-${title}`}>
-      <p id={`budget-group-${title}`} className="text-[10px] font-semibold text-muted-foreground uppercase tracking-[0.12em] mb-2.5 px-0.5">
-        {title}
-      </p>
-      <div className="rounded-2xl overflow-hidden border border-border bg-card">
-        {budgets.map((budget, i) => (
-          <BudgetRow key={budget.budget_id} budget={budget} baseCurrency={baseCurrency} hasBorder={i < budgets.length - 1} />
-        ))}
-      </div>
-    </section>
-  )
-}
-
-function getDailyAllowance(remaining: number, period: string) {
-  if (remaining <= 0) return null
-  const now = new Date()
-  if (period === 'monthly') {
-    const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0)
-    const daysLeft = Math.max(1, endOfMonth.getDate() - now.getDate() + 1)
-    return remaining / daysLeft
-  } else if (period === 'weekly') {
-    const dayOfWeek = now.getDay() // 0 (Sun) to 6 (Sat)
-    const daysLeft = Math.max(1, 7 - dayOfWeek)
-    return remaining / daysLeft
-  } else if (period === 'yearly') {
-    const endOfYear = new Date(now.getFullYear(), 11, 31)
-    const diffTime = endOfYear.getTime() - now.getTime()
-    const daysLeft = Math.max(1, Math.ceil(diffTime / (1000 * 60 * 60 * 24)))
-    return remaining / daysLeft
-  }
-  return null
-}
-
-function BudgetRow({
-  budget,
-  baseCurrency,
-  hasBorder,
-}: {
-  budget: BudgetProgress
-  baseCurrency: string
-  hasBorder: boolean
-}) {
-  const isWarning = budget.percentage >= 80 && !budget.is_over
-  const barColor = budget.is_over ? 'var(--expense)' : isWarning ? '#f59e0b' : 'var(--income)'
-  const displayPct = Math.min(100, budget.percentage)
-  const dailyAllowance = getDailyAllowance(budget.remaining, budget.period)
+function RecurringRowItem({ item, hasBorder }: { item: RecurringRow; hasBorder: boolean }) {
+  const overdue = item.is_active && isOverdue(item.next_due_date)
+  const isIncome = item.type === 'income'
+  const yearlyProj = getYearlyProjection(item.amount, item.frequency)
 
   return (
-    <div className={`px-4 py-4 hover:bg-muted/10 transition-colors ${hasBorder ? 'border-b border-border' : ''}`}>
-      <div className="flex items-start gap-3 mb-3">
+    <div className={`flex items-center gap-3 px-4 py-3.5 hover:bg-muted/10 transition-colors ${hasBorder ? 'border-b border-border' : ''}`}>
+      <Link href={`/recurring/${item.id}`} className="flex items-center gap-3 flex-1 min-w-0 focus-visible:ring-2 rounded-lg">
         <div
-          className="w-8 h-8 rounded-[9px] flex items-center justify-center text-sm shrink-0 mt-0.5"
+          className="w-9 h-9 rounded-[9px] flex items-center justify-center text-sm font-bold shrink-0"
           style={{
-            background: budget.category_color ? `${budget.category_color}22` : 'var(--muted)',
-            color: budget.category_color ?? 'var(--muted-foreground)',
+            background: item.categories?.color ? `${item.categories.color}22` : isIncome ? 'var(--income-muted)' : 'var(--expense-muted)',
+            color: item.categories?.color ?? (isIncome ? 'var(--income)' : 'var(--expense)'),
           }}
           aria-hidden="true"
         >
-          {budget.category_icon ?? budget.name.charAt(0).toUpperCase()}
+          {renderCategoryIcon(item.categories?.icon, item.description ?? 'U', 'w-4.5 h-4.5')}
         </div>
 
         <div className="flex-1 min-w-0">
-          <div className="flex items-baseline justify-between gap-2">
-            <p className="text-sm font-semibold text-foreground truncate leading-tight">{budget.name}</p>
-            <div className="flex items-center gap-2 shrink-0">
-              <p className={`text-xs font-bold tabular-nums ${budget.is_over ? 'text-expense' : 'text-foreground'}`}>
-                {formatCurrency(budget.spent, baseCurrency)}
-                <span className="font-normal text-muted-foreground"> / {formatCurrency(budget.amount, baseCurrency)}</span>
-              </p>
-              <DeleteBudgetButton budgetId={budget.budget_id} />
-            </div>
-          </div>
-
-          <div className="flex items-center justify-between mt-0.5">
-            <p className="text-[10px] text-muted-foreground">
-              {budget.category_name ?? 'All categories'} · {getPeriodLabel(budget.period)}
+          <p className="text-sm font-semibold text-foreground truncate leading-tight">
+            {item.description}
+          </p>
+          <p className="text-[11px] text-muted-foreground mt-0.5">
+            {item.accounts?.name ?? '—'} · {FREQUENCY_LABELS[item.frequency] ?? item.frequency}
+            {item.auto_generate && ' · Auto'}
+          </p>
+          {yearlyProj > 0 && (
+            <p className="text-[10px] text-muted-foreground/80 mt-0.5">
+              Proj. yearly: <span className="font-medium text-foreground/90 tabular-nums">{formatCurrency(yearlyProj, item.currency)}</span>
             </p>
-            <p className={`text-[10px] font-semibold tabular-nums ${budget.is_over ? 'text-expense' : isWarning ? 'text-[#f59e0b]' : 'text-muted-foreground'}`}>
-              {budget.is_over
-                ? `${formatCurrency(Math.abs(budget.remaining), baseCurrency)} over`
-                : `${formatCurrency(budget.remaining, baseCurrency)} left`}
-            </p>
-          </div>
-        </div>
-      </div>
-
-      <div
-        className="h-1.5 rounded-full overflow-hidden bg-muted"
-        role="progressbar"
-        aria-valuenow={displayPct}
-        aria-valuemin={0}
-        aria-valuemax={100}
-        aria-label={`${budget.name} budget used`}
-      >
-        <div className="h-full rounded-full transition-all duration-500" style={{ width: `${displayPct}%`, background: barColor }} />
-      </div>
-
-      <div className="flex items-center justify-between mt-2.5">
-        <div className="flex items-center gap-2">
-          {budget.is_over ? (
-            <span className="text-[10px] font-semibold text-expense flex items-center gap-1">
-              <span>⚠</span> Over budget
-            </span>
-          ) : isWarning ? (
-            <span className="text-[10px] font-semibold text-amber-500 flex items-center gap-1">
-              <span>⚠</span> Almost at limit
-            </span>
-          ) : dailyAllowance !== null && dailyAllowance > 0 ? (
-            <span className="text-[10px] text-muted-foreground">
-              Suggested: <strong className="text-foreground tracking-tight tabular-nums">{formatCurrency(dailyAllowance, baseCurrency)}</strong> / day
-            </span>
-          ) : (
-            <span className="text-[10px] text-muted-foreground flex items-center gap-1">
-              <span>✓</span> On track
-            </span>
           )}
         </div>
-        <p className="text-[10px] text-muted-foreground tabular-nums">{Math.round(budget.percentage)}%</p>
-      </div>
-    </div>
-  )
-}
 
-function EmptyState() {
-  return (
-    <div className="rounded-2xl px-6 py-14 text-center" style={{ border: '0.5px solid var(--border)', background: 'var(--card)' }}>
-      <div className="text-4xl mb-4" aria-hidden="true">🎯</div>
-      <p className="text-sm font-semibold text-foreground mb-1">No budgets yet</p>
-      <p className="text-xs text-muted-foreground mb-5 max-w-xs mx-auto">
-        Set spending limits per category to stay on track with your monthly goals.
-      </p>
-      <Link
-        href="/budgets/new"
-        className="inline-flex items-center gap-2 h-9 px-4 rounded-xl bg-primary text-primary-foreground text-xs font-semibold hover:opacity-90 transition-opacity focus-visible:ring-2 focus-visible:ring-offset-2"
-      >
-        + Create budget
+        <div className="text-right shrink-0">
+          <p className={`text-sm font-bold tabular-nums ${isIncome ? 'text-income' : 'text-expense'}`}>
+            {isIncome ? '+' : '−'}{formatCurrency(item.amount, item.currency)}
+          </p>
+          <p className={`text-[10px] mt-0.5 ${overdue ? 'text-expense font-semibold' : 'text-muted-foreground'}`}>
+            {overdue ? 'Overdue' : `Due ${new Date(item.next_due_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`}
+          </p>
+        </div>
       </Link>
+
+      <RecurringActions id={item.id} isActive={item.is_active} />
     </div>
   )
 }
