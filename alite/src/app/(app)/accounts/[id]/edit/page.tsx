@@ -21,7 +21,7 @@ export default async function EditAccountPage({
   // 1. Fetch account
   const { data: account, error: accountError } = await supabase
     .from('accounts')
-    .select('id, name, type, currency, include_in_net_worth')
+    .select('id, name, type, currency, color, include_in_net_worth')
     .eq('id', id)
     .eq('user_id', user.id)
     .single()
@@ -47,7 +47,7 @@ export default async function EditAccountPage({
         <div className="flex items-center gap-3">
           <Link
             href={`/accounts/${account.id}`}
-            className="text-muted-foreground hover:text-foreground transition-colors"
+            className="text-muted-foreground hover:text-foreground transition-colors focus-visible:ring-2 rounded-lg"
             aria-label="Back"
           >
             ←
@@ -62,6 +62,7 @@ export default async function EditAccountPage({
           accountId={account.id}
           initialName={account.name}
           initialType={account.type}
+          initialColor={account.color ?? '#6366f1'}
           initialIncludeInNetWorth={account.include_in_net_worth ?? true}
           currency={account.currency}
           currentBalance={currentBalance}

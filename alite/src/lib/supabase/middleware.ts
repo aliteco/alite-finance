@@ -29,7 +29,15 @@ export async function middleware(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser()
 
   const path = request.nextUrl.pathname
-  const isAuthRoute = path.startsWith('/login') || path.startsWith('/register')
+
+  // /reset-password is intentionally excluded from both groups below: a
+  // user lands there via a Supabase recovery link, which signs them in
+  // with a temporary session. They are technically "logged in" at that
+  // point, but redirecting them away (as isAuthRoute would) breaks the
+  // password-reset flow before they can set a new password.
+  const isAuthRoute =
+    path.startsWith('/login') || path.startsWith('/register') || path.startsWith('/forgot-password')
+
   const isProtectedRoute =
     path.startsWith('/dashboard') ||
     path.startsWith('/accounts') ||

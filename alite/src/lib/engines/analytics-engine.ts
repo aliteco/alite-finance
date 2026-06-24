@@ -70,9 +70,7 @@ export const AnalyticsEngine = {
   ): Promise<number[]> {
     return ExchangeRateService.convertBatch(
       txs.map(t => ({ amount: t.amount, currency: t.currency })),
-      baseCurrency,
-      undefined,
-      client
+      baseCurrency
     )
   },
 
@@ -250,9 +248,7 @@ export const AnalyticsEngine = {
     if (subs.length === 0) return 0
     const baseAmounts = await ExchangeRateService.convertBatch(
       subs.map(s => ({ amount: s.amount, currency: s.currency })),
-      baseCurrency,
-      undefined,
-      client
+      baseCurrency
     )
     return subs.reduce((sum, s, i) => {
       const monthlyEquivalent =

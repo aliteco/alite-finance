@@ -123,9 +123,9 @@ export default async function RecurringDetailPage({
         <div className="rounded-2xl border border-border bg-card px-4 py-4 flex items-center justify-between">
           <div>
             <p className="text-sm font-medium text-foreground">Actions</p>
-            <p className="text-[11px] text-muted-foreground mt-0.5">Record this cycle now or pause the rule.</p>
+            <p className="text-[11px] text-muted-foreground mt-0.5">Record this cycle now, edit, or pause the rule.</p>
           </div>
-          <RecurringActions id={data.id} isActive={data.is_active} />
+          <RecurringActions id={data.id} isActive={data.is_active} showEdit />
         </div>
 
         <section>

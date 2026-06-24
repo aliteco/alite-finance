@@ -4,10 +4,9 @@
 
 import { useState, useMemo, useCallback } from 'react'
 import Link from 'next/link'
-import { motion } from 'motion/react'
 import {
-  Wallet, TrendingUp, TrendingDown, PiggyBank, ChevronRight,
-  Search, ListFilter, AlertCircle,
+  Wallet, TrendingUp, TrendingDown, PiggyBank,
+  Search, AlertCircle,
 } from 'lucide-react'
 import {
   ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip,
@@ -17,6 +16,7 @@ import KpiCard from '@/components/dashboard/kpi-card'
 import QuickActionsBar from '@/components/dashboard/quick-actions-bar'
 import NetWorthHero from '@/components/dashboard/net-worth-hero'
 import AccountsRail from '@/components/dashboard/accounts-rail'
+import DateRangePicker, { type CustomRange } from '@/components/dashboard/date-range-picker'
 import { renderCategoryIcon } from '@/lib/icons'
 
 interface Category {
@@ -89,6 +89,8 @@ const RANGES = [
   { id: 'all', label: 'All Time', days: -1 },
 ] as const
 
+type RangeId = typeof RANGES[number]['id'] | 'custom'
+
 function formatCurrency(amount: number, currency: string) {
   try {
     return new Intl.NumberFormat('en-US', {
@@ -117,7 +119,8 @@ export default function DashboardShell({
   budgetProgress,
   baseCurrency,
 }: DashboardShellProps) {
-  const [range, setRange] = useState<typeof RANGES[number]['id']>('30d')
+  const [range, setRange] = useState<RangeId>('30d')
+  const [customRange, setCustomRange] = useState<CustomRange | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [page, setPage] = useState(1)
   const PAGE_SIZE = 6
@@ -127,14 +130,29 @@ export default function DashboardShell({
   const dateLimit = useMemo(() => {
     const today = new Date()
     today.setHours(23, 59, 59, 999)
-    const cfg = RANGES.find(r => r.id === range)!
+
+    if (range === 'custom' && customRange) {
+      const start = new Date(customRange.start)
+      start.setHours(0, 0, 0, 0)
+      const end = new Date(customRange.end)
+      end.setHours(23, 59, 59, 999)
+      return { start, end }
+    }
+
+    const cfg = RANGES.find(r => r.id === range) ?? RANGES[0]
     if (cfg.id === 'month') return { start: new Date(today.getFullYear(), today.getMonth(), 1), end: today }
     if (cfg.id === 'all') return { start: new Date(1970, 0, 1), end: today }
     const start = new Date()
     start.setDate(today.getDate() - cfg.days)
     start.setHours(0, 0, 0, 0)
     return { start, end: today }
-  }, [range])
+  }, [range, customRange])
+
+  function handleCustomRangeChange(next: CustomRange | null) {
+    setCustomRange(next)
+    setRange(next ? 'custom' : '30d')
+    resetPage()
+  }
 
   const filteredTxs = useMemo(() => {
     return transactions.filter(tx => {
@@ -247,6 +265,11 @@ export default function DashboardShell({
     }).sort((a, b) => b.percentage - a.percentage).slice(0, 4)
   }, [budgets, budgetProgress])
 
+  const rangeDayCount = Math.max(
+    1,
+    Math.round((dateLimit.end.getTime() - dateLimit.start.getTime()) / (1000 * 60 * 60 * 24))
+  )
+
   return (
     <div className="w-full max-w-7xl mx-auto px-4 py-6 md:py-8 space-y-6">
 
@@ -261,25 +284,35 @@ export default function DashboardShell({
       />
 
       <div className="flex items-center justify-between gap-3 flex-wrap">
-        <h2 className="text-sm font-bold text-foreground">Activity overview</h2>
-        <div
-          className="flex bg-muted p-1 rounded-xl border border-border/40 overflow-x-auto"
-          role="radiogroup"
-          aria-label="Time range"
-        >
-          {RANGES.map(r => (
-            <button
-              key={r.id}
-              role="radio"
-              aria-checked={range === r.id}
-              onClick={() => { setRange(r.id); resetPage() }}
-              className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all whitespace-nowrap focus-visible:ring-2 ${
-                range === r.id ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
-              }`}
-            >
-              {r.label}
-            </button>
-          ))}
+        <div>
+          <h2 className="text-sm font-bold text-foreground">Activity overview</h2>
+          {range === 'custom' && customRange && (
+            <p className="text-[11px] text-muted-foreground mt-0.5">
+              {rangeDayCount} day{rangeDayCount !== 1 ? 's' : ''} selected
+            </p>
+          )}
+        </div>
+        <div className="flex items-center gap-2 flex-wrap">
+          <div
+            className="flex bg-muted p-1 rounded-xl border border-border/40 overflow-x-auto"
+            role="radiogroup"
+            aria-label="Time range"
+          >
+            {RANGES.map(r => (
+              <button
+                key={r.id}
+                role="radio"
+                aria-checked={range === r.id}
+                onClick={() => { setRange(r.id); setCustomRange(null); resetPage() }}
+                className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all whitespace-nowrap focus-visible:ring-2 ${
+                  range === r.id ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                {r.label}
+              </button>
+            ))}
+          </div>
+          <DateRangePicker value={customRange} onChange={handleCustomRangeChange} />
         </div>
       </div>
 
@@ -347,7 +380,17 @@ export default function DashboardShell({
 
             {paginatedTxs.length === 0 ? (
               <div className="py-10 text-center bg-muted/10 border border-dashed border-border rounded-xl">
-                <p className="text-xs text-muted-foreground font-medium">No transactions match.</p>
+                <p className="text-xs text-muted-foreground font-medium">
+                  {searchQuery.trim() ? 'No transactions match your search.' : 'No transactions in this range.'}
+                </p>
+                {searchQuery.trim() && (
+                  <button
+                    onClick={() => setSearchQuery('')}
+                    className="text-xs text-primary font-semibold mt-2 underline focus-visible:ring-2 rounded"
+                  >
+                    Clear search
+                  </button>
+                )}
               </div>
             ) : (
               <div className="space-y-2">

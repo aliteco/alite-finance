@@ -12,10 +12,17 @@ const ACCOUNT_TYPES = [
   { value: 'other', label: 'Other' },
 ]
 
+const COLORS = ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#ec4899', '#84cc16', '#3b82f6', '#6b7280']
+
+function accountTypeAllowsNegativeBalance(type: string) {
+  return type === 'credit_card'
+}
+
 interface EditAccountFormProps {
   accountId: string
   initialName: string
   initialType: string
+  initialColor: string
   initialIncludeInNetWorth: boolean
   currency: string
   currentBalance: number
@@ -38,6 +45,7 @@ export default function EditAccountForm({
   accountId,
   initialName,
   initialType,
+  initialColor,
   initialIncludeInNetWorth,
   currency,
   currentBalance,
@@ -48,11 +56,14 @@ export default function EditAccountForm({
 
   const [name, setName] = useState(initialName)
   const [type, setType] = useState(initialType)
+  const [color, setColor] = useState(initialColor || COLORS[0])
   const [includeInNetWorth, setIncludeInNetWorth] = useState(initialIncludeInNetWorth)
   const [error, setError] = useState('')
   const [saved, setSaved] = useState(false)
 
   const hasNonZeroBalance = Math.abs(currentBalance) > 0.01
+  const wouldBlockNegativeType =
+    currentBalance < 0 && type !== initialType && !accountTypeAllowsNegativeBalance(type)
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault()
@@ -60,11 +71,16 @@ export default function EditAccountForm({
     setSaved(false)
 
     if (!name.trim()) { setError('Account name cannot be empty.'); return }
+    if (wouldBlockNegativeType) {
+      setError(`Cannot switch to "${ACCOUNT_TYPES.find(t => t.value === type)?.label}" while the balance is negative. Settle the balance first or choose Credit Card.`)
+      return
+    }
 
     startTransition(async () => {
       const result = await updateAccount(accountId, {
         name: name.trim(),
         type,
+        color,
         include_in_net_worth: includeInNetWorth,
       })
       if (result.error) {
@@ -105,6 +121,32 @@ export default function EditAccountForm({
           />
         </div>
 
+        {/* Color */}
+        <div className="bg-card border border-border rounded-2xl px-4 py-4">
+          <fieldset>
+            <legend className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest block mb-2.5">
+              Color
+            </legend>
+            <div className="flex flex-wrap gap-2">
+              {COLORS.map(c => (
+                <button
+                  key={c}
+                  type="button"
+                  onClick={() => setColor(c)}
+                  aria-pressed={color === c}
+                  aria-label={`Select color ${c}`}
+                  className="w-8 h-8 rounded-full transition-all focus-visible:ring-2"
+                  style={{
+                    background: c,
+                    outline: color === c ? '2px solid var(--foreground)' : 'none',
+                    outlineOffset: '2px',
+                  }}
+                />
+              ))}
+            </div>
+          </fieldset>
+        </div>
+
         {/* Type */}
         <div className="bg-card border border-border rounded-2xl px-4 py-4">
           <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest block mb-2.5">
@@ -131,6 +173,11 @@ export default function EditAccountForm({
           <p className="text-[11px] text-muted-foreground mt-3">
             Currency ({currency}) cannot be changed after an account is created.
           </p>
+          {wouldBlockNegativeType && (
+            <p role="alert" className="text-[11px] text-expense mt-2 bg-expense/10 rounded-lg px-2.5 py-2">
+              This account has a negative balance — only Credit Card accounts may carry one.
+            </p>
+          )}
         </div>
 
         {/* Net worth toggle */}

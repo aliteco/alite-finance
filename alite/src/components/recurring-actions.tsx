@@ -3,14 +3,17 @@
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { generateRecurringNow, pauseRecurring } from '@/app/actions/recurring'
 
 export default function RecurringActions({
   id,
   isActive,
+  showEdit = false,
 }: {
   id: string
   isActive: boolean
+  showEdit?: boolean
 }) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
@@ -47,6 +50,16 @@ export default function RecurringActions({
   return (
     <div className="flex flex-col items-end gap-1 shrink-0 ml-1">
       <div className="flex gap-1">
+        {showEdit && (
+          <Link
+            href={`/recurring/${id}/edit`}
+            onClick={e => e.stopPropagation()}
+            className="text-[10px] font-semibold px-2 py-1 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors focus-visible:ring-2"
+            aria-label="Edit this recurring rule"
+          >
+            Edit
+          </Link>
+        )}
         {isActive && (
           <button
             type="button"
