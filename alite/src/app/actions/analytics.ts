@@ -60,7 +60,7 @@ export async function getSavingsRateReport(months = 1) {
 
 export async function getBurnRateReport(lookbackMonths = 3) {
   const { supabase, baseCurrency, transactions, accounts } = await getTrailingTransactions(Math.max(lookbackMonths, 1))
-  const netWorth = await NetWorthEngine.currentNetWorth(accounts, baseCurrency, supabase)
+  const netWorth = await NetWorthEngine.currentNetWorth(accounts, baseCurrency)
   return AnalyticsEngine.burnRate(transactions, netWorth, baseCurrency, lookbackMonths, supabase)
 }
 
@@ -93,5 +93,5 @@ export async function getNetWorthTimeSeries(days = 30) {
   const accounts = (accountsRes.data as unknown as NetWorthAccount[]) ?? []
   const transactions = txRes.data ?? []
 
-  return NetWorthEngine.getHistoricalSnapshots(accounts, transactions, baseCurrency, days, supabase)
+  return NetWorthEngine.getHistoricalSnapshots(accounts, transactions, baseCurrency, days)
 }
