@@ -105,7 +105,7 @@ export default function DateRangePicker({ value, onChange }: DateRangePickerProp
           ref={popoverRef}
           role="dialog"
           aria-label="Custom date range"
-          className="absolute right-0 sm:left-0 top-full mt-2 z-50 w-72 bg-card border border-border rounded-2xl shadow-xl p-4 space-y-3"
+          className="absolute right-0 top-full mt-2 z-50 w-72 bg-card border border-border rounded-2xl shadow-xl p-4"
         >
           <div>
             <label htmlFor={startId} className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide block mb-1.5">

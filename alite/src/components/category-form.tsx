@@ -1,10 +1,11 @@
+// filepath: alite/src/components/category-form.tsx
 'use client'
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { createCategory } from '@/app/actions/categories'
 import { renderCategoryIcon } from '@/lib/icons'
-import { Plus, X } from 'lucide-react'
+import { Plus } from 'lucide-react'
 
 const ICONS = [
   'shopping-bag',
@@ -76,9 +77,9 @@ export default function CategoryForm() {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="w-full h-11 rounded-xl bg-neutral-900 text-white dark:bg-white dark:text-neutral-950 text-xs font-bold transition-all active:scale-[0.99] flex items-center justify-center gap-2 shadow-sm hover:opacity-90"
+        className="w-full h-11 rounded-xl bg-neutral-900 text-white dark:bg-white dark:text-neutral-950 text-xs font-bold transition-all active:scale-[0.99] flex items-center justify-center gap-2 shadow-sm hover:opacity-90 focus-visible:ring-2 focus-visible:ring-offset-2"
       >
-        <Plus size={14} strokeWidth={2.5} />
+        <Plus size={14} strokeWidth={2.5} aria-hidden="true" />
         <span>New custom category</span>
       </button>
     )
@@ -96,9 +97,10 @@ export default function CategoryForm() {
           Category Name
         </label>
         <div className="flex items-center gap-3 w-full bg-muted/20 border border-border rounded-xl px-3.5 h-11 focus-within:border-foreground/40 focus-within:bg-card transition-all">
-          <div 
+          <div
             className="w-5 h-5 rounded-md flex items-center justify-center shrink-0 transition-colors"
-            style={{ color: color }}
+            style={{ color }}
+            aria-hidden="true"
           >
             {renderCategoryIcon(icon, 'Preview', 'w-4 h-4')}
           </div>
@@ -117,20 +119,22 @@ export default function CategoryForm() {
 
       {/* Segmented Flow Type Control */}
       <div className="space-y-1.5">
-        <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest block px-0.5">
+        <span id="cat-type-label" className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest block px-0.5">
           Flow Assignment
         </span>
-        <div className="flex bg-muted/60 p-1 rounded-xl border border-border/40 gap-1">
+        <div role="radiogroup" aria-labelledby="cat-type-label" className="flex bg-muted/60 p-1 rounded-xl border border-border/40 gap-1">
           {(['expense', 'income', 'both'] as const).map(t => {
             const active = type === t
             return (
               <button
                 key={t}
                 type="button"
+                role="radio"
+                aria-checked={active}
                 onClick={() => setType(t)}
-                className={`flex-1 h-8 rounded-lg text-xs font-semibold capitalize transition-all duration-100 active:scale-[0.98]
-                  ${active 
-                    ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-950 shadow-sm font-bold' 
+                className={`flex-1 h-8 rounded-lg text-xs font-semibold capitalize transition-all duration-100 active:scale-[0.98] focus-visible:ring-2
+                  ${active
+                    ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-950 shadow-sm font-bold'
                     : 'text-muted-foreground hover:text-foreground'
                   }`}
               >
@@ -143,26 +147,31 @@ export default function CategoryForm() {
 
       {/* Grid Icon Panel */}
       <div className="space-y-2">
-        <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-0.5">
+        <p id="cat-icon-label" className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-0.5">
           Glyph Selection
         </p>
-        <div className="grid grid-cols-6 gap-1.5 bg-muted/10 border border-border/40 p-2 rounded-xl max-h-36 overflow-y-auto">
+        <div
+          role="radiogroup"
+          aria-labelledby="cat-icon-label"
+          className="grid grid-cols-6 gap-1.5 bg-muted/10 border border-border/40 p-2 rounded-xl max-h-36 overflow-y-auto"
+        >
           {ICONS.map(i => {
             const active = icon === i
             return (
               <button
                 key={i}
                 type="button"
+                role="radio"
+                aria-checked={active}
+                aria-label={`Select icon ${i.replace(/-/g, ' ')}`}
                 onClick={() => setIcon(i)}
-                aria-pressed={active}
-                aria-label={`Select icon ${i}`}
-                className={`aspect-square rounded-lg flex items-center justify-center transition-all active:scale-95
+                className={`aspect-square rounded-lg flex items-center justify-center transition-all active:scale-95 focus-visible:ring-2
                   ${active
                     ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-950 shadow-sm scale-105'
                     : 'bg-card border border-border/60 text-muted-foreground hover:text-foreground hover:border-border-strong'
                   }`}
               >
-                <span style={{ color: active ? undefined : color }} className="transition-colors">
+                <span style={{ color: active ? undefined : color }} className="transition-colors" aria-hidden="true">
                   {renderCategoryIcon(i, 'Category Option', 'w-4 h-4')}
                 </span>
               </button>
@@ -173,19 +182,21 @@ export default function CategoryForm() {
 
       {/* Matrix Color Panel */}
       <div className="space-y-2">
-        <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-0.5">
+        <p id="cat-color-label" className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-0.5">
           Theme Identity
         </p>
-        <div className="flex flex-wrap gap-2.5 p-1">
+        <div role="radiogroup" aria-labelledby="cat-color-label" className="flex flex-wrap gap-2.5 p-1">
           {COLORS.map(c => {
             const active = color === c
             return (
               <button
                 key={c}
                 type="button"
+                role="radio"
+                aria-checked={active}
+                aria-label={`Select color ${c}`}
                 onClick={() => setColor(c)}
-                aria-pressed={active}
-                className={`w-7 h-7 rounded-full transition-all relative active:scale-90 shadow-inner
+                className={`w-7 h-7 rounded-full transition-all relative active:scale-90 shadow-inner focus-visible:ring-2 focus-visible:ring-offset-2
                   ${active ? 'ring-2 ring-offset-2 ring-foreground dark:ring-offset-neutral-900 scale-110' : 'hover:scale-105'}`}
                 style={{ backgroundColor: c }}
               />
@@ -196,7 +207,7 @@ export default function CategoryForm() {
 
       {/* System Error Alerts */}
       {error && (
-        <p role="alert" className="text-xs font-semibold text-red-500 bg-red-500/10 border border-red-500/20 px-4 py-3 rounded-xl outline-none">
+        <p role="alert" aria-live="assertive" className="text-xs font-semibold text-red-500 bg-red-500/10 border border-red-500/20 px-4 py-3 rounded-xl outline-none">
           {error}
         </p>
       )}
@@ -209,7 +220,7 @@ export default function CategoryForm() {
             setOpen(false)
             setError('')
           }}
-          className="flex-1 h-10 rounded-xl border border-border text-xs font-bold text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-all active:scale-[0.98]"
+          className="flex-1 h-10 rounded-xl border border-border text-xs font-bold text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-all active:scale-[0.98] focus-visible:ring-2"
         >
           Cancel
         </button>
@@ -217,7 +228,7 @@ export default function CategoryForm() {
         <button
           type="submit"
           disabled={isPending}
-          className="flex-1 h-10 rounded-xl bg-neutral-900 text-white dark:bg-white dark:text-neutral-950 text-xs font-bold disabled:opacity-40 transition-all active:scale-[0.98]"
+          className="flex-1 h-10 rounded-xl bg-neutral-900 text-white dark:bg-white dark:text-neutral-950 text-xs font-bold disabled:opacity-40 transition-all active:scale-[0.98] focus-visible:ring-2"
         >
           {isPending ? 'Creating…' : 'Create category'}
         </button>

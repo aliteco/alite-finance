@@ -1,3 +1,4 @@
+// filepath: alite/src/components/account-form.tsx
 'use client'
 
 import { useState, useTransition } from 'react'
@@ -10,10 +11,10 @@ const ACCOUNT_TYPES = [
   { value: 'credit_card', label: 'Credit Card' },
   { value: 'investment', label: 'Investment' },
   { value: 'other', label: 'Other' },
-]
+] as const
 
 const COMMON_CURRENCIES = [
-  'IDR', 'USD', 'EUR', 'SGD', 'JPY', 'GBP', 'AUD', 'MYR', 'TWD'
+  'IDR', 'USD', 'EUR', 'SGD', 'JPY', 'GBP', 'AUD', 'MYR', 'TWD',
 ]
 
 interface AccountFormProps {
@@ -24,14 +25,14 @@ export default function AccountForm({ initialCurrency }: AccountFormProps) {
   const [isPending, startTransition] = useTransition()
 
   const [name, setName] = useState('')
-  const [type, setType] = useState('bank')
+  const [type, setType] = useState<string>('bank')
   const [currency, setCurrency] = useState(initialCurrency)
   const [balance, setBalance] = useState('')
   const [error, setError] = useState('')
 
   const allowsNegativeBalance = type === 'credit_card'
 
-  async function handleSubmit(e: React.SubmitEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setError('')
 
@@ -71,51 +72,58 @@ export default function AccountForm({ initialCurrency }: AccountFormProps) {
 
       {/* Name */}
       <div className="bg-card border border-border rounded-2xl px-4 py-4">
-        <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest block mb-2">
+        <label htmlFor="account-name" className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest block mb-2">
           Account name
         </label>
-
         <input
+          id="account-name"
           type="text"
           value={name}
           onChange={e => setName(e.target.value)}
           placeholder="e.g. BCA Checking"
           maxLength={60}
+          autoFocus
           className="w-full bg-transparent text-base font-medium text-foreground placeholder:text-muted-foreground/50 focus:outline-none"
         />
       </div>
 
       {/* Type */}
       <div className="bg-card border border-border rounded-2xl px-4 py-4">
-        <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest block mb-2.5">
+        <span id="account-type-label" className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest block mb-2.5">
           Type
-        </label>
-
-        <select
-          value={type}
-          onChange={e => setType(e.target.value)}
-          className="w-full rounded-xl border border-border bg-background px-3 py-3 text-sm"
-        >
+        </span>
+        <div role="radiogroup" aria-labelledby="account-type-label" className="flex flex-wrap gap-2">
           {ACCOUNT_TYPES.map(t => (
-            <option key={t.value} value={t.value}>
+            <button
+              key={t.value}
+              type="button"
+              role="radio"
+              aria-checked={type === t.value}
+              onClick={() => setType(t.value)}
+              className={`rounded-xl px-3 py-2 text-xs font-medium transition-colors focus-visible:ring-2 focus-visible:ring-offset-2
+                ${type === t.value
+                  ? 'bg-primary text-primary-foreground'
+                  : 'bg-muted text-muted-foreground hover:text-foreground'
+                }`}
+            >
               {t.label}
-            </option>
+            </button>
           ))}
-        </select>
+        </div>
       </div>
 
       {/* Currency + Balance */}
       <div className="bg-card border border-border rounded-2xl px-4 py-4 space-y-4">
 
         <div>
-          <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest block mb-2">
+          <label htmlFor="account-currency" className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest block mb-2">
             Currency
           </label>
-
           <select
+            id="account-currency"
             value={currency}
             onChange={e => setCurrency(e.target.value)}
-            className="w-full rounded-xl border border-border bg-background px-3 py-3 text-sm"
+            className="w-full rounded-xl border border-border bg-background px-3 py-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
           >
             {COMMON_CURRENCIES.map(c => (
               <option key={c} value={c}>
@@ -126,17 +134,18 @@ export default function AccountForm({ initialCurrency }: AccountFormProps) {
         </div>
 
         <div className="border-t border-border pt-4">
-          <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest block mb-2">
+          <label htmlFor="account-balance" className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest block mb-2">
             Starting balance
           </label>
-
           <input
+            id="account-balance"
             type="number"
+            inputMode="decimal"
             step="0.01"
             value={balance}
             onChange={e => setBalance(e.target.value)}
             placeholder="0"
-            className="w-full bg-transparent text-2xl font-bold tabular-nums"
+            className="w-full bg-transparent text-2xl font-bold tabular-nums text-foreground placeholder:text-muted-foreground/40 focus:outline-none"
           />
 
           {allowsNegativeBalance && (
@@ -149,7 +158,7 @@ export default function AccountForm({ initialCurrency }: AccountFormProps) {
 
       {/* Error */}
       {error && (
-        <p role="alert" className="text-xs text-red-500 bg-red-500/10 p-3 rounded-xl">
+        <p role="alert" aria-live="assertive" className="text-xs text-expense bg-expense/10 rounded-xl px-4 py-3 border border-expense/20">
           {error}
         </p>
       )}
@@ -158,7 +167,7 @@ export default function AccountForm({ initialCurrency }: AccountFormProps) {
       <button
         type="submit"
         disabled={isPending}
-        className="w-full h-12 rounded-2xl bg-primary text-primary-foreground font-semibold"
+        className="w-full h-12 rounded-2xl bg-primary text-primary-foreground text-sm font-semibold tracking-tight transition-all active:scale-[0.98] disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-offset-2"
       >
         {isPending ? 'Creating…' : 'Create account'}
       </button>

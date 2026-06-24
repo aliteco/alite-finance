@@ -133,7 +133,7 @@ export default function LandingPage() {
                 Create free account
               </Link>
               <Link
-                href="/how-it-works"
+                href="/login"
                 className="h-11 px-6 w-full sm:w-auto justify-center rounded-xl border border-border bg-background text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-all flex items-center"
               >
                 Sign in →

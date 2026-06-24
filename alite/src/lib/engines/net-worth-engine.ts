@@ -1,7 +1,6 @@
 // filepath: alite/src/lib/engines/net-worth-engine.ts
 
 import { ExchangeRateService } from '@/lib/services/exchange-rate-service'
-import type { SupabaseClient } from '@supabase/supabase-js'
 
 export interface NetWorthAccount {
   id: string
@@ -39,19 +38,22 @@ export const NetWorthEngine = {
    */
   async currentNetWorth(
     accounts: NetWorthAccount[],
-    baseCurrency: string,
-    client?: SupabaseClient
+    baseCurrency: string
   ): Promise<number> {
     const eligible = accounts.filter(
       a => a.include_in_net_worth !== false && a.is_active !== false
     )
+
     if (eligible.length === 0) return 0
+
     const converted = await ExchangeRateService.convertBatch(
-      eligible.map(a => ({ amount: a.balance, currency: a.currency })),
-      baseCurrency,
-      undefined,
-      client
+      eligible.map(a => ({
+        amount: a.balance,
+        currency: a.currency,
+      })),
+      baseCurrency
     )
+
     return converted.reduce((sum, v) => sum + v, 0)
   },
 
@@ -66,8 +68,12 @@ export const NetWorthEngine = {
     asOf: Date
   ): Record<string, number> {
     const targetTime = asOf.getTime()
+
     const balances: Record<string, number> = {}
-    for (const acc of accounts) balances[acc.id] = acc.balance
+
+    for (const acc of accounts) {
+      balances[acc.id] = acc.balance
+    }
 
     const sorted = [...transactions].sort((a, b) => {
       const aTime = new Date(a.date || a.created_at).getTime()
@@ -77,6 +83,7 @@ export const NetWorthEngine = {
 
     for (const tx of sorted) {
       const txTime = new Date(tx.date || tx.created_at).getTime()
+
       if (txTime < targetTime) continue
       if (balances[tx.account_id] === undefined) continue
 
@@ -85,8 +92,11 @@ export const NetWorthEngine = {
       } else if (tx.type === 'expense') {
         balances[tx.account_id] += tx.amount
       } else if (tx.type === 'transfer') {
-        if (tx.transfer_type === 'debit') balances[tx.account_id] += tx.amount
-        else if (tx.transfer_type === 'credit') balances[tx.account_id] -= tx.amount
+        if (tx.transfer_type === 'debit') {
+          balances[tx.account_id] += tx.amount
+        } else if (tx.transfer_type === 'credit') {
+          balances[tx.account_id] -= tx.amount
+        }
       }
     }
 
@@ -95,57 +105,92 @@ export const NetWorthEngine = {
 
   /**
    * Produces a daily time series of base-currency net worth for the
-   * trailing `days` days (inclusive of today). Each day's conversion uses
-   * that day's historical/DB rate when available, falling back per the
-   * ExchangeRateService resolution order.
+   * trailing `days` days (inclusive of today).
    */
   async getHistoricalSnapshots(
     accounts: NetWorthAccount[],
     transactions: NetWorthTransaction[],
     baseCurrency: string,
-    days = 30,
-    client?: SupabaseClient
+    days = 30
   ): Promise<NetWorthSnapshot[]> {
-    const eligibleIds = new Set(
-      accounts.filter(a => a.include_in_net_worth !== false && a.is_active !== false).map(a => a.id)
+    const eligibleAccounts = accounts.filter(
+      a => a.include_in_net_worth !== false && a.is_active !== false
     )
-    const eligibleAccounts = accounts.filter(a => eligibleIds.has(a.id))
+
     const snapshots: NetWorthSnapshot[] = []
     const today = new Date()
 
     for (let i = days - 1; i >= 0; i--) {
-      const d = new Date(today.getFullYear(), today.getMonth(), today.getDate() - i)
+      const d = new Date(
+        today.getFullYear(),
+        today.getMonth(),
+        today.getDate() - i
+      )
+
       const dateStr = d.toISOString().slice(0, 10)
-      const label = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
 
-      const balances = this.computeHistoricalBalances(eligibleAccounts, transactions, d)
-      const items = eligibleAccounts.map(a => ({ amount: balances[a.id] ?? 0, currency: a.currency }))
-      const converted = await ExchangeRateService.convertBatch(items, baseCurrency, dateStr, client)
-      const value = Math.round(converted.reduce((sum, v) => sum + v, 0))
+      const label = d.toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+      })
 
-      snapshots.push({ dateStr, label, value })
+      const balances = this.computeHistoricalBalances(
+        eligibleAccounts,
+        transactions,
+        d
+      )
+
+      const items = eligibleAccounts.map(a => ({
+        amount: balances[a.id] ?? 0,
+        currency: a.currency,
+      }))
+
+      const converted = await ExchangeRateService.convertBatch(
+        items,
+        baseCurrency,
+        dateStr
+      )
+
+      const value = Math.round(
+        converted.reduce((sum, v) => sum + v, 0)
+      )
+
+      snapshots.push({
+        dateStr,
+        label,
+        value,
+      })
     }
 
     return snapshots
   },
 
-  /** Net worth grouped by account type, normalized to baseCurrency. Used for allocation breakdowns. */
+  /**
+   * Net worth grouped by account type, normalized to baseCurrency.
+   * Used for allocation breakdowns.
+   */
   async byAccountType(
     accounts: (NetWorthAccount & { type: string })[],
-    baseCurrency: string,
-    client?: SupabaseClient
+    baseCurrency: string
   ): Promise<Record<string, number>> {
-    const eligible = accounts.filter(a => a.include_in_net_worth !== false && a.is_active !== false)
-    const converted = await ExchangeRateService.convertBatch(
-      eligible.map(a => ({ amount: a.balance, currency: a.currency })),
-      baseCurrency,
-      undefined,
-      client
+    const eligible = accounts.filter(
+      a => a.include_in_net_worth !== false && a.is_active !== false
     )
+
+    const converted = await ExchangeRateService.convertBatch(
+      eligible.map(a => ({
+        amount: a.balance,
+        currency: a.currency,
+      })),
+      baseCurrency
+    )
+
     const result: Record<string, number> = {}
+
     eligible.forEach((a, i) => {
       result[a.type] = (result[a.type] ?? 0) + converted[i]
     })
+
     return result
   },
 }
