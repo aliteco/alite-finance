@@ -5,6 +5,7 @@ import DashboardShell from '@/components/dashboard-shell'
 import DashboardOnboarding from '@/components/dashboard-onboarding'
 import DashboardInsights from '@/components/dashboard-insights'
 import { getBudgetProgress } from '@/app/actions/budgets'
+import { NetWorthEngine } from '@/lib/engines/net-worth-engine'
 
 interface Profile {
   base_currency: string
@@ -17,6 +18,7 @@ interface Account {
   balance: number
   type: string
   color?: string
+  include_in_net_worth: boolean
 }
 
 interface Transaction {
@@ -66,7 +68,7 @@ async function getDashboardPayload() {
 
     supabase
       .from('accounts')
-      .select('id, name, currency, balance, type, color')
+      .select('id, name, currency, balance, type, color, include_in_net_worth') // ← added field
       .eq('user_id', user.id)
       .eq('is_active', true)
       .order('balance', { ascending: false }),
@@ -109,6 +111,9 @@ async function getDashboardPayload() {
   const budgets: Budget[] = (budgetsRes.data as unknown as Budget[]) || []
   const overdueRecurringCount = overdueRecurringRes.count ?? 0
 
+  // Compute net worth server-side with proper currency conversion
+  const netWorth = await NetWorthEngine.currentNetWorth(accounts, profile.base_currency)
+
   return {
     profile,
     accounts,
@@ -117,6 +122,7 @@ async function getDashboardPayload() {
     budgetProgress,
     overdueRecurringCount,
     baseCurrency: profile.base_currency,
+    netWorth,
   }
 }
 
@@ -128,6 +134,7 @@ export default async function DashboardPage() {
     budgetProgress,
     overdueRecurringCount,
     baseCurrency,
+    netWorth,
   } = await getDashboardPayload()
 
   if (accounts.length === 0 || transactions.length === 0) {
@@ -168,6 +175,7 @@ export default async function DashboardPage() {
         budgets={budgets}
         budgetProgress={budgetProgress}
         baseCurrency={baseCurrency}
+        netWorth={netWorth}
       />
     </div>
   )

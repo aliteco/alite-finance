@@ -209,7 +209,7 @@ export default function SettingsForm({
                 Privacy Mode
               </p>
               <p className="text-xs text-muted-foreground leading-normal">
-                Hide and obscure sensitive balance metrics across your dashboards.
+                Hide and obscure sensitive balance metrics on your insights.
               </p>
             </div>
 

@@ -17,7 +17,7 @@ export class ExchangeRateService {
   private static liveCache: CacheEntry | null = null
 
   private static API_URL = process.env.NEXT_PUBLIC_RATES_URL!
-  private static API_SECRET = process.env.NEXT_PUBLIC_RATES_SECRET!
+  private static API_SECRET = process.env.NEXT_PUBLIC_RATES_KEY!
 
   /**
    * Fetch live USD-based rates

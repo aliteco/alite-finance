@@ -14,7 +14,8 @@ const ACCOUNT_TYPES = [
 ] as const
 
 const COMMON_CURRENCIES = [
-  'IDR', 'USD', 'EUR', 'SGD', 'JPY', 'GBP', 'AUD', 'MYR', 'TWD',
+  'IDR', 'USD', 'EUR', 'TWD', 'JPY', 'SGD', 'GBP',
+  'AUD', 'CNY', 'HKD', 'KRW', 'MYR', 'THB', 'PHP', 'VND',
 ]
 
 interface AccountFormProps {
@@ -100,11 +101,11 @@ export default function AccountForm({ initialCurrency }: AccountFormProps) {
               role="radio"
               aria-checked={type === t.value}
               onClick={() => setType(t.value)}
-              className={`rounded-xl px-3 py-2 text-xs font-medium transition-colors focus-visible:ring-2 focus-visible:ring-offset-2
-                ${type === t.value
-                  ? 'bg-primary text-primary-foreground'
-                  : 'bg-muted text-muted-foreground hover:text-foreground'
-                }`}
+              className={`rounded-xl px-3 py-2 text-xs font-medium transition-all focus-visible:ring-2 focus-visible:ring-offset-2 border ${
+                type === t.value
+                  ? 'bg-foreground/10 border-foreground/35 text-foreground font-bold'
+                  : 'bg-transparent border-border text-muted-foreground hover:text-foreground hover:bg-muted/40'
+              }`}
             >
               {t.label}
             </button>
@@ -119,18 +120,23 @@ export default function AccountForm({ initialCurrency }: AccountFormProps) {
           <label htmlFor="account-currency" className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest block mb-2">
             Currency
           </label>
-          <select
-            id="account-currency"
-            value={currency}
-            onChange={e => setCurrency(e.target.value)}
-            className="w-full rounded-xl border border-border bg-background px-3 py-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
-          >
+          <div className="flex flex-wrap gap-2">
             {COMMON_CURRENCIES.map(c => (
-              <option key={c} value={c}>
+              <button
+                key={c}
+                type="button"
+                onClick={() => setCurrency(c)}
+                aria-pressed={currency === c}
+                className={`rounded-xl px-3 py-2 text-xs font-medium transition-all focus-visible:ring-2 border ${
+                  currency === c
+                    ? 'bg-foreground/10 border-foreground/35 text-foreground font-bold'
+                    : 'bg-transparent border-border text-muted-foreground hover:text-foreground hover:bg-muted/40'
+                }`}
+              >
                 {c}
-              </option>
+              </button>
             ))}
-          </select>
+          </div>
         </div>
 
         <div className="border-t border-border pt-4">

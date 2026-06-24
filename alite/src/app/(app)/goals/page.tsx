@@ -5,20 +5,13 @@ import React, { useEffect, useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
-import { 
-  Target, 
-  Sparkles, 
-  Calendar, 
-  CheckCircle2, 
-  TrendingUp, 
-  Search, 
-  ArrowUpRight, 
-  Clock, 
-  ShieldAlert,
-  ChevronRight,
-  Info,
-  DollarSign
+import {
+  Target,
+  Sparkles,
+  TrendingUp,
+  Search,
 } from 'lucide-react'
+import PageLoadingSkeleton from '@/components/page-loading-skeleton'
 
 interface Goal {
   id: string
@@ -50,59 +43,61 @@ function daysUntil(dateStr: string | null): string | null {
   return `${(days / 365).toFixed(1)}y left`
 }
 
+type TabId = 'all' | 'active' | 'completed'
+
 export default function GoalsPage() {
   const router = useRouter()
   const [goals, setGoals] = useState<Goal[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [searchQuery, setSearchQuery] = useState('')
-  const [activeTab, setActiveTab] = useState<'all' | 'active' | 'completed'>('all')
+  const [activeTab, setActiveTab] = useState<TabId>('all')
   const [privacyEnabled, setPrivacyEnabled] = useState(false)
-  const [simulateDeposit, setSimulateDeposit] = useState(0) // Slider top-up simulation
-
-  const fetchGoals = async () => {
-    try {
-      const supabase = createClient()
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) {
-        router.push('/login')
-        return
-      }
-
-      const { data: goalsData, error: err } = await supabase
-        .from('goals')
-        .select('id, name, description, target_amount, current_amount, currency, target_date, icon, color, is_completed')
-        .eq('user_id', user.id)
-        .eq('is_active', true)
-        .order('is_completed', { ascending: true })
-        .order('target_date', { ascending: true, nullsFirst: false })
-
-      if (err) throw err
-      setGoals((goalsData as Goal[]) ?? [])
-    } catch (err: any) {
-      setError(err.message || 'Failed to load goals')
-    } finally {
-      setLoading(false)
-    }
-  }
+  const [simulateDeposit, setSimulateDeposit] = useState(0)
 
   useEffect(() => {
+    let active = true
+
+    async function fetchGoals() {
+      try {
+        const supabase = createClient()
+        const { data: { user } } = await supabase.auth.getUser()
+        if (!user) {
+          router.push('/login')
+          return
+        }
+
+        const { data: goalsData, error: err } = await supabase
+          .from('goals')
+          .select('id, name, description, target_amount, current_amount, currency, target_date, icon, color, is_completed')
+          .eq('user_id', user.id)
+          .eq('is_active', true)
+          .order('is_completed', { ascending: true })
+          .order('target_date', { ascending: true, nullsFirst: false })
+
+        if (err) throw err
+        if (active) setGoals((goalsData as Goal[]) ?? [])
+      } catch (err: unknown) {
+        if (active) setError(err instanceof Error ? err.message : 'Failed to load goals')
+      } finally {
+        if (active) setLoading(false)
+      }
+    }
+
     fetchGoals()
 
-    // Setup privacy listener
     const checkPrivacy = () => {
       setPrivacyEnabled(localStorage.getItem('alite_privacy_mode') === 'true')
     }
     checkPrivacy()
     window.addEventListener('alite_privacy_changed', checkPrivacy)
     return () => {
+      active = false
       window.removeEventListener('alite_privacy_changed', checkPrivacy)
     }
-  }, [])
+  }, [router])
 
-  const wrapPrivacy = (val: string) => {
-    return privacyEnabled ? '••••' : val
-  }
+  const wrapPrivacy = (val: string) => (privacyEnabled ? '••••••' : val)
 
   const formatCurrency = (amount: number, currency: string) => {
     try {
@@ -123,75 +118,54 @@ export default function GoalsPage() {
   const totalsByCurrency = useMemo(() => {
     const totals: Record<string, { target: number; current: number }> = {}
     goals.forEach(g => {
-      if (!totals[g.currency]) {
-        totals[g.currency] = { target: 0, current: 0 }
-      }
+      if (!totals[g.currency]) totals[g.currency] = { target: 0, current: 0 }
       totals[g.currency].target += g.target_amount
       totals[g.currency].current += g.current_amount
     })
     return totals
   }, [goals])
 
-  // Filtered list
-  const filteredGoals = useMemo(() => {
-    return goals.filter(g => {
-      const queryMatch = g.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                         (g.description && g.description.toLowerCase().includes(searchQuery.toLowerCase()))
-      
-      const tabMatch = 
-        activeTab === 'all' ? true :
-        activeTab === 'active' ? !g.is_completed :
-        activeTab === 'completed' ? g.is_completed : true
-
-      return queryMatch && tabMatch
-    })
-  }, [goals, searchQuery, activeTab])
-
-  // Top Up deposit simulator engine
   const simulatedGoals = useMemo(() => {
     if (simulateDeposit <= 0 || active.length === 0) return goals
-
-    // Split the simulation deposit evenly across all ACTIVE goals to see the impact
     const slice = simulateDeposit / active.length
-
     return goals.map(g => {
       if (g.is_completed) return g
       const simulatedCurrent = Math.min(g.target_amount, g.current_amount + slice)
-      return {
-        ...g,
-        current_amount: simulatedCurrent,
-        is_completed: simulatedCurrent >= g.target_amount
-      }
+      return { ...g, current_amount: simulatedCurrent, is_completed: simulatedCurrent >= g.target_amount }
     })
   }, [goals, simulateDeposit, active])
 
   const simulatedTotalsByCurrency = useMemo(() => {
     const totals: Record<string, { target: number; current: number }> = {}
     simulatedGoals.forEach(g => {
-      if (!totals[g.currency]) {
-        totals[g.currency] = { target: 0, current: 0 }
-      }
+      if (!totals[g.currency]) totals[g.currency] = { target: 0, current: 0 }
       totals[g.currency].target += g.target_amount
       totals[g.currency].current += g.current_amount
     })
     return totals
   }, [simulatedGoals])
 
+  const filteredGoals = useMemo(() => {
+    return simulatedGoals.filter(g => {
+      const queryMatch =
+        g.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (g.description && g.description.toLowerCase().includes(searchQuery.toLowerCase()))
+      const tabMatch =
+        activeTab === 'all' ? true :
+        activeTab === 'active' ? !g.is_completed :
+        g.is_completed
+      return queryMatch && tabMatch
+    })
+  }, [simulatedGoals, searchQuery, activeTab])
+
   if (loading) {
-    return (
-      <div className="p-6 max-w-lg mx-auto space-y-6">
-        <div className="h-10 w-48 bg-muted animate-pulse rounded-lg" />
-        <div className="h-28 bg-muted animate-pulse rounded-2xl" />
-        <div className="h-56 bg-muted animate-pulse rounded-2xl" />
-      </div>
-    )
+    return <PageLoadingSkeleton variant="grid" />
   }
 
   return (
     <div className="min-h-screen bg-background pb-28">
       <div className="max-w-md md:max-w-5xl lg:max-w-6xl mx-auto px-4 pt-8 space-y-6 md:space-y-8">
 
-        {/* ── Header ── */}
         <div className="flex items-center justify-between border-b border-border/40 pb-4">
           <div>
             <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-[0.12em] mb-1">
@@ -203,43 +177,46 @@ export default function GoalsPage() {
           </div>
           <Link
             href="/goals/new"
-            className="inline-flex items-center justify-center gap-1.5 h-10 px-4 rounded-xl bg-primary text-primary-foreground text-xs font-bold hover:opacity-90 transition-opacity shrink-0"
+            className="inline-flex items-center justify-center gap-1.5 h-10 px-4 rounded-xl bg-primary text-primary-foreground text-xs font-bold hover:opacity-90 transition-opacity shrink-0 focus-visible:ring-2 focus-visible:ring-offset-2"
             aria-label="Create goal"
           >
             <span>+ New Goal</span>
           </Link>
         </div>
 
+        {error && (
+          <p role="alert" className="text-xs text-expense bg-expense/10 rounded-xl px-4 py-3 border border-expense/20">
+            {error}
+          </p>
+        )}
+
         {goals.length === 0 ? (
           <div className="rounded-2xl px-6 py-14 text-center border border-border bg-card">
             <div className="text-4xl mb-4" aria-hidden="true">🎯</div>
             <p className="text-sm font-semibold text-foreground mb-1">No goals configured</p>
             <p className="text-xs text-muted-foreground mb-5 max-w-xs mx-auto">
-              Configure a custom target—an emergency cushion, a luxury flight, or seed investment capital—and monitor progress dynamically.
+              Configure a custom target — an emergency cushion, a flight, or seed capital — and track progress.
             </p>
             <Link
               href="/goals/new"
-              className="inline-flex items-center gap-2 h-9 px-4 rounded-xl bg-primary text-primary-foreground text-xs font-semibold hover:opacity-90 transition-opacity"
+              className="inline-flex items-center gap-2 h-9 px-4 rounded-xl bg-primary text-primary-foreground text-xs font-semibold hover:opacity-90 transition-opacity focus-visible:ring-2"
             >
               + Create Goal
             </Link>
           </div>
         ) : (
-          /* Desktop Split Layout Grid */
           <div className="grid grid-cols-1 md:grid-cols-12 gap-6 md:gap-8 items-start">
-            
-            {/* Left Col: Target Achievement Bento */}
+
             <div className="md:col-span-5 md:sticky md:top-6 space-y-6">
-              
+
               <div className="relative rounded-2xl px-6 py-6 border border-border bg-card overflow-hidden shadow-sm">
                 <div
                   className="absolute inset-0 pointer-events-none"
-                  style={{
-                    background: 'radial-gradient(ellipse 65% 55% at 80% -10%, rgba(99,102,241,0.08) 0%, transparent 70%)',
-                  }}
+                  style={{ background: 'radial-gradient(ellipse 65% 55% at 80% -10%, rgba(99,102,241,0.08) 0%, transparent 70%)' }}
+                  aria-hidden="true"
                 />
                 <h3 className="text-xs font-bold uppercase tracking-wider text-indigo-500 mb-4 flex items-center gap-1.5">
-                  <Target size={14} /> Milestone Diagnostics
+                  <Target size={14} aria-hidden="true" /> Milestone Diagnostics
                 </h3>
 
                 <div className="grid grid-cols-2 gap-4 mb-6">
@@ -251,9 +228,7 @@ export default function GoalsPage() {
                   </div>
                   <div className="bg-muted/10 p-3 rounded-xl border border-border/40">
                     <p className="text-[10px] text-muted-foreground uppercase tracking-wide font-medium">Settled Targets</p>
-                    <p className="text-2xl font-black text-income mt-0.5">
-                      {completed.length} settled
-                    </p>
+                    <p className="text-2xl font-black text-income mt-0.5">{completed.length} settled</p>
                   </div>
                 </div>
 
@@ -269,11 +244,15 @@ export default function GoalsPage() {
                             {wrapPrivacy(formatCurrency(val.current, curr))} / {wrapPrivacy(formatCurrency(val.target, curr))}
                           </span>
                         </div>
-                        <div className="h-1.5 rounded-full overflow-hidden bg-muted">
-                          <div 
-                            className="h-full rounded-full bg-indigo-500 transition-all duration-300" 
-                            style={{ width: `${ratio}%` }}
-                          />
+                        <div
+                          className="h-1.5 rounded-full overflow-hidden bg-muted"
+                          role="progressbar"
+                          aria-valuenow={ratio}
+                          aria-valuemin={0}
+                          aria-valuemax={100}
+                          aria-label={`${curr} goal progress`}
+                        >
+                          <div className="h-full rounded-full bg-indigo-500 transition-all duration-300" style={{ width: `${ratio}%` }} />
                         </div>
                       </div>
                     )
@@ -281,27 +260,28 @@ export default function GoalsPage() {
                 </div>
               </div>
 
-              {/* Deposit Simulation Interactive Box */}
               {active.length > 0 && (
                 <section className="bg-card border border-border rounded-2xl p-5 shadow-sm space-y-4">
                   <div className="flex items-center justify-between">
                     <div>
                       <h4 className="text-xs font-bold uppercase tracking-wider text-primary flex items-center gap-1.5">
-                        <Sparkles size={13} className="text-primary" /> Top-Up Windfall Simulator
+                        <Sparkles size={13} className="text-primary" aria-hidden="true" /> Top-Up Windfall Simulator
                       </h4>
-                      <p className="text-[11px] text-muted-foreground">See how an immediate cash bonus reduces active goals debt</p>
+                      <p className="text-[11px] text-muted-foreground">See how a cash bonus affects your active goals</p>
                     </div>
                     {simulateDeposit > 0 && (
-                      <button 
+                      <button
                         onClick={() => setSimulateDeposit(0)}
-                        className="text-[10px] hover:underline font-bold text-muted-foreground hover:text-foreground"
+                        className="text-[10px] hover:underline font-bold text-muted-foreground hover:text-foreground focus-visible:ring-2 rounded"
                       >
                         Reset
                       </button>
                     )}
                   </div>
-                  
-                  <input 
+
+                  <label htmlFor="windfall-slider" className="sr-only">Simulated windfall amount</label>
+                  <input
+                    id="windfall-slider"
                     type="range"
                     min="0"
                     max="10000"
@@ -320,7 +300,7 @@ export default function GoalsPage() {
 
                   {simulateDeposit > 0 && (
                     <p className="text-[11px] text-muted-foreground leading-relaxed italic border-l-2 border-indigo-400 pl-2">
-                       Simulates injecting <strong className="text-foreground">{formatCurrency(simulateDeposit / active.length, goals[0]?.currency ?? 'USD')}</strong> into each of your {active.length} active goals immediately! Look at the cards on the right of the screen or totals gauge to observe updated balances.
+                      Simulates injecting <strong className="text-foreground">{formatCurrency(simulateDeposit / active.length, goals[0]?.currency ?? 'USD')}</strong> into each of your {active.length} active goals.
                     </p>
                   )}
                 </section>
@@ -329,39 +309,41 @@ export default function GoalsPage() {
               <div className="hidden md:block rounded-2xl bg-muted/20 border border-border/30 p-4 shadow-sm">
                 <p className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground mb-1">Target Speed Metrics</p>
                 <p className="text-[11px] text-muted-foreground leading-relaxed">
-                  Required daily savings are computed chronologically using calendar remaining days. Keep goals optimized with periodic Top-ups.
+                  Required savings are computed from calendar days remaining. Use top-ups to adjust pace.
                 </p>
               </div>
 
             </div>
 
-            {/* Right Col: Spacious Goals list and Grid */}
             <div className="md:col-span-7 space-y-6">
 
-              {/* Goal Search and Filter Tabs */}
               <div className="space-y-3">
                 <div className="flex items-center gap-2 bg-card border border-border rounded-xl px-3 h-10 shadow-sm">
-                  <Search size={15} className="text-muted-foreground shrink-0" />
+                  <Search size={15} className="text-muted-foreground shrink-0" aria-hidden="true" />
+                  <label htmlFor="goal-search" className="sr-only">Search goals</label>
                   <input
-                    type="text"
+                    id="goal-search"
+                    type="search"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Search goals by name or descriptives..."
+                    placeholder="Search goals by name or description..."
                     className="bg-transparent text-xs w-full focus:outline-none placeholder-muted-foreground"
                   />
                 </div>
 
-                <div className="flex gap-1.5 overflow-x-auto pb-1">
-                  {[
+                <div className="flex gap-1.5 overflow-x-auto pb-1" role="tablist" aria-label="Goal filters">
+                  {([
                     { id: 'all', label: 'All Targets' },
                     { id: 'active', label: `Active (${active.length})` },
-                    { id: 'completed', label: `Completed (${completed.length})` }
-                  ].map(tab => (
+                    { id: 'completed', label: `Completed (${completed.length})` },
+                  ] as { id: TabId; label: string }[]).map(tab => (
                     <button
                       key={tab.id}
                       type="button"
-                      onClick={() => setActiveTab(tab.id as any)}
-                      className={`px-3.5 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap border transition
+                      role="tab"
+                      aria-selected={activeTab === tab.id}
+                      onClick={() => setActiveTab(tab.id)}
+                      className={`px-3.5 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap border transition focus-visible:ring-2
                         ${activeTab === tab.id
                           ? 'bg-primary text-primary-foreground border-primary'
                           : 'bg-card border-border hover:bg-muted text-muted-foreground'
@@ -372,33 +354,20 @@ export default function GoalsPage() {
                   ))}
                 </div>
               </div>
-              
+
               {filteredGoals.length === 0 ? (
                 <div className="rounded-2xl px-6 py-14 text-center border border-border bg-card shadow-sm">
                   <div className="text-3xl mb-3" aria-hidden="true">🎯</div>
                   <p className="text-sm font-semibold text-foreground mb-1">No matching targets found</p>
                   <p className="text-xs text-muted-foreground max-w-xs mx-auto">
-                    Try modifying your search text queries or switching filter labels.
+                    Try a different search term or filter.
                   </p>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {simulatedGoals
-                    .filter(g => {
-                      const queryMatch = g.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                                         (g.description && g.description.toLowerCase().includes(searchQuery.toLowerCase()))
-                      
-                      const tabMatch = 
-                        activeTab === 'all' ? true :
-                        activeTab === 'active' ? !g.is_completed :
-                        activeTab === 'completed' ? g.is_completed : true
-
-                      return queryMatch && tabMatch
-                    })
-                    .map(g => (
-                      <GoalCardItem key={g.id} goal={g} wrapPrivacy={wrapPrivacy} formatCurrency={formatCurrency} />
-                    ))
-                  }
+                  {filteredGoals.map(g => (
+                    <GoalCardItem key={g.id} goal={g} wrapPrivacy={wrapPrivacy} formatCurrency={formatCurrency} />
+                  ))}
                 </div>
               )}
 
@@ -418,29 +387,13 @@ function getSuggestedSaving(current: number, target: number, targetDateStr: stri
   const now = new Date()
   const diffTime = targetDate.getTime() - now.getTime()
   const daysLeft = Math.max(1, Math.ceil(diffTime / (1000 * 60 * 60 * 24)))
-  
   const remainingAmount = target - current
-  
   const monthsLeft = daysLeft / 30.43
-  if (monthsLeft >= 1) {
-    return {
-      value: remainingAmount / monthsLeft,
-      unit: 'mo',
-    }
-  } else {
-    const weeksLeft = daysLeft / 7
-    if (weeksLeft >= 1) {
-      return {
-        value: remainingAmount / weeksLeft,
-        unit: 'wk',
-      }
-    } else {
-      return {
-        value: remainingAmount / daysLeft,
-        unit: 'day',
-      }
-    }
-  }
+
+  if (monthsLeft >= 1) return { value: remainingAmount / monthsLeft, unit: 'mo' }
+  const weeksLeft = daysLeft / 7
+  if (weeksLeft >= 1) return { value: remainingAmount / weeksLeft, unit: 'wk' }
+  return { value: remainingAmount / daysLeft, unit: 'day' }
 }
 
 interface GoalCardItemProps {
@@ -457,7 +410,7 @@ function GoalCardItem({ goal, wrapPrivacy, formatCurrency }: GoalCardItemProps) 
   return (
     <Link
       href={`/goals/${goal.id}`}
-      className="block rounded-2xl border border-border bg-card px-4 py-4 hover:shadow-md hover:border-indigo-500/20 transition-all duration-300"
+      className="block rounded-2xl border border-border bg-card px-4 py-4 hover:shadow-md hover:border-indigo-500/20 transition-all duration-300 focus-visible:ring-2"
     >
       <div className="flex items-start gap-3 mb-3">
         <div
@@ -483,9 +436,7 @@ function GoalCardItem({ goal, wrapPrivacy, formatCurrency }: GoalCardItemProps) 
       <div className="flex items-baseline justify-between mb-1.5">
         <p className="text-xs font-extrabold tabular-nums text-foreground">
           {wrapPrivacy(formatCurrency(goal.current_amount, goal.currency))}
-          <span className="font-normal text-muted-foreground">
-            {' '} / {wrapPrivacy(formatCurrency(goal.target_amount, goal.currency))}
-          </span>
+          <span className="font-normal text-muted-foreground"> / {wrapPrivacy(formatCurrency(goal.target_amount, goal.currency))}</span>
         </p>
         <p className="text-xs font-bold tabular-nums text-muted-foreground">{percentage}%</p>
       </div>
@@ -507,7 +458,7 @@ function GoalCardItem({ goal, wrapPrivacy, formatCurrency }: GoalCardItemProps) 
       {suggestedSaving && !goal.is_completed && (
         <div className="mt-3.5 pt-2.5 border-t border-border/40 text-[10px] text-muted-foreground flex items-center justify-between">
           <span className="flex items-center gap-1 font-medium">
-            <TrendingUp size={11} className="text-indigo-400" />
+            <TrendingUp size={11} className="text-indigo-400" aria-hidden="true" />
             <span>Required top-up rate:</span>
           </span>
           <span className="font-bold text-foreground bg-muted/45 px-2 py-0.5 rounded-lg border border-border/30 font-mono">

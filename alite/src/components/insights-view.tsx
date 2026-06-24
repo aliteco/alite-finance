@@ -2,7 +2,7 @@
 'use client'
 
 import React, { useState, useEffect, useMemo } from 'react'
-import { TrendingUp, TrendingDown, PiggyBank, Flame, Sparkles, Smile, ShieldAlert, BadgeInfo } from 'lucide-react'
+import { TrendingUp, TrendingDown, PiggyBank, Flame, Sparkles, Smile, BadgeInfo } from 'lucide-react'
 import {
   ResponsiveContainer,
   BarChart,
@@ -24,12 +24,17 @@ interface InsightsViewProps {
   burn: BurnRateResult
 }
 
+const DEFAULT_SAVINGS_TARGET = 20
+
 export default function InsightsView({ baseCurrency, cashflow, spending, savings, burn }: InsightsViewProps) {
+  const [mounted, setMounted] = useState(false)
   const [privacyEnabled, setPrivacyEnabled] = useState(false)
-  const [savingsTarget, setSavingsTarget] = useState(20)
-  const [lifestyleDiscount, setLifestyleDiscount] = useState(0) // slider percentage (0 to 50%)
+  const [savingsTarget, setSavingsTarget] = useState(DEFAULT_SAVINGS_TARGET)
+  const [lifestyleDiscount, setLifestyleDiscount] = useState(0)
 
   useEffect(() => {
+    setMounted(true)
+
     const checkPrivacy = () => {
       setPrivacyEnabled(localStorage.getItem('alite_privacy_mode') === 'true')
     }
@@ -37,10 +42,10 @@ export default function InsightsView({ baseCurrency, cashflow, spending, savings
       const stored = localStorage.getItem('alite_savings_target')
       if (stored) setSavingsTarget(parseInt(stored, 10))
     }
-    
+
     checkPrivacy()
     checkSavingsTarget()
-    
+
     window.addEventListener('alite_privacy_changed', checkPrivacy)
     window.addEventListener('alite_savings_target_changed', checkSavingsTarget)
     return () => {
@@ -49,9 +54,7 @@ export default function InsightsView({ baseCurrency, cashflow, spending, savings
     }
   }, [])
 
-  const wrapPrivacy = (val: string) => {
-    return privacyEnabled ? '••••' : val
-  }
+  const wrapPrivacy = (val: string) => (mounted && privacyEnabled ? '••••••' : val)
 
   function formatCurrency(amount: number, currency: string) {
     try {
@@ -68,26 +71,17 @@ export default function InsightsView({ baseCurrency, cashflow, spending, savings
 
   const isRunwayInfinite = !Number.isFinite(burn.runwayMonths)
 
-  // 50/30/20 classification
   const allocationBreakdown = useMemo(() => {
     let needsSum = 0
     let wantsSum = 0
 
     spending.forEach(item => {
       const name = item.name.toLowerCase()
-      // Classify as needs vs wants
       if (
-        name.includes('rent') ||
-        name.includes('utilit') ||
-        name.includes('bill') ||
-        name.includes('tax') ||
-        name.includes('grocer') ||
-        name.includes('gas') ||
-        name.includes('health') ||
-        name.includes('medi') ||
-        name.includes('insur') ||
-        name.includes('transport') ||
-        name.includes('commut')
+        name.includes('rent') || name.includes('utilit') || name.includes('bill') ||
+        name.includes('tax') || name.includes('grocer') || name.includes('gas') ||
+        name.includes('health') || name.includes('medi') || name.includes('insur') ||
+        name.includes('transport') || name.includes('commut')
       ) {
         needsSum += item.value
       } else {
@@ -103,48 +97,30 @@ export default function InsightsView({ baseCurrency, cashflow, spending, savings
     const wantsPct = netIncomeDef > 0 ? (wantsSum / netIncomeDef) * 100 : 0
     const savingsPct = netIncomeDef > 0 ? (netSavings / netIncomeDef) * 100 : 0
 
-    return {
-      needs: needsSum,
-      needsPct,
-      wants: wantsSum,
-      wantsPct,
-      savings: netSavings,
-      savingsPct,
-      totalIncome: netIncomeDef,
-      totalExp
-    }
+    return { needs: needsSum, needsPct, wants: wantsSum, wantsPct, savings: netSavings, savingsPct, totalIncome: netIncomeDef, totalExp }
   }, [spending, savings])
 
-  // Dynamic Health Rating Score (0 to 100)
   const healthScore = useMemo(() => {
-    let score = 50 // baseline
-    
-    // 1. Savings rate component (max +25 points, penalty for negative savings)
+    let score = 50
     const currentRate = savings.savingsRate
     if (currentRate >= savingsTarget) score += 25
     else if (currentRate > 0) score += (currentRate / savingsTarget) * 25
-    else score -= 30 // saving rate below 0 drops rating
+    else score -= 30
 
-    // 2. Runway level component (max +25 points)
     if (isRunwayInfinite) score += 25
     else if (burn.runwayMonths >= 12) score += 25
     else if (burn.runwayMonths >= 6) score += 15
     else if (burn.runwayMonths >= 3) score += 5
-    else score -= 15 // extremely low runway drops score
+    else score -= 15
 
-    // 3. Wants/lifestyle ratio component (max +25 points)
     if (allocationBreakdown.wantsPct <= 30) score += 25
     else if (allocationBreakdown.wantsPct <= 45) score += 15
     else score -= 10
 
-    // 4. Overdue/Liability penalty (if any)
-    score = Math.min(100, Math.max(10, Math.round(score)))
-    return score
+    return Math.min(100, Math.max(10, Math.round(score)))
   }, [savings, burn, savingsTarget, isRunwayInfinite, allocationBreakdown])
 
-  // Runway discount slider multiplier:
   const simulatedExpenses = useMemo(() => {
-    // reduce wants by the lifestyleDiscount percent
     const wantsReduced = allocationBreakdown.wants * (1 - lifestyleDiscount / 100)
     return allocationBreakdown.needs + wantsReduced
   }, [allocationBreakdown, lifestyleDiscount])
@@ -152,7 +128,6 @@ export default function InsightsView({ baseCurrency, cashflow, spending, savings
   const simulatedRunway = useMemo(() => {
     if (savings.income >= simulatedExpenses) return Infinity
     const monthlyNetBurn = simulatedExpenses - savings.income
-    // assuming reserve amount is monthlyBurn * runwayMonths
     const currentReserves = burn.monthlyBurn * burn.runwayMonths
     if (monthlyNetBurn <= 0) return Infinity
     return currentReserves / monthlyNetBurn
@@ -173,44 +148,43 @@ export default function InsightsView({ baseCurrency, cashflow, spending, savings
           </div>
           <div className="flex gap-2">
             <span className="text-[11px] bg-muted px-3 py-1.5 rounded-xl border border-border/70 font-semibold flex items-center gap-1 text-muted-foreground">
-              <Sparkles size={11} className="text-primary animate-pulse" />
+              <Sparkles size={11} className="text-primary" aria-hidden="true" />
               Intelligence Engine Active
             </span>
           </div>
         </div>
 
-        {/* Financial health scorecard index banner */}
         <section className="bg-card border border-border rounded-3xl p-5 shadow-sm grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
           <div className="md:col-span-4 flex flex-col items-center justify-center space-y-2 border-b md:border-b-0 md:border-r border-border pb-5 md:pb-0 md:pr-6">
             <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground text-center">
               Wealth Health Score
             </span>
             <div className="relative w-28 h-28 flex items-center justify-center">
-              <svg className="absolute inset-0 w-full h-full transform -rotate-90">
+              <svg className="absolute inset-0 w-full h-full transform -rotate-90" aria-hidden="true">
                 <circle cx="56" cy="56" r="48" stroke="var(--muted)" strokeWidth="6" fill="transparent" />
-                <circle 
-                  cx="56" 
-                  cy="56" 
-                  r="48" 
-                  stroke="var(--primary)" 
-                  strokeWidth="8" 
-                  fill="transparent" 
+                <circle
+                  cx="56"
+                  cy="56"
+                  r="48"
+                  stroke="var(--primary)"
+                  strokeWidth="8"
+                  fill="transparent"
                   strokeDasharray={2 * Math.PI * 48}
-                  strokeDashoffset={2 * Math.PI * 48 * (1 - healthScore / 100)}
+                  strokeDashoffset={mounted ? 2 * Math.PI * 48 * (1 - healthScore / 100) : 2 * Math.PI * 48}
                   strokeLinecap="round"
                   className="transition-all duration-500"
                 />
               </svg>
               <div className="flex flex-col items-center">
-                <span className="text-3xl font-black text-foreground tracking-tight">{healthScore}</span>
+                <span className="text-3xl font-black text-foreground tracking-tight">{mounted ? healthScore : '—'}</span>
                 <span className="text-[9px] uppercase font-bold text-muted-foreground">Index</span>
               </div>
             </div>
-            <span className={`text-[11px] font-bold uppercase px-3 py-1 rounded-full 
-              ${healthScore >= 80 
-                ? 'bg-emerald-500/10 text-emerald-500' 
-                : healthScore >= 55 
-                ? 'bg-amber-500/10 text-amber-500' 
+            <span className={`text-[11px] font-bold uppercase px-3 py-1 rounded-full
+              ${healthScore >= 80
+                ? 'bg-emerald-500/10 text-emerald-500'
+                : healthScore >= 55
+                ? 'bg-amber-500/10 text-amber-500'
                 : 'bg-red-500/10 text-red-500'}`}>
               {healthScore >= 80 ? 'Excellent' : healthScore >= 55 ? 'Good' : 'Needs Optimization'}
             </span>
@@ -218,29 +192,28 @@ export default function InsightsView({ baseCurrency, cashflow, spending, savings
 
           <div className="md:col-span-8 space-y-3.5">
             <h3 className="text-sm font-bold text-foreground flex items-center gap-1.5 leading-none">
-              <Smile size={16} className="text-primary" /> Advice Diagnostic
+              <Smile size={16} className="text-primary" aria-hidden="true" /> Advice Diagnostic
             </h3>
             <p className="text-xs text-muted-foreground leading-relaxed">
-              {healthScore >= 80 
-                ? `Exceptional structure! Your outstanding savings rate of ${Math.round(savings.savingsRate)}% easily secures your ${savingsTarget}% custom financial target. Keep deploying assets to high-yield or brokerage accounts.`
+              {healthScore >= 80
+                ? `Exceptional structure. Your savings rate of ${Math.round(savings.savingsRate)}% comfortably clears your ${savingsTarget}% target.`
                 : healthScore >= 55
-                ? `Decent financial shield. Your savings stand at ${Math.round(savings.savingsRate)}%. Consider optimizing non-essential expenses like leisure subscriptions and restaurant visits to hit your target of ${savingsTarget}%.`
-                : `Active optimization recommended. Your savings index has dropped below sustainable standards. Prioritize structuring tight spending constraints, lowering subscription bleed, or configuring liquid backup safeguards.`}
+                ? `Decent buffer. Savings sit at ${Math.round(savings.savingsRate)}%. Trimming non-essential spend could help reach ${savingsTarget}%.`
+                : `Active attention recommended. Your savings rate has dropped below a sustainable level — review recurring costs and discretionary spend.`}
             </p>
             <div className="grid grid-cols-2 gap-3 text-[11px] font-medium text-foreground pt-1.5">
               <div className="flex items-center gap-1.5">
-                <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${savings.savingsRate >= savingsTarget ? 'bg-emerald-500' : 'bg-amber-500'}`} />
+                <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${savings.savingsRate >= savingsTarget ? 'bg-emerald-500' : 'bg-amber-500'}`} aria-hidden="true" />
                 <span>Savings target: <strong className="font-mono">{savingsTarget}%</strong></span>
               </div>
               <div className="flex items-center gap-1.5">
-                <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${isRunwayInfinite || burn.runwayMonths >= 6 ? 'bg-emerald-500' : 'bg-red-500'}`} />
-                <span>Safe runway cushion: <strong className="font-mono">{isRunwayInfinite ? 'Infinite' : 'Healthy'}</strong></span>
+                <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${isRunwayInfinite || burn.runwayMonths >= 6 ? 'bg-emerald-500' : 'bg-red-500'}`} aria-hidden="true" />
+                <span>Runway cushion: <strong className="font-mono">{isRunwayInfinite ? 'Infinite' : 'Healthy'}</strong></span>
               </div>
             </div>
           </div>
         </section>
 
-        {/* KPI Core Row */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           <KpiCard
             label="Income (mo.)"
@@ -268,7 +241,6 @@ export default function InsightsView({ baseCurrency, cashflow, spending, savings
           />
         </div>
 
-        {/* Two-Column Chart Matrix */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <section className="bg-card border border-border rounded-2xl p-5 shadow-sm space-y-4">
             <div>
@@ -276,19 +248,23 @@ export default function InsightsView({ baseCurrency, cashflow, spending, savings
               <p className="text-[11px] text-muted-foreground">Last {cashflow.length} months</p>
             </div>
             <div className="h-64 w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={cashflow} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                  <XAxis dataKey="month" tick={{ fill: 'var(--muted-foreground)', fontSize: 10 }} axisLine={false} tickLine={false} />
-                  <YAxis tick={{ fill: 'var(--muted-foreground)', fontSize: 9 }} axisLine={false} tickLine={false}
-                    tickFormatter={v => (v >= 1000 ? `${(v / 1000).toFixed(0)}k` : String(v))} />
-                  <Tooltip
-                    contentStyle={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 12, fontSize: 11 }}
-                    formatter={(value) => [wrapPrivacy(formatCurrency(Number(value ?? 0), baseCurrency)), '']}
-                  />
-                  <Bar dataKey="income" fill="#10b981" radius={[4, 4, 0, 0]} name="Income" />
-                  <Bar dataKey="expense" fill="#ef4444" radius={[4, 4, 0, 0]} name="Expense" />
-                </BarChart>
-              </ResponsiveContainer>
+              {mounted ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={cashflow} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                    <XAxis dataKey="month" tick={{ fill: 'var(--muted-foreground)', fontSize: 10 }} axisLine={false} tickLine={false} />
+                    <YAxis tick={{ fill: 'var(--muted-foreground)', fontSize: 9 }} axisLine={false} tickLine={false}
+                      tickFormatter={v => (v >= 1000 ? `${(v / 1000).toFixed(0)}k` : String(v))} />
+                    <Tooltip
+                      contentStyle={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 12, fontSize: 11 }}
+                      formatter={(value) => [wrapPrivacy(formatCurrency(Number(value ?? 0), baseCurrency)), '']}
+                    />
+                    <Bar dataKey="income" fill="#10b981" radius={[4, 4, 0, 0]} name="Income" />
+                    <Bar dataKey="expense" fill="#ef4444" radius={[4, 4, 0, 0]} name="Expense" />
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="h-full w-full bg-muted/20 animate-pulse rounded-xl" aria-hidden="true" />
+              )}
             </div>
           </section>
 
@@ -304,16 +280,18 @@ export default function InsightsView({ baseCurrency, cashflow, spending, savings
             ) : (
               <div className="h-64 flex flex-col">
                 <div className="flex-1 relative">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie data={spending} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={55} outerRadius={75} paddingAngle={3}>
-                        {spending.map((entry, i) => (
-                          <Cell key={i} fill={entry.color} />
-                        ))}
-                      </Pie>
-                      <Tooltip formatter={(value) => [wrapPrivacy(formatCurrency(Number(value ?? 0), baseCurrency)), '']} />
-                    </PieChart>
-                  </ResponsiveContainer>
+                  {mounted && (
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie data={spending} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={55} outerRadius={75} paddingAngle={3}>
+                          {spending.map((entry, i) => (
+                            <Cell key={i} fill={entry.color} />
+                          ))}
+                        </Pie>
+                        <Tooltip formatter={(value) => [wrapPrivacy(formatCurrency(Number(value ?? 0), baseCurrency)), '']} />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  )}
                   <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
                     <span className="text-[10px] uppercase font-bold text-muted-foreground">Total</span>
                     <span className="text-sm font-bold text-foreground tabular-nums">
@@ -337,15 +315,14 @@ export default function InsightsView({ baseCurrency, cashflow, spending, savings
           </section>
         </div>
 
-        {/* 50/30/20 standard split card */}
         <section className="bg-card border border-border rounded-2xl p-5 shadow-sm space-y-4">
           <div>
             <h2 className="text-sm font-bold text-foreground flex items-center gap-1.5">
-              <BadgeInfo size={15} className="text-indigo-400" />
+              <BadgeInfo size={15} className="text-indigo-400" aria-hidden="true" />
               The 50/30/20 Budgeting Diagnostic
             </h2>
             <p className="text-xs text-muted-foreground">
-              Evaluates how much of your total incoming capital funds Needs (survival), Wants (lifestyle), and Savings (net reserve).
+              How much of your income funds Needs (survival), Wants (lifestyle), and Savings (net reserve).
             </p>
           </div>
 
@@ -377,16 +354,15 @@ export default function InsightsView({ baseCurrency, cashflow, spending, savings
           </div>
         </section>
 
-        {/* Runway & Expense cut slider simulator */}
         <section className="bg-card border border-border rounded-2xl p-5 shadow-sm space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <div>
               <h2 className="text-sm font-bold text-foreground flex items-center gap-1.5">
-                <Flame size={15} className="text-orange-400" />
+                <Flame size={15} className="text-orange-400" aria-hidden="true" />
                 Live Runway & Burn Rate Simulator
               </h2>
               <p className="text-xs text-muted-foreground">
-                Slide to simulate cutting non-essential lifestyle wants and see how it pushes your runway further.
+                Simulate cutting lifestyle spend and see the effect on your runway.
               </p>
             </div>
             <div className="text-xs bg-orange-500/10 text-orange-500 font-bold px-2 py-1 rounded-lg">
@@ -395,7 +371,9 @@ export default function InsightsView({ baseCurrency, cashflow, spending, savings
           </div>
 
           <div className="space-y-4">
-            <input 
+            <label htmlFor="lifestyle-discount-slider" className="sr-only">Lifestyle spend discount percentage</label>
+            <input
+              id="lifestyle-discount-slider"
               type="range"
               min="0"
               max="60"
@@ -422,8 +400,8 @@ export default function InsightsView({ baseCurrency, cashflow, spending, savings
 
             <p className="text-xs text-muted-foreground leading-relaxed italic">
               {isRunwayInfinite
-                ? 'Your average income completely covers your average expenses — your reserves are protected.'
-                : `By cutting wants spending by ${lifestyleDiscount}%, you reduce estimated monthly expenses from ${formatCurrency(allocationBreakdown.totalExp, baseCurrency)} down to ${formatCurrency(simulatedExpenses, baseCurrency)}, giving you ${!Number.isFinite(simulatedRunway) ? 'unbounded' : simulatedRunway.toFixed(1)} months of emergency buffer.`}
+                ? 'Your average income covers your average expenses — reserves are protected.'
+                : `Cutting wants spend by ${lifestyleDiscount}% reduces estimated monthly expenses from ${formatCurrency(allocationBreakdown.totalExp, baseCurrency)} to ${formatCurrency(simulatedExpenses, baseCurrency)}, giving roughly ${!Number.isFinite(simulatedRunway) ? 'unbounded' : simulatedRunway.toFixed(1)} months of buffer.`}
             </p>
           </div>
         </section>
@@ -475,15 +453,22 @@ function BudgetBar({
     <div className="space-y-1.5 bg-muted/15 border border-border/40 p-3 rounded-xl flex flex-col justify-between">
       <div>
         <p className="text-[11px] font-bold text-foreground line-clamp-1">{label}</p>
-        <p className="text-[10px] text-muted-foreground">Standard target is: <strong className="font-mono text-foreground/80">{target}</strong></p>
+        <p className="text-[10px] text-muted-foreground">Standard target: <strong className="font-mono text-foreground/80">{target}</strong></p>
       </div>
       <div className="space-y-1 pt-1">
         <div className="flex justify-between items-baseline text-xs font-mono">
           <span className="font-black text-foreground">{amount}</span>
           <span className="font-semibold text-muted-foreground">({actual})</span>
         </div>
-        <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
-          <div 
+        <div
+          className="h-1.5 w-full bg-muted rounded-full overflow-hidden"
+          role="progressbar"
+          aria-valuenow={Math.round(Math.min(100, Math.max(0, percentage)))}
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-label={`${label} allocation`}
+        >
+          <div
             className={`h-full rounded-full ${color} transition-all duration-500`}
             style={{ width: `${Math.min(100, Math.max(0, percentage))}%` }}
           />

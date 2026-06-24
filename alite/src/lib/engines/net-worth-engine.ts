@@ -1,5 +1,3 @@
-// filepath: alite/src/lib/engines/net-worth-engine.ts
-
 import { ExchangeRateService } from '@/lib/services/exchange-rate-service'
 
 export interface NetWorthAccount {
@@ -25,16 +23,10 @@ export interface NetWorthSnapshot {
   value: number
 }
 
-/**
- * NetWorthEngine — all net worth math lives here. Pages and components
- * call these pure/async functions and render the result; they never sum
- * account balances or roll back transactions themselves.
- */
 export const NetWorthEngine = {
   /**
-   * Sums account balances normalized into baseCurrency "as of now".
-   * Excludes accounts where include_in_net_worth === false or
-   * is_active === false (when those fields are present).
+   * Sums account balances normalized into baseCurrency.
+   * This is what generates your "Net Worth" header.
    */
   async currentNetWorth(
     accounts: NetWorthAccount[],
@@ -46,7 +38,8 @@ export const NetWorthEngine = {
 
     if (eligible.length === 0) return 0
 
-    const converted = await ExchangeRateService.convertBatch(
+    // Batch convert all accounts to the base currency (e.g., IDR)
+    const convertedValues = await ExchangeRateService.convertBatch(
       eligible.map(a => ({
         amount: a.balance,
         currency: a.currency,
@@ -54,13 +47,13 @@ export const NetWorthEngine = {
       baseCurrency
     )
 
-    return converted.reduce((sum, v) => sum + v, 0)
+    // Sum the converted values
+    return convertedValues.reduce((sum, v) => sum + v, 0)
   },
 
   /**
-   * Reconstructs per-account balances at an arbitrary point in time by
-   * rolling back every transaction that occurred at or after that time,
-   * starting from the current balance. O(accounts + transactions).
+   * Reconstructs historical balances. 
+   * Useful for the Net Worth Chart.
    */
   computeHistoricalBalances(
     accounts: NetWorthAccount[],
@@ -68,7 +61,6 @@ export const NetWorthEngine = {
     asOf: Date
   ): Record<string, number> {
     const targetTime = asOf.getTime()
-
     const balances: Record<string, number> = {}
 
     for (const acc of accounts) {
@@ -83,7 +75,6 @@ export const NetWorthEngine = {
 
     for (const tx of sorted) {
       const txTime = new Date(tx.date || tx.created_at).getTime()
-
       if (txTime < targetTime) continue
       if (balances[tx.account_id] === undefined) continue
 
@@ -103,10 +94,6 @@ export const NetWorthEngine = {
     return balances
   },
 
-  /**
-   * Produces a daily time series of base-currency net worth for the
-   * trailing `days` days (inclusive of today).
-   */
   async getHistoricalSnapshots(
     accounts: NetWorthAccount[],
     transactions: NetWorthTransaction[],
@@ -121,76 +108,23 @@ export const NetWorthEngine = {
     const today = new Date()
 
     for (let i = days - 1; i >= 0; i--) {
-      const d = new Date(
-        today.getFullYear(),
-        today.getMonth(),
-        today.getDate() - i
-      )
-
+      const d = new Date(today.getFullYear(), today.getMonth(), today.getDate() - i)
       const dateStr = d.toISOString().slice(0, 10)
+      const label = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
 
-      const label = d.toLocaleDateString('en-US', {
-        month: 'short',
-        day: 'numeric',
-      })
-
-      const balances = this.computeHistoricalBalances(
-        eligibleAccounts,
-        transactions,
-        d
-      )
+      const balances = this.computeHistoricalBalances(eligibleAccounts, transactions, d)
 
       const items = eligibleAccounts.map(a => ({
         amount: balances[a.id] ?? 0,
         currency: a.currency,
       }))
 
-      const converted = await ExchangeRateService.convertBatch(
-        items,
-        baseCurrency,
-        dateStr
-      )
+      const converted = await ExchangeRateService.convertBatch(items, baseCurrency, dateStr)
+      const value = Math.round(converted.reduce((sum, v) => sum + v, 0))
 
-      const value = Math.round(
-        converted.reduce((sum, v) => sum + v, 0)
-      )
-
-      snapshots.push({
-        dateStr,
-        label,
-        value,
-      })
+      snapshots.push({ dateStr, label, value })
     }
 
     return snapshots
-  },
-
-  /**
-   * Net worth grouped by account type, normalized to baseCurrency.
-   * Used for allocation breakdowns.
-   */
-  async byAccountType(
-    accounts: (NetWorthAccount & { type: string })[],
-    baseCurrency: string
-  ): Promise<Record<string, number>> {
-    const eligible = accounts.filter(
-      a => a.include_in_net_worth !== false && a.is_active !== false
-    )
-
-    const converted = await ExchangeRateService.convertBatch(
-      eligible.map(a => ({
-        amount: a.balance,
-        currency: a.currency,
-      })),
-      baseCurrency
-    )
-
-    const result: Record<string, number> = {}
-
-    eligible.forEach((a, i) => {
-      result[a.type] = (result[a.type] ?? 0) + converted[i]
-    })
-
-    return result
   },
 }

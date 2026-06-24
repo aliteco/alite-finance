@@ -1,6 +1,8 @@
+// filepath: alite/src/app/(app)/accounts/page.tsx
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
+import { NetWorthEngine } from '@/lib/engines/net-worth-engine'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -48,7 +50,6 @@ const ACCOUNT_TYPE_ICONS: Record<string, string> = {
   other: '🗂',
 }
 
-// Group accounts by type for a cleaner layout
 function groupByType(accounts: Account[]): Map<string, Account[]> {
   const map = new Map<string, Account[]>()
   const order = ['bank', 'savings', 'cash', 'credit_card', 'investment', 'other']
@@ -87,13 +88,22 @@ export default async function AccountsPage() {
   const activeAccounts = accounts.filter(a => a.is_active)
   const netWorthAccounts = activeAccounts.filter(a => a.include_in_net_worth)
 
-  // NOTE: This is a simplified sum in account currency (not converted to base).
-  // For multi-currency accuracy across mixed-currency accounts, the dashboard's
-  // base_currency_amount-derived net worth is authoritative; this is a quick view.
-  const netWorth = netWorthAccounts.reduce((sum, a) => sum + (a.balance ?? 0), 0)
+  // Properly converted net worth
+  const netWorth = await NetWorthEngine.currentNetWorth(netWorthAccounts, baseCurrency)
 
   const grouped = groupByType(activeAccounts)
-  const hasMixedCurrencies = new Set(netWorthAccounts.map(a => a.currency)).size > 1
+
+  // Compute converted subtotal for each type group
+  const groupSubtotals = new Map<string, number>()
+  await Promise.all(
+    Array.from(grouped.entries()).map(async ([type, group]) => {
+      const subtotal = await NetWorthEngine.currentNetWorth(
+        group.map(a => ({ ...a, include_in_net_worth: true, is_active: true })),
+        baseCurrency
+      )
+      groupSubtotals.set(type, subtotal)
+    })
+  )
 
   return (
     <div className="min-h-screen bg-background pb-28">
@@ -122,12 +132,11 @@ export default async function AccountsPage() {
         {accounts.length === 0 ? (
           <EmptyState />
         ) : (
-          /* Desktop responsive split grid */
           <div className="grid grid-cols-1 md:grid-cols-12 gap-6 md:gap-8 items-start">
-            
-            {/* Left side panel: Net Worth & summary subtotals (sticky on desktop) */}
+
+            {/* Left side panel: Net Worth & summary subtotals */}
             <div className="md:col-span-5 md:sticky md:top-6 space-y-6">
-              
+
               {/* Net Worth Summary */}
               <div
                 className="rounded-2xl border px-6 py-6 relative overflow-hidden shadow-sm"
@@ -149,7 +158,6 @@ export default async function AccountsPage() {
                 </p>
                 <p className="text-xs text-muted-foreground mt-2">
                   {baseCurrency} · {netWorthAccounts.length} account{netWorthAccounts.length !== 1 ? 's' : ''} in net worth
-                  {hasMixedCurrencies && ' · mixed currencies, not converted'}
                 </p>
 
                 {activeAccounts.length > 0 && (
@@ -157,8 +165,8 @@ export default async function AccountsPage() {
                     className="mt-6 pt-5 grid grid-cols-2 gap-x-4 gap-y-4"
                     style={{ borderTop: '0.5px solid var(--border)' }}
                   >
-                    {Array.from(grouped.entries()).map(([type, group]) => {
-                      const subtotal = group.reduce((s, a) => s + (a.balance ?? 0), 0)
+                    {Array.from(grouped.entries()).map(([type, _group]) => {
+                      const subtotal = groupSubtotals.get(type) ?? 0
                       return (
                         <div key={type} className="bg-muted/10 p-2.5 rounded-xl border border-border/40">
                           <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-0.5 font-medium truncate">
@@ -173,7 +181,7 @@ export default async function AccountsPage() {
                   </div>
                 )}
               </div>
-              
+
               <div className="hidden md:block rounded-2xl bg-muted/20 border border-border/30 p-5">
                 <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground mb-1.5">Asset Allocation Mode</p>
                 <p className="text-xs text-muted-foreground leading-relaxed">
@@ -294,7 +302,12 @@ function AccountRow({
             isNegative ? 'text-expense' : 'text-foreground'
           }`}
         >
-          {formatCurrency(account.balance, account.currency)}
+          {new Intl.NumberFormat('en-US', {
+            style: 'currency',
+            currency: account.currency,
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 0,
+          }).format(account.balance)}
         </p>
         <svg
           width="6"

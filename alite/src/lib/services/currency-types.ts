@@ -24,8 +24,7 @@ export const CURRENCY_SYMBOLS: Readonly<Record<string, string>> = {
 
 export const SUPPORTED_CURRENCIES: readonly CurrencyCode[] = [
   'IDR', 'USD', 'EUR', 'TWD', 'JPY', 'SGD', 'GBP',
-  'AUD', 'CNY', 'HKD', 'KRW', 'MYR', 'THB', 'PHP', 'VND',
-]
+  'AUD', 'CNY', 'HKD', 'KRW', 'MYR', 'THB', 'PHP', 'VND',]
 
 export const STATIC_USD_FALLBACK_RATES: Readonly<Record<string, number>> = {
   USD: 1.0,

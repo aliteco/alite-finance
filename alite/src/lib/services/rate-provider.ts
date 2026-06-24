@@ -14,11 +14,11 @@ export class OpenErApiProvider implements RateProvider {
   readonly name = 'google-apps-script-rates'
 
   async fetchUsdRates(): Promise<Record<string, number>> {
-    const url = process.env.RATES_URL
-    const secret = process.env.RATES_SECRET
+    const url = process.env.NEXT_PUBLIC_RATES_URL
+    const secret = process.env.NEXT_PUBLIC_RATES_KEY
 
     if (!url || !secret) {
-      throw new Error('Missing RATES_URL or RATES_SECRET')
+      throw new Error('Missing RATES_URL or RATES_KEY')
     }
 
     const response = await fetch(`${url}?key=${secret}`, {

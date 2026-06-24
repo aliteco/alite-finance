@@ -1,7 +1,7 @@
 // filepath: alite/src/components/portfolio-view.tsx
 'use client'
 
-import React, { useState, useMemo } from 'react'
+import React, { useState, useMemo, useEffect } from 'react'
 import Link from 'next/link'
 import { useCurrency } from '@/components/currency-provider'
 import {
@@ -29,11 +29,16 @@ export default function PortfolioView({
   baseCurrency: string
 }) {
   const { convert, format, isLoadingRates } = useCurrency()
+  const [mounted, setMounted] = useState(false)
   const [annualContribution, setAnnualContribution] = useState(12000)
   const [expectedReturn, setExpectedReturn] = useState(8)
   const [years, setYears] = useState(10)
   const [showScheduleTable, setShowScheduleTable] = useState(false)
   const [annualExpenseTarget, setAnnualExpenseTarget] = useState(36000)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   const accounts = initialAccounts
 
@@ -84,7 +89,7 @@ export default function PortfolioView({
     return list
   }, [totalAssetsValue, totalLiabilitiesValue, annualContribution, expectedReturn, years])
 
-  if (isLoadingRates && accounts.length > 0) {
+  if ((isLoadingRates && accounts.length > 0) || !mounted) {
     return (
       <div className="p-6 max-w-7xl mx-auto space-y-6" aria-busy="true" aria-live="polite">
         <div className="skeleton h-10 w-48 rounded-lg" />
@@ -298,14 +303,14 @@ export default function PortfolioView({
 
       <div className="bg-card border border-border rounded-3xl p-5 md:p-6 shadow-sm space-y-4">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <h3 className="text-sm font-bold tracking-tight text-foreground">🔥 FIRE Indicator</h3>
+          <h3 className="text-sm font-bold tracking-tight text-foreground">FIRE Indicator</h3>
           <div className="flex items-center gap-2 bg-muted/20 border border-border/40 p-2 rounded-xl text-xs font-semibold tabular-nums">
-            <span>Target expenses:</span>
+            <label htmlFor="fire-target" className="text-muted-foreground">Target expenses:</label>
             <input
+              id="fire-target"
               type="number" min="1000" max="500000" step="1000" value={annualExpenseTarget}
               onChange={(e) => setAnnualExpenseTarget(Number(e.target.value) || 0)}
               className="w-24 bg-transparent text-primary font-bold focus:outline-none text-right"
-              aria-label="Annual expense target"
             />
             <span className="text-muted-foreground">/ yr</span>
           </div>
@@ -330,7 +335,7 @@ export default function PortfolioView({
                   <p className="text-lg font-extrabold text-primary mt-0.5">{firePct}%</p>
                 </div>
               </div>
-              <div className="h-2 w-full rounded-full bg-muted overflow-hidden" role="progressbar" aria-valuenow={firePct} aria-valuemin={0} aria-valuemax={100}>
+              <div className="h-2 w-full rounded-full bg-muted overflow-hidden" role="progressbar" aria-valuenow={firePct} aria-valuemin={0} aria-valuemax={100} aria-label="FIRE progress">
                 <div className="h-full rounded-full bg-primary transition-all duration-500" style={{ width: `${firePct}%` }} />
               </div>
             </div>

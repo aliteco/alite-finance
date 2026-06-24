@@ -1,3 +1,4 @@
+// filepath: alite/src/app/(app)/settings/categories/page.tsx
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
@@ -35,21 +36,19 @@ export default async function CategoriesPage() {
 
   return (
     <div className="min-h-screen bg-background text-foreground antialiased pb-28">
-      {/* Expanded standard layout max-width constraints */}
       <div className="max-w-5xl mx-auto px-4 md:px-8 pt-6 md:pt-12">
-        
+
         <div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-start">
-          
+
           {/* LEFT SIDE: CONTROL PANEL (Sticky on Desktop) */}
           <div className="md:col-span-5 md:sticky md:top-8 space-y-6">
-            {/* Dynamic Structural Header Block */}
             <div className="flex items-center gap-3.5 pb-2">
               <Link
                 href="/settings"
-                className="w-8 h-8 rounded-xl border border-border flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-all active:scale-95"
-                aria-label="Back to configuration dashboard"
+                className="w-8 h-8 rounded-xl border border-border flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-all active:scale-95 focus-visible:ring-2 focus-visible:ring-offset-2"
+                aria-label="Back to settings"
               >
-                <ChevronLeft size={16} strokeWidth={2.5} />
+                <ChevronLeft size={16} strokeWidth={2.5} aria-hidden="true" />
               </Link>
 
               <div className="space-y-0.5">
@@ -62,14 +61,12 @@ export default async function CategoriesPage() {
               </div>
             </div>
 
-            {/* Global Component Inserter Form */}
             <CategoryForm />
           </div>
 
           {/* RIGHT SIDE: LIST VIEWS (Scrollable Stack) */}
           <div className="md:col-span-7 space-y-7">
-            
-            {/* Custom User Category Registry */}
+
             {custom.length > 0 ? (
               <section aria-labelledby="custom-categories" className="space-y-2">
                 <div className="flex items-center justify-between px-1">
@@ -115,15 +112,13 @@ export default async function CategoriesPage() {
                 </div>
               </section>
             ) : (
-              /* Visual placeholder only when user has zero categories created yet */
-              <div className="hidden md:block p-8 border border-dashed border-border rounded-2xl text-center">
+              <div className="p-8 border border-dashed border-border rounded-2xl text-center">
                 <p className="text-xs text-muted-foreground font-medium">
-                  No custom items compiled yet. Use the form tool to map your own targets.
+                  No custom categories yet. Use the form on the left to create your first one.
                 </p>
               </div>
             )}
 
-            {/* Immutable Core Global Registry */}
             <section aria-labelledby="system-categories" className="space-y-2">
               <div className="flex items-center justify-between px-1">
                 <p id="system-categories" className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
@@ -154,12 +149,12 @@ export default async function CategoriesPage() {
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-semibold text-foreground/80 truncate">
                         {cat.name}
-                  </p>
+                      </p>
                       <p className="text-[10px] text-muted-foreground/70 font-medium capitalize tracking-wide">
                         {cat.type} standard
                       </p>
                     </div>
-                    
+
                     <span className="text-[9px] font-bold bg-muted border border-border/60 px-2 py-0.5 rounded-md text-muted-foreground uppercase tracking-wider select-none">
                       Core
                     </span>

@@ -74,6 +74,8 @@ interface DashboardShellProps {
   budgets: Budget[]
   budgetProgress: BudgetProgressLite[]
   baseCurrency: string
+  /** Pre-converted net worth in baseCurrency, computed server-side. */
+  netWorth: number
 }
 
 const CATEGORY_DEFAULT_COLORS: Record<string, string> = {
@@ -118,6 +120,7 @@ export default function DashboardShell({
   budgets,
   budgetProgress,
   baseCurrency,
+  netWorth,
 }: DashboardShellProps) {
   const [range, setRange] = useState<RangeId>('30d')
   const [customRange, setCustomRange] = useState<CustomRange | null>(null)
@@ -172,7 +175,7 @@ export default function DashboardShell({
     return { income, expense, net, savingsRate: income > 0 ? (net / income) * 100 : 0 }
   }, [filteredTxs])
 
-  const netWorth = useMemo(() => accounts.reduce((s, a) => s + (a.balance || 0), 0), [accounts])
+  // netWorth is now passed from the server — no local raw sum needed.
 
   const netWorthTrend = useMemo(() => {
     const now = new Date()

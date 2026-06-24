@@ -15,6 +15,9 @@
   --muted: #f0f0f0;
   --muted-foreground: #737373;
   --muted-foreground-strong: #525252;
+  --selected-bg: #0a0a0a;
+  --selected-fg: #ffffff;
+  --selected-border: #0a0a0a;
 
   /* ── Borders ── */
   --border: rgba(0, 0, 0, 0.08);
@@ -109,6 +112,9 @@
   --muted: #1a1a1c;
   --muted-foreground: #a1a1aa;
   --muted-foreground-strong: #d4d4d8;
+  --selected-bg: #e4e4e7;
+  --selected-fg: #09090b;
+  --selected-border: #e4e4e7;
 
   /* ── Borders ── */
   --border: rgba(255, 255, 255, 0.07);
@@ -197,6 +203,9 @@
   --radius-xl: var(--radius-xl);
   --radius-2xl: var(--radius-2xl);
   --radius-full: var(--radius-full);
+  --color-selected-bg: var(--selected-bg);
+  --color-selected-fg: var(--selected-fg);
+  --color-selected-border: var(--selected-border);
 }
 
 /* ═══════════════════════════════════════════════════════════════

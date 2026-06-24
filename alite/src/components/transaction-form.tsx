@@ -38,7 +38,7 @@ interface TransactionFormProps {
 
 type FormMode = 'expense' | 'income' | 'transfer'
 
-const COMMON_CURRENCIES = ['IDR', 'USD', 'EUR', 'SGD', 'JPY', 'GBP', 'AUD', 'MYR', 'TWD', 'THB', 'PHP']
+const COMMON_CURRENCIES = ['IDR', 'USD', 'EUR', 'TWD', 'JPY', 'SGD', 'GBP', 'AUD', 'CNY', 'HKD', 'KRW', 'MYR', 'THB', 'PHP', 'VND',]
 
 function formatCurrency(amount: number, currency: string) {
   try {
