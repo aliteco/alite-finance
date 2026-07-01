@@ -18,6 +18,8 @@ import NetWorthHero from '@/components/dashboard/net-worth-hero'
 import AccountsRail from '@/components/dashboard/accounts-rail'
 import DateRangePicker, { type CustomRange } from '@/components/dashboard/date-range-picker'
 import { renderCategoryIcon } from '@/lib/icons'
+import { useCurrency } from '@/components/currency-provider'
+import { usePrivacyMode } from '@/lib/hooks/use-privacy-mode'
 
 interface Category {
   id: string
@@ -93,16 +95,6 @@ const RANGES = [
 
 type RangeId = typeof RANGES[number]['id'] | 'custom'
 
-function formatCurrency(amount: number, currency: string) {
-  try {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency', currency, minimumFractionDigits: 0, maximumFractionDigits: 0,
-    }).format(amount)
-  } catch {
-    return `${currency} ${Math.round(amount).toLocaleString()}`
-  }
-}
-
 function formatDateLabel(dateStr: string) {
   const d = new Date(dateStr)
   if (isNaN(d.getTime())) return '—'
@@ -122,6 +114,8 @@ export default function DashboardShell({
   baseCurrency,
   netWorth,
 }: DashboardShellProps) {
+  const { format, convert } = useCurrency()
+  const privacyMode = usePrivacyMode()
   const [range, setRange] = useState<RangeId>('30d')
   const [customRange, setCustomRange] = useState<CustomRange | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
@@ -174,8 +168,6 @@ export default function DashboardShell({
     const net = income - expense
     return { income, expense, net, savingsRate: income > 0 ? (net / income) * 100 : 0 }
   }, [filteredTxs])
-
-  // netWorth is now passed from the server — no local raw sum needed.
 
   const netWorthTrend = useMemo(() => {
     const now = new Date()
@@ -320,10 +312,10 @@ export default function DashboardShell({
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
-        <KpiCard label="Net Worth" value={formatCurrency(netWorth, baseCurrency)} icon={<Wallet size={16} />} sub={`${accounts.length} acct${accounts.length !== 1 ? 's' : ''}`} />
-        <KpiCard label="Income" value={`+${formatCurrency(totals.income, baseCurrency)}`} icon={<TrendingUp size={16} className="text-income" />} sub="Selected range" accent="income" />
-        <KpiCard label="Expenses" value={`−${formatCurrency(totals.expense, baseCurrency)}`} icon={<TrendingDown size={16} className="text-expense" />} sub="Excludes transfers" accent="expense" />
-        <KpiCard label="Net Savings" value={`${totals.net >= 0 ? '+' : ''}${formatCurrency(totals.net, baseCurrency)}`} icon={<PiggyBank size={16} className="text-primary" />} sub={`${Math.round(totals.savingsRate)}% rate`} accent={totals.net >= 0 ? 'income' : 'expense'} />
+        <KpiCard label="Net Worth" amount={netWorth} fromCurrency={baseCurrency} icon={<Wallet size={16} />} sub={`${accounts.length} acct${accounts.length !== 1 ? 's' : ''}`} />
+        <KpiCard label="Income" amount={totals.income} fromCurrency={baseCurrency} icon={<TrendingUp size={16} className="text-income" />} sub="Selected range" accent="income" />
+        <KpiCard label="Expenses" amount={totals.expense} fromCurrency={baseCurrency} icon={<TrendingDown size={16} className="text-expense" />} sub="Excludes transfers" accent="expense" />
+        <KpiCard label="Net Savings" amount={totals.net} fromCurrency={baseCurrency} icon={<PiggyBank size={16} className="text-primary" />} sub={`${Math.round(totals.savingsRate)}% rate`} accent={totals.net >= 0 ? 'income' : 'expense'} />
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
@@ -352,7 +344,7 @@ export default function DashboardShell({
                     tickFormatter={v => (v >= 1000 ? `${(v / 1000).toFixed(0)}k` : String(v))} />
                   <Tooltip
                     contentStyle={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 12, fontSize: 11 }}
-                    formatter={(value) => [formatCurrency(Number(value ?? 0), baseCurrency), '']}
+                    formatter={(value) => [privacyMode ? '******' : format(convert(Number(value ?? 0), baseCurrency)), '']}
                   />
                   <Area type="monotone" dataKey="Income" stroke="#34d399" strokeWidth={2} fill="url(#dashIncomeGrad)" />
                   <Area type="monotone" dataKey="Expense" stroke="#f87171" strokeWidth={2} fill="url(#dashExpenseGrad)" />
@@ -401,6 +393,7 @@ export default function DashboardShell({
                   const isIncome = tx.type === 'income' || (tx.type === 'transfer' && tx.transfer_type === 'credit')
                   const isTransfer = tx.type === 'transfer'
                   const color = tx.categories?.color || CATEGORY_DEFAULT_COLORS[tx.categories?.name || ''] || '#3b82f6'
+                  const convertedAmount = convert(tx.amount, tx.currency)
                   return (
                     <Link
                       href={`/transactions/${tx.id}`}
@@ -425,7 +418,7 @@ export default function DashboardShell({
                         </div>
                       </div>
                       <p className={`text-xs font-bold tabular-nums shrink-0 ml-3 ${isIncome ? 'text-income' : isTransfer ? 'text-primary' : 'text-expense'}`}>
-                        {isIncome ? '+' : '−'}{formatCurrency(tx.amount, tx.currency)}
+                        {isIncome ? '+' : '−'}{privacyMode ? '******' : format(tx.amount, tx.currency)}
                       </p>
                     </Link>
                   )
@@ -480,13 +473,13 @@ export default function DashboardShell({
                       <Pie data={categorySpending} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={42} outerRadius={62} paddingAngle={3}>
                         {categorySpending.map((entry, i) => <Cell key={i} fill={entry.color} />)}
                       </Pie>
-                      <Tooltip formatter={(value) => [formatCurrency(Number(value ?? 0), baseCurrency), '']} />
+                      <Tooltip formatter={(value) => [privacyMode ? '******' : format(convert(Number(value ?? 0), baseCurrency)), '']} />
                     </PieChart>
                   </ResponsiveContainer>
                   <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
                     <span className="text-[9px] uppercase font-bold text-muted-foreground">Total</span>
                     <span className="text-xs font-bold text-foreground tabular-nums">
-                      {formatCurrency(categorySpending.reduce((s, c) => s + c.value, 0), baseCurrency)}
+                      {privacyMode ? '******' : format(convert(categorySpending.reduce((s, c) => s + c.value, 0), baseCurrency))}
                     </span>
                   </div>
                 </div>
@@ -497,7 +490,7 @@ export default function DashboardShell({
                         <span className="w-2.5 h-2.5 rounded-md shrink-0" style={{ backgroundColor: item.color }} aria-hidden="true" />
                         <span className="font-semibold text-foreground truncate">{item.name}</span>
                       </div>
-                      <span className="text-muted-foreground font-mono shrink-0 ml-2">{formatCurrency(item.value, baseCurrency)}</span>
+                      <span className="text-muted-foreground font-mono shrink-0 ml-2">{privacyMode ? '******' : format(convert(item.value, baseCurrency))}</span>
                     </li>
                   ))}
                 </ul>
@@ -524,8 +517,8 @@ export default function DashboardShell({
                     <div className="flex justify-between items-center text-xs">
                       <span className="font-bold text-foreground truncate">{b.name}</span>
                       <span className="text-muted-foreground font-medium shrink-0 ml-2">
-                        <span className={b.isOver ? 'text-expense' : 'text-foreground'}>{formatCurrency(b.spent, b.currency)}</span>
-                        {' / '}{formatCurrency(b.amount, b.currency)}
+                        <span className={b.isOver ? 'text-expense' : 'text-foreground'}>{privacyMode ? '******' : format(b.spent, b.currency)}</span>
+                        {' / '}{privacyMode ? '******' : format(b.amount, b.currency)}
                       </span>
                     </div>
                     <div className="h-1.5 bg-muted rounded-full overflow-hidden" role="progressbar" aria-valuenow={Math.round(b.percentage)} aria-valuemin={0} aria-valuemax={100}>

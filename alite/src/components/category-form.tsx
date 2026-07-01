@@ -9,7 +9,7 @@ import { Plus } from 'lucide-react'
 
 const ICONS = [
   'shopping-bag',
-  'utensils',
+  'tensils',
   'car',
   'home',
   'zap',
@@ -77,7 +77,7 @@ export default function CategoryForm() {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="w-full h-11 rounded-xl bg-neutral-900 text-white dark:bg-white dark:text-neutral-950 text-xs font-bold transition-all active:scale-[0.99] flex items-center justify-center gap-2 shadow-sm hover:opacity-90 focus-visible:ring-2 focus-visible:ring-offset-2"
+        className="w-full h-11 rounded-xl bg-primary text-primary-foreground text-xs font-bold transition-all active:scale-[0.99] flex items-center justify-center gap-2 shadow-sm hover:opacity-90 focus-visible:ring-2 focus-visible:ring-offset-2"
       >
         <Plus size={14} strokeWidth={2.5} aria-hidden="true" />
         <span>New custom category</span>
@@ -134,7 +134,7 @@ export default function CategoryForm() {
                 onClick={() => setType(t)}
                 className={`flex-1 h-8 rounded-lg text-xs font-semibold capitalize transition-all duration-100 active:scale-[0.98] focus-visible:ring-2
                   ${active
-                    ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-950 shadow-sm font-bold'
+                    ? 'bg-selected-bg text-selected-fg shadow-sm font-bold'
                     : 'text-muted-foreground hover:text-foreground'
                   }`}
               >
@@ -167,7 +167,7 @@ export default function CategoryForm() {
                 onClick={() => setIcon(i)}
                 className={`aspect-square rounded-lg flex items-center justify-center transition-all active:scale-95 focus-visible:ring-2
                   ${active
-                    ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-950 shadow-sm scale-105'
+                    ? 'bg-selected-bg text-selected-fg shadow-sm scale-105'
                     : 'bg-card border border-border/60 text-muted-foreground hover:text-foreground hover:border-border-strong'
                   }`}
               >
@@ -197,7 +197,7 @@ export default function CategoryForm() {
                 aria-label={`Select color ${c}`}
                 onClick={() => setColor(c)}
                 className={`w-7 h-7 rounded-full transition-all relative active:scale-90 shadow-inner focus-visible:ring-2 focus-visible:ring-offset-2
-                  ${active ? 'ring-2 ring-offset-2 ring-foreground dark:ring-offset-neutral-900 scale-110' : 'hover:scale-105'}`}
+                  ${active ? 'ring-2 ring-offset-2 ring-foreground scale-110' : 'hover:scale-105'}`}
                 style={{ backgroundColor: c }}
               />
             )
@@ -207,7 +207,7 @@ export default function CategoryForm() {
 
       {/* System Error Alerts */}
       {error && (
-        <p role="alert" aria-live="assertive" className="text-xs font-semibold text-red-500 bg-red-500/10 border border-red-500/20 px-4 py-3 rounded-xl outline-none">
+        <p role="alert" aria-live="assertive" className="text-xs font-semibold text-expense bg-expense/10 border border-expense/20 px-4 py-3 rounded-xl outline-none">
           {error}
         </p>
       )}
@@ -228,7 +228,7 @@ export default function CategoryForm() {
         <button
           type="submit"
           disabled={isPending}
-          className="flex-1 h-10 rounded-xl bg-neutral-900 text-white dark:bg-white dark:text-neutral-950 text-xs font-bold disabled:opacity-40 transition-all active:scale-[0.98] focus-visible:ring-2"
+          className="flex-1 h-10 rounded-xl bg-primary text-primary-foreground text-xs font-bold disabled:opacity-40 transition-all active:scale-[0.98] focus-visible:ring-2"
         >
           {isPending ? 'Creating…' : 'Create category'}
         </button>

@@ -1,8 +1,10 @@
+// filepath: alite/src/components/contribute-form.tsx
 'use client'
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { addGoalContribution } from '@/app/actions/goals'
+import { useCurrency } from '@/components/currency-provider'
 
 interface Account {
   id: string
@@ -20,6 +22,7 @@ export default function ContributeForm({
   goalCurrency: string
 }) {
   const router = useRouter()
+  const { convert } = useCurrency()
   const [isPending, startTransition] = useTransition()
   const [open, setOpen] = useState(false)
   const [amount, setAmount] = useState('')
@@ -33,7 +36,12 @@ export default function ContributeForm({
     if (!numAmount || numAmount <= 0) { setError('Enter a valid amount.'); return }
 
     const account = accounts.find(a => a.id === accountId)
-    const rate = account && account.currency !== goalCurrency ? 1 : 1 // rate lookup omitted; assumes same currency or manual entry
+    // Convert from the source account's native currency into the goal's
+    // currency so contributions accumulate correctly regardless of which
+    // account funded them.
+    const rate = account && account.currency !== goalCurrency
+      ? convert(1, account.currency, goalCurrency)
+      : 1
 
     startTransition(async () => {
       const result = await addGoalContribution({

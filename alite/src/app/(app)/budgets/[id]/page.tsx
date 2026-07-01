@@ -6,18 +6,18 @@ import DeleteBudgetButton from '@/components/delete-budget-button'
 import BudgetProgressBar from '@/components/budget-progress-bar'
 import BudgetChart from '@/components/budget-chart'
 import { getBudgetProgress } from '@/app/actions/budgets'
+import { CURRENCY_SYMBOLS } from '@/lib/services/currency-types'
+import { renderCategoryIcon } from '@/lib/icons'
 
-function formatCurrency(amount: number, currency: string) {
-  try {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency,
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(amount)
-  } catch {
-    return `${currency} ${Math.round(amount).toLocaleString()}`
-  }
+export function formatCurrency(amount: number, currency: string) {
+  const symbol = CURRENCY_SYMBOLS[currency] ?? `${currency} `
+
+  const formatted = new Intl.NumberFormat('en-US', {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+  }).format(amount)
+
+  return `${symbol}${formatted}`
 }
 
 function getPeriodLabel(period: string) {
@@ -175,7 +175,7 @@ export default async function BudgetDetailPage({
             }}
             aria-hidden="true"
           >
-            {budget.categories?.icon ?? budget.name.charAt(0).toUpperCase()}
+            {renderCategoryIcon(budget.categories?.icon, budget.name.charAt(0).toUpperCase())}
           </div>
 
           <h1 className="text-sm font-semibold text-foreground">{budget.name}</h1>

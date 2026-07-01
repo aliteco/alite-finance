@@ -1,3 +1,4 @@
+// filepath: alite/src/components/transaction-form.tsx
 'use client'
 
 import { useState, useEffect, useTransition, useCallback, useId } from 'react'
@@ -8,6 +9,7 @@ import {
   getExchangeRate,
   type TransactionType,
 } from '@/app/actions/transactions'
+import { useCurrency } from '@/components/currency-provider'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -40,19 +42,6 @@ type FormMode = 'expense' | 'income' | 'transfer'
 
 const COMMON_CURRENCIES = ['IDR', 'USD', 'EUR', 'TWD', 'JPY', 'SGD', 'GBP', 'AUD', 'CNY', 'HKD', 'KRW', 'MYR', 'THB', 'PHP', 'VND',]
 
-function formatCurrency(amount: number, currency: string) {
-  try {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency,
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 2,
-    }).format(amount)
-  } catch {
-    return `${currency} ${amount.toLocaleString()}`
-  }
-}
-
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function TransactionForm({
@@ -63,6 +52,7 @@ export default function TransactionForm({
   defaultType,
 }: TransactionFormProps) {
   const router = useRouter()
+  const { format } = useCurrency()
   const [isPending, startTransition] = useTransition()
   const errorId = useId()
 
@@ -369,7 +359,7 @@ export default function TransactionForm({
                   1 {currency} = {exchangeRate} {baseCurrency}
                 </span>
                 <span className="text-[11px] font-semibold text-foreground tabular-nums">
-                  ≈ {formatCurrency(baseCurrencyAmount, baseCurrency)}
+                  ≈ {format(baseCurrencyAmount, baseCurrency)}
                 </span>
               </>
             )}
@@ -593,8 +583,8 @@ export default function TransactionForm({
         {isPending
           ? 'Saving…'
           : mode === 'transfer'
-          ? `Transfer ${numAmount > 0 ? formatCurrency(numAmount, fromCurrency) : ''}`
-          : `Add ${mode} ${numAmount > 0 ? formatCurrency(numAmount, currency) : ''}`}
+          ? `Transfer ${numAmount > 0 ? format(numAmount, fromCurrency) : ''}`
+          : `Add ${mode} ${numAmount > 0 ? format(numAmount, currency) : ''}`}
       </button>
     </form>
   )

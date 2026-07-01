@@ -1,3 +1,4 @@
+// filepath: alite/src/app/(app)/goals/new/page.tsx
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
@@ -28,7 +29,7 @@ export default async function NewGoalPage() {
           <h1 className="text-xl font-bold tracking-tight">New goal</h1>
         </div>
 
-        <GoalForm baseCurrency={profile?.base_currency ?? 'IDR'} />
+        <GoalForm baseCurrency={profile?.base_currency ?? 'USD'} />
       </div>
     </div>
   )

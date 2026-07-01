@@ -212,23 +212,20 @@ export default function SettingsForm({
                 Hide and obscure sensitive balance metrics on your insights.
               </p>
             </div>
-
             <button
               type="button"
               onClick={togglePrivacyMode}
               className={`w-11 h-6 rounded-full p-1 transition-colors duration-200 outline-none shrink-0 relative flex items-center border
                 ${privacyMode 
-                  ? 'bg-neutral-900 border-neutral-900 dark:bg-neutral-800 dark:border-neutral-700' 
-                  : 'bg-muted border-border-strong/20'
+                  ? 'bg-[var(--selected-bg)] border-[var(--selected-border)]' 
+                  : 'bg-muted border-[var(--border)]'
                 }`}
               aria-pressed={privacyMode}
             >
               <span
-                className={`block w-4 h-4 rounded-full shadow-sm transition-transform duration-200 ease-in-out bg-white
-                  ${privacyMode 
-                    ? 'translate-x-5' 
-                    : 'translate-x-0'
-                  }`}
+                className={`block w-4 h-4 rounded-full shadow-sm transition-transform duration-200 ease-in-out
+                  ${privacyMode ? 'translate-x-5' : 'translate-x-0'}
+                  ${privacyMode ? 'bg-[var(--foreground)]' : 'bg-[var(--foreground)]'}`}
               />
             </button>
           </div>
@@ -284,7 +281,7 @@ export default function SettingsForm({
                   onClick={() => setDisplayCurrency(c.code)}
                   className={`flex items-center justify-between rounded-xl border px-3 py-2.5 transition-all duration-150 active:scale-[0.98]
                     ${selected
-                      ? 'bg-neutral-900 border-neutral-900 text-white dark:bg-neutral-800 dark:border-neutral-700 font-bold shadow-sm'
+                      ? 'bg-[var(--selected-bg)] border-[var(--selected-border)] text-[var(--selected-fg)] font-bold shadow-sm'
                       : 'bg-card border-border text-foreground hover:bg-muted/60 hover:border-border-strong'
                     }`}
                 >
@@ -292,7 +289,9 @@ export default function SettingsForm({
                     <span className="text-sm select-none leading-none">{c.flag}</span>
                     <div className="text-left">
                       <p className="text-xs font-bold">{c.code}</p>
-                      <p className={`text-[10px] tracking-tight leading-none ${selected ? 'text-white/80' : 'text-muted-foreground'}`}>{c.label}</p>
+                      <p className={`text-[10px] tracking-tight leading-none ${selected ? 'opacity-80' : 'text-muted-foreground'}`}>
+                        {c.label}
+                      </p>
                     </div>
                   </div>
 

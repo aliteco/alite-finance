@@ -143,7 +143,7 @@ export default function EditGoalForm({
                 onClick={() => setIcon(i)}
                 aria-label={`Select icon ${i}`}
                 className={`w-9 h-9 rounded-xl flex items-center justify-center text-base transition-all focus-visible:ring-2
-                  ${icon === i ? 'bg-primary/15 ring-2 ring-primary' : 'bg-muted hover:bg-muted-foreground/10'}`}
+                  ${icon === i ? 'bg-selected-bg ring-2 ring-selected-bg' : 'bg-muted hover:bg-muted-foreground/10'}`}
               >
                 {i}
               </button>

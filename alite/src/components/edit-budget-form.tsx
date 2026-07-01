@@ -47,7 +47,7 @@ export default function EditBudgetForm({
 
   const expenseCategories = categories.filter(c => c.type === 'expense' || c.type === 'both')
 
-  async function handleSubmit(e: React.SubmitEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setError('')
     setSaved(false)
@@ -117,7 +117,7 @@ export default function EditBudgetForm({
               aria-checked={period === p.value}
               onClick={() => setPeriod(p.value)}
               className={`flex-1 h-9 rounded-lg text-xs font-semibold transition-colors focus-visible:ring-2
-                ${period === p.value ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground'}`}
+                ${period === p.value ? 'bg-selected-bg text-selected-fg shadow-sm' : 'text-muted-foreground'}`}
             >
               {p.label}
             </button>
@@ -134,7 +134,7 @@ export default function EditBudgetForm({
             aria-checked={categoryId === null}
             onClick={() => setCategoryId(null)}
             className={`rounded-xl px-3 py-2 text-xs font-medium transition-colors focus-visible:ring-2
-              ${categoryId === null ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:text-foreground'}`}
+              ${categoryId === null ? 'bg-selected-bg text-selected-fg' : 'bg-muted text-muted-foreground hover:text-foreground'}`}
           >
             All categories
           </button>
@@ -146,7 +146,7 @@ export default function EditBudgetForm({
               aria-checked={categoryId === cat.id}
               onClick={() => setCategoryId(cat.id)}
               className={`rounded-xl px-3 py-2 text-xs font-medium transition-colors focus-visible:ring-2
-                ${categoryId === cat.id ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:text-foreground'}`}
+                ${categoryId === cat.id ? 'bg-selected-bg text-selected-fg' : 'bg-muted text-muted-foreground hover:text-foreground'}`}
             >
               {cat.name}
             </button>

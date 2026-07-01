@@ -1,4 +1,6 @@
 // filepath: alite/src/components/recurring-impact-summary.tsx
+import { CURRENCY_SYMBOLS } from '@/lib/services/currency-types'
+
 interface RecurringImpactSummaryProps {
   monthlyIncome: number
   monthlyExpense: number
@@ -7,16 +9,14 @@ interface RecurringImpactSummaryProps {
 }
 
 function formatCurrency(amount: number, currency: string) {
-  try {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency,
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(amount)
-  } catch {
-    return `${currency} ${Math.round(amount).toLocaleString()}`
-  }
+  const symbol = CURRENCY_SYMBOLS[currency] ?? `${currency} `
+
+  const formatted = new Intl.NumberFormat('en-US', {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+  }).format(amount)
+
+  return `${symbol}${formatted}`
 }
 
 export default function RecurringImpactSummary({

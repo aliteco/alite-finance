@@ -1,17 +1,23 @@
 // filepath: alite/src/components/dashboard/kpi-card.tsx
+'use client'
 
+import { useCurrency } from '@/components/currency-provider'
 import type { ReactNode } from 'react'
 
 interface KpiCardProps {
   label: string
-  value: string
+  amount: number
+  fromCurrency: string
   icon: ReactNode
   sub?: string
   accent?: 'income' | 'expense' | 'neutral'
   trend?: { direction: 'up' | 'down'; label: string } | null
 }
 
-export default function KpiCard({ label, value, icon, sub, accent = 'neutral', trend }: KpiCardProps) {
+export default function KpiCard({ label, amount, fromCurrency, icon, sub, accent = 'neutral', trend }: KpiCardProps) {
+  const { convert, format } = useCurrency()
+
+  const converted = convert(amount, fromCurrency)
   const valueColor =
     accent === 'income' ? 'text-income' : accent === 'expense' ? 'text-expense' : 'text-foreground'
 
@@ -23,7 +29,7 @@ export default function KpiCard({ label, value, icon, sub, accent = 'neutral', t
       </div>
       <div>
         <p className={`text-lg md:text-2xl font-bold tracking-tight tabular-nums truncate ${valueColor}`}>
-          {value}
+          {format(converted)}
         </p>
         <div className="flex items-center gap-1.5 mt-1 min-h-[14px]">
           {sub && <p className="text-[10px] text-muted-foreground truncate">{sub}</p>}

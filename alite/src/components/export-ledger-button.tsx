@@ -1,7 +1,9 @@
+// filepath: alite/src/components/export-ledger-button.tsx
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
 import { Download, Table, FileCode, ChevronDown } from 'lucide-react'
+import { useCurrency } from '@/components/currency-provider'
 
 interface ExportTransaction {
   id: string
@@ -19,6 +21,7 @@ interface ExportLedgerButtonProps {
 }
 
 export default function ExportLedgerButton({ transactions }: ExportLedgerButtonProps) {
+  const { convert, displayCurrency } = useCurrency()
   const [isOpen, setIsOpen] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
 
@@ -35,13 +38,14 @@ export default function ExportLedgerButton({ transactions }: ExportLedgerButtonP
   const handleExportCSV = () => {
     if (transactions.length === 0) return
 
-    const headers = ['Date', 'Description', 'Type', 'Amount', 'Currency', 'Account', 'Category']
+    const headers = ['Date', 'Description', 'Type', 'Amount', 'Currency', `Amount (${displayCurrency})`, 'Account', 'Category']
     const rows = transactions.map(tx => [
       tx.date,
       tx.description || '',
       tx.type,
       tx.amount,
       tx.currency,
+      convert(tx.amount, tx.currency, displayCurrency).toFixed(2),
       tx.accounts?.name || 'Unassigned',
       tx.categories?.name || 'Uncategorized'
     ])
@@ -65,7 +69,13 @@ export default function ExportLedgerButton({ transactions }: ExportLedgerButtonP
   const handleExportJSON = () => {
     if (transactions.length === 0) return
 
-    const jsonContent = JSON.stringify(transactions, null, 2)
+    const enriched = transactions.map(tx => ({
+      ...tx,
+      converted_amount: convert(tx.amount, tx.currency, displayCurrency),
+      converted_currency: displayCurrency,
+    }))
+
+    const jsonContent = JSON.stringify(enriched, null, 2)
     const blob = new Blob([jsonContent], { type: 'application/json;charset=utf-8;' })
     const url = URL.createObjectURL(blob)
     const link = document.createElement('a')

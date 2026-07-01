@@ -3,6 +3,7 @@ import { redirect, notFound } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { renderCategoryIcon } from '@/lib/icons'
+import { CURRENCY_SYMBOLS } from '@/lib/services/currency-types'
 
 interface AccountDetail {
   id: string
@@ -38,17 +39,15 @@ const ACCOUNT_TYPE_LABELS: Record<string, string> = {
   other: 'Other',
 }
 
-function formatCurrency(amount: number, currency: string) {
-  try {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency,
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 2,
-    }).format(amount)
-  } catch {
-    return `${currency} ${amount.toLocaleString()}`
-  }
+export function formatCurrency(amount: number, currency: string) {
+  const symbol = CURRENCY_SYMBOLS[currency] ?? `${currency} `
+
+  const formatted = new Intl.NumberFormat('en-US', {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+  }).format(amount)
+
+  return `${symbol}${formatted}`
 }
 
 function formatDate(iso: string) {
@@ -159,7 +158,7 @@ export default async function AccountDetailPage({
           </div>
           <h1 className="text-sm font-semibold text-foreground">{account.name}</h1>
           <p className="text-[11px] text-muted-foreground mt-0.5">
-            {ACCOUNT_TYPE_LABELS[account.type] ?? account.type} · {account.currency}
+            {ACCOUNT_TYPE_LABELS[account.type] ?? account.type} · {CURRENCY_SYMBOLS[account.currency] ?? account.currency}
             {!account.is_active && <span className="ml-1.5 text-expense">· Archived</span>}
             {!account.include_in_net_worth && <span className="ml-1.5">· Excluded from net worth</span>}
           </p>

@@ -2,8 +2,9 @@
 import { redirect, notFound } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
-import { ICONS } from '@/lib/icons'
+import { renderCategoryIcon } from '@/lib/icons'
 import DeleteTransactionButton from '@/components/delete-transaction-button'
+import { CURRENCY_SYMBOLS } from '@/lib/services/currency-types'
 
 interface TxDetail {
   id: string
@@ -22,12 +23,14 @@ interface TxDetail {
 }
 
 function formatCurrency(amount: number, currency: string) {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency,
+  const symbol = CURRENCY_SYMBOLS[currency] ?? `${currency} `
+
+  const formatted = new Intl.NumberFormat('en-US', {
     minimumFractionDigits: 0,
     maximumFractionDigits: 2,
   }).format(amount)
+
+  return `${symbol}${formatted}`
 }
 
 export default async function TransactionDetailPage({
@@ -97,7 +100,12 @@ export default async function TransactionDetailPage({
             }}
             aria-hidden="true"
           >
-            {isTransfer ? '⇄' : (tx.categories?.icon ?? '•')}
+            {isTransfer   ? '⇄'
+              : renderCategoryIcon(
+                  tx.categories?.icon,
+                  tx.categories?.name ?? 'U',
+                  'w-6 h-6'
+                )}
           </div>
           <p
             className={`text-3xl font-extrabold tabular-nums tracking-tight ${

@@ -162,7 +162,7 @@ export default function RecurringForm({
             aria-checked={categoryId === null}
             onClick={() => setCategoryId(null)}
             className={`rounded-xl px-3 py-2 text-xs font-medium transition-colors focus-visible:ring-2
-              ${categoryId === null ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:text-foreground'}`}
+              ${categoryId === null ? 'bg-selected-bg text-selected-fg' : 'bg-muted text-muted-foreground hover:text-foreground'}`}
           >
             None
           </button>
@@ -174,7 +174,7 @@ export default function RecurringForm({
               aria-checked={categoryId === cat.id}
               onClick={() => setCategoryId(cat.id)}
               className={`rounded-xl px-3 py-2 text-xs font-medium transition-colors focus-visible:ring-2
-                ${categoryId === cat.id ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:text-foreground'}`}
+                ${categoryId === cat.id ? 'bg-selected-bg text-selected-fg' : 'bg-muted text-muted-foreground hover:text-foreground'}`}
             >
               {cat.name}
             </button>
@@ -195,7 +195,7 @@ export default function RecurringForm({
               aria-checked={frequency === f.value}
               onClick={() => setFrequency(f.value)}
               className={`h-9 rounded-lg text-xs font-semibold transition-colors focus-visible:ring-2
-                ${frequency === f.value ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:text-foreground'}`}
+                ${frequency === f.value ? 'bg-selected-bg text-selected-fg' : 'bg-muted text-muted-foreground hover:text-foreground'}`}
             >
               {f.label}
             </button>

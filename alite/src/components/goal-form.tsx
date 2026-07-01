@@ -1,7 +1,9 @@
+// filepath: alite/src/components/goal-form.tsx
 'use client'
 
 import { useState, useTransition } from 'react'
 import { createGoal } from '@/app/actions/goals'
+import { useCurrency } from '@/components/currency-provider'
 
 const ICONS = ['🎯', '✈️', '🏠', '🚗', '💍', '🎓', '🏖️', '💰', '🛡️', '📱']
 const COLORS = ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#ec4899', '#84cc16']
@@ -11,6 +13,10 @@ interface GoalFormProps {
 }
 
 export default function GoalForm({ baseCurrency }: GoalFormProps) {
+  const { displayCurrency } = useCurrency()
+  // New goals are denominated in whichever currency the user is currently
+  // viewing the app in, so progress and targets line up with everything else.
+  const goalCurrency = displayCurrency || baseCurrency
   const [isPending, startTransition] = useTransition()
 
   const [name, setName] = useState('')
@@ -34,7 +40,7 @@ export default function GoalForm({ baseCurrency }: GoalFormProps) {
         name: name.trim(),
         description: description.trim() || null,
         target_amount: amount,
-        currency: baseCurrency,
+        currency: goalCurrency,
         target_date: targetDate || null,
         icon,
         color,
@@ -65,7 +71,7 @@ export default function GoalForm({ baseCurrency }: GoalFormProps) {
 
       <div className="bg-card border border-border rounded-2xl px-4 py-4">
         <label htmlFor="goal-amount" className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest block mb-2">
-          Target amount ({baseCurrency})
+          Target amount ({goalCurrency})
         </label>
         <input
           id="goal-amount"

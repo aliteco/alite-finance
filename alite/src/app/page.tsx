@@ -8,7 +8,7 @@ const NAV_LINKS = [
 
 const FEATURES = [
   {
-    icon: '₿',
+    icon: '$',
     title: 'Multi-currency',
     body: 'Hold IDR, USD, EUR, or more. Each transaction keeps the exchange rate it happened at, so old balances never quietly change value.',
   },

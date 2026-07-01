@@ -9,6 +9,7 @@ import RecurringActions from '@/components/recurring-actions'
 import CatchUpOverdueButton from '@/components/catch-up-overdue-button'
 import PageLoadingSkeleton from '@/components/page-loading-skeleton'
 import { renderCategoryIcon } from '@/lib/icons'
+import { CURRENCY_SYMBOLS } from '@/lib/services/currency-types'
 import {
   Search,
   Clock,
@@ -116,16 +117,12 @@ export default function RecurringPage() {
   const wrapPrivacy = (val: string) => (privacyEnabled ? '••••••' : val)
 
   const formatCurrency = (amount: number, currency: string) => {
-    try {
-      return new Intl.NumberFormat('en-US', {
-        style: 'currency',
-        currency,
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 2,
-      }).format(amount)
-    } catch {
-      return `${currency} ${amount.toLocaleString()}`
-    }
+    const symbol = CURRENCY_SYMBOLS[currency] ?? currency
+
+    return `${symbol}${Math.abs(amount).toLocaleString('en-US', {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 2,
+    })}`
   }
 
   const active = useMemo(() => rows.filter(r => r.is_active), [rows])

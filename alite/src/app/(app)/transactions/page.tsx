@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import ExportLedgerButton from '@/components/export-ledger-button'
 import { renderCategoryIcon } from '@/lib/icons'
+import { CURRENCY_SYMBOLS } from '@/lib/services/currency-types'
 
 const ACCOUNT_TYPE_ICONS: Record<string, string> = {
   cash: '💵',
@@ -33,12 +34,14 @@ type FilterType = 'all' | 'income' | 'expense'
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function formatCurrency(amount: number, currency: string) {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency,
+  const symbol = CURRENCY_SYMBOLS[currency] ?? `${currency} `
+
+  const formatted = new Intl.NumberFormat('en-US', {
     minimumFractionDigits: 0,
     maximumFractionDigits: 2,
   }).format(amount)
+
+  return `${symbol}${formatted}`
 }
 
 function formatDate(iso: string) {

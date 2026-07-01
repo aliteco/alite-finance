@@ -103,7 +103,7 @@ export default function AccountForm({ initialCurrency }: AccountFormProps) {
               onClick={() => setType(t.value)}
               className={`rounded-xl px-3 py-2 text-xs font-medium transition-all focus-visible:ring-2 focus-visible:ring-offset-2 border ${
                 type === t.value
-                  ? 'bg-foreground/10 border-foreground/35 text-foreground font-bold'
+                  ? 'bg-selected-bg border-selected-border text-selected-fg font-bold'
                   : 'bg-transparent border-border text-muted-foreground hover:text-foreground hover:bg-muted/40'
               }`}
             >
@@ -129,7 +129,7 @@ export default function AccountForm({ initialCurrency }: AccountFormProps) {
                 aria-pressed={currency === c}
                 className={`rounded-xl px-3 py-2 text-xs font-medium transition-all focus-visible:ring-2 border ${
                   currency === c
-                    ? 'bg-foreground/10 border-foreground/35 text-foreground font-bold'
+                    ? 'bg-selected-bg border-selected-border text-selected-fg font-bold'
                     : 'bg-transparent border-border text-muted-foreground hover:text-foreground hover:bg-muted/40'
                 }`}
               >

@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import ContributeForm from '@/components/contribute-form'
 import DeleteGoalButton from '@/components/delete-goal-button'
+import { CURRENCY_SYMBOLS } from '@/lib/services/currency-types'
 
 interface Goal {
   id: string
@@ -26,13 +27,15 @@ interface Contribution {
   notes: string | null
 }
 
-function formatCurrency(amount: number, currency: string) {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency,
+export function formatCurrency(amount: number, currency: string) {
+  const symbol = CURRENCY_SYMBOLS[currency] ?? `${currency} `
+
+  const formatted = new Intl.NumberFormat('en-US', {
     minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
+    maximumFractionDigits: 2,
   }).format(amount)
+
+  return `${symbol}${formatted}`
 }
 
 function pct(current: number, target: number) {

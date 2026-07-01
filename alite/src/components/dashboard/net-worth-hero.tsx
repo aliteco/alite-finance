@@ -2,10 +2,11 @@
 
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useMemo, useState, useEffect } from 'react'
 import Link from 'next/link'
 import { ResponsiveContainer, AreaChart, Area, XAxis, Tooltip } from 'recharts'
 import { ChevronRight } from 'lucide-react'
+import { useCurrency } from '@/components/currency-provider'
 
 interface NetWorthHeroProps {
   netWorth: number
@@ -15,19 +16,6 @@ interface NetWorthHeroProps {
   monthChangePct: number | null
 }
 
-function formatCurrency(amount: number, currency: string) {
-  try {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency,
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(amount)
-  } catch {
-    return `${currency} ${Math.round(amount).toLocaleString()}`
-  }
-}
-
 export default function NetWorthHero({
   netWorth,
   baseCurrency,
@@ -35,8 +23,15 @@ export default function NetWorthHero({
   trend,
   monthChangePct,
 }: NetWorthHeroProps) {
-  const [mounted] = useState(true)
+  const { convert, format } = useCurrency()
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
   const isPositiveChange = (monthChangePct ?? 0) >= 0
+  const convertedNetWorth = convert(netWorth, baseCurrency)
 
   const chartData = useMemo(() => trend, [trend])
 
@@ -57,11 +52,11 @@ export default function NetWorthHero({
             Net Worth
           </p>
           <h2 className="text-3xl md:text-4xl font-extrabold tabular-nums tracking-tight text-foreground leading-none break-all">
-            {formatCurrency(netWorth, baseCurrency)}
+            {format(convertedNetWorth)}
           </h2>
           <div className="flex items-center gap-2 mt-2 flex-wrap">
             <span className="text-xs text-muted-foreground">
-              {baseCurrency} · {accountCount} account{accountCount !== 1 ? 's' : ''}
+              · {accountCount} account{accountCount !== 1 ? 's' : ''}
             </span>
             {monthChangePct !== null && (
               <span
@@ -102,7 +97,7 @@ export default function NetWorthHero({
                     borderRadius: 10,
                     fontSize: 11,
                   }}
-                  formatter={(value) => [formatCurrency(Number(value ?? 0), baseCurrency), 'Net worth']}
+                  formatter={(value) => [format(convert(Number(value ?? 0), baseCurrency)), 'Net worth']}
                   labelFormatter={() => ''}
                 />
                 <Area

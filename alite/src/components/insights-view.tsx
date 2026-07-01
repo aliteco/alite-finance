@@ -2,7 +2,12 @@
 'use client'
 
 import React, { useState, useEffect, useMemo } from 'react'
-import { TrendingUp, TrendingDown, PiggyBank, Flame, Sparkles, Smile, BadgeInfo } from 'lucide-react'
+import {
+  TrendingUp, TrendingDown, PiggyBank, Flame, Sparkles, AlertTriangle,
+  Target, ArrowRight, ArrowDownRight, ArrowUpRight, Wallet, Zap,
+  Lightbulb, ShieldCheck, ChevronRight, BarChart3, PieChart as PieIcon,
+  Clock, TrendingUpIcon
+} from 'lucide-react'
 import {
   ResponsiveContainer,
   BarChart,
@@ -13,8 +18,17 @@ import {
   PieChart,
   Pie,
   Cell,
+  LineChart,
+  Line,
+  ReferenceLine,
+  AreaChart,
+  Area,
 } from 'recharts'
+import Link from 'next/link'
+import Slider from '@/components/ui/slider'
 import type { CashflowPoint, CategorySpend, SavingsRateResult, BurnRateResult } from '@/lib/engines/analytics-engine'
+import { useCurrency } from '@/components/currency-provider'
+import { usePrivacyMode } from '@/lib/hooks/use-privacy-mode'
 
 interface InsightsViewProps {
   baseCurrency: string
@@ -27,61 +41,67 @@ interface InsightsViewProps {
 const DEFAULT_SAVINGS_TARGET = 20
 
 export default function InsightsView({ baseCurrency, cashflow, spending, savings, burn }: InsightsViewProps) {
+  const { convert, format, displayCurrency } = useCurrency()
+  const privacyMode = usePrivacyMode()
   const [mounted, setMounted] = useState(false)
-  const [privacyEnabled, setPrivacyEnabled] = useState(false)
   const [savingsTarget, setSavingsTarget] = useState(DEFAULT_SAVINGS_TARGET)
   const [lifestyleDiscount, setLifestyleDiscount] = useState(0)
 
   useEffect(() => {
     setMounted(true)
-
-    const checkPrivacy = () => {
-      setPrivacyEnabled(localStorage.getItem('alite_privacy_mode') === 'true')
-    }
-    const checkSavingsTarget = () => {
-      const stored = localStorage.getItem('alite_savings_target')
-      if (stored) setSavingsTarget(parseInt(stored, 10))
-    }
-
-    checkPrivacy()
-    checkSavingsTarget()
-
-    window.addEventListener('alite_privacy_changed', checkPrivacy)
-    window.addEventListener('alite_savings_target_changed', checkSavingsTarget)
-    return () => {
-      window.removeEventListener('alite_privacy_changed', checkPrivacy)
-      window.removeEventListener('alite_savings_target_changed', checkSavingsTarget)
-    }
+    const stored = localStorage.getItem('alite_savings_target')
+    if (stored) setSavingsTarget(parseInt(stored, 10))
   }, [])
 
-  const wrapPrivacy = (val: string) => (mounted && privacyEnabled ? '••••••' : val)
+  const dCashflow = useMemo(
+    () => cashflow.map(c => ({
+      ...c,
+      income: convert(c.income, baseCurrency, displayCurrency),
+      expense: convert(c.expense, baseCurrency, displayCurrency),
+      savings: convert(c.savings, baseCurrency, displayCurrency),
+    })),
+    [cashflow, baseCurrency, displayCurrency, convert]
+  )
 
-  function formatCurrency(amount: number, currency: string) {
-    try {
-      return new Intl.NumberFormat('en-US', {
-        style: 'currency',
-        currency,
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 0,
-      }).format(amount)
-    } catch {
-      return `${currency} ${Math.round(amount).toLocaleString()}`
-    }
-  }
+  const dSpending = useMemo(
+    () => spending.map(s => ({ ...s, value: convert(s.value, baseCurrency, displayCurrency) })),
+    [spending, baseCurrency, displayCurrency, convert]
+  )
 
-  const isRunwayInfinite = !Number.isFinite(burn.runwayMonths)
+  const dSavings = useMemo(
+    () => ({
+      income: convert(savings.income, baseCurrency, displayCurrency),
+      expense: convert(savings.expense, baseCurrency, displayCurrency),
+      net: convert(savings.net, baseCurrency, displayCurrency),
+      savingsRate: savings.savingsRate,
+    }),
+    [savings, baseCurrency, displayCurrency, convert]
+  )
+
+  const dBurn = useMemo(
+    () => ({
+      netWorth: convert(burn.netWorth, baseCurrency, displayCurrency),
+      monthlyBurn: convert(burn.monthlyBurn, baseCurrency, displayCurrency),
+      runwayMonths: burn.runwayMonths,
+    }),
+    [burn, baseCurrency, displayCurrency, convert]
+  )
+
+  const isRunwayInfinite = !Number.isFinite(dBurn.runwayMonths)
 
   const allocationBreakdown = useMemo(() => {
     let needsSum = 0
     let wantsSum = 0
 
-    spending.forEach(item => {
+    dSpending.forEach(item => {
       const name = item.name.toLowerCase()
       if (
-        name.includes('rent') || name.includes('utilit') || name.includes('bill') ||
-        name.includes('tax') || name.includes('grocer') || name.includes('gas') ||
-        name.includes('health') || name.includes('medi') || name.includes('insur') ||
-        name.includes('transport') || name.includes('commut')
+        name.includes('rent') || name.includes('mortgage') || name.includes('utilit') ||
+        name.includes('bill') || name.includes('tax') || name.includes('grocer') ||
+        name.includes('gas') || name.includes('health') || name.includes('medi') ||
+        name.includes('insur') || name.includes('transport') || name.includes('commut') ||
+        name.includes('phone') || name.includes('internet') || name.includes('education') ||
+        name.includes('loan') || name.includes('debt')
       ) {
         needsSum += item.value
       } else {
@@ -90,7 +110,7 @@ export default function InsightsView({ baseCurrency, cashflow, spending, savings
     })
 
     const totalExp = needsSum + wantsSum
-    const netIncomeDef = savings.income || (totalExp + savings.net)
+    const netIncomeDef = dSavings.income || (totalExp + dSavings.net)
     const netSavings = Math.max(0, netIncomeDef - totalExp)
 
     const needsPct = netIncomeDef > 0 ? (needsSum / netIncomeDef) * 100 : 0
@@ -98,27 +118,132 @@ export default function InsightsView({ baseCurrency, cashflow, spending, savings
     const savingsPct = netIncomeDef > 0 ? (netSavings / netIncomeDef) * 100 : 0
 
     return { needs: needsSum, needsPct, wants: wantsSum, wantsPct, savings: netSavings, savingsPct, totalIncome: netIncomeDef, totalExp }
-  }, [spending, savings])
+  }, [dSpending, dSavings])
 
   const healthScore = useMemo(() => {
     let score = 50
-    const currentRate = savings.savingsRate
+    const currentRate = dSavings.savingsRate
+
     if (currentRate >= savingsTarget) score += 25
     else if (currentRate > 0) score += (currentRate / savingsTarget) * 25
-    else score -= 30
+    else score -= 20
 
     if (isRunwayInfinite) score += 25
-    else if (burn.runwayMonths >= 12) score += 25
-    else if (burn.runwayMonths >= 6) score += 15
-    else if (burn.runwayMonths >= 3) score += 5
+    else if (dBurn.runwayMonths >= 12) score += 25
+    else if (dBurn.runwayMonths >= 6) score += 15
+    else if (dBurn.runwayMonths >= 3) score += 5
     else score -= 15
 
-    if (allocationBreakdown.wantsPct <= 30) score += 25
-    else if (allocationBreakdown.wantsPct <= 45) score += 15
+    if (allocationBreakdown.wantsPct <= 25) score += 25
+    else if (allocationBreakdown.wantsPct <= 35) score += 15
+    else if (allocationBreakdown.wantsPct <= 50) score += 5
     else score -= 10
 
-    return Math.min(100, Math.max(10, Math.round(score)))
-  }, [savings, burn, savingsTarget, isRunwayInfinite, allocationBreakdown])
+    if (dSavings.net > 0) score += 25
+    else if (dSavings.net > -dSavings.income * 0.1) score += 10
+    else score -= 10
+
+    return Math.min(100, Math.max(0, Math.round(score)))
+  }, [dSavings, dBurn, savingsTarget, isRunwayInfinite, allocationBreakdown])
+
+  const healthLabel = healthScore >= 80 ? 'Excellent' : healthScore >= 60 ? 'Good' : healthScore >= 40 ? 'Fair' : 'Needs Attention'
+  const healthColor = healthScore >= 80 ? 'emerald' : healthScore >= 60 ? 'blue' : healthScore >= 40 ? 'amber' : 'red'
+
+  const insights = useMemo(() => {
+    const list: { type: 'good' | 'warning' | 'critical' | 'tip'; title: string; body: string; action?: { label: string; href: string } }[] = []
+
+    if (dSavings.savingsRate >= savingsTarget) {
+      list.push({
+        type: 'good',
+        title: 'Savings target met',
+        body: `You're saving ${Math.round(dSavings.savingsRate)}% of income — above your ${savingsTarget}% goal.`,
+      })
+    } else if (dSavings.savingsRate > 0) {
+      const gap = savingsTarget - dSavings.savingsRate
+      const monthlyGap = (dSavings.income * (gap / 100)) / 12
+      list.push({
+        type: 'warning',
+        title: 'Savings gap detected',
+        body: `You're saving ${Math.round(dSavings.savingsRate)}%, ${Math.round(gap)} points below target. Cutting just ${format(monthlyGap)}/mo from discretionary spend closes the gap.`,
+        action: { label: 'Review budgets', href: '/budgets' },
+      })
+    } else {
+      list.push({
+        type: 'critical',
+        title: 'Negative savings rate',
+        body: `You're spending ${format(Math.abs(dSavings.net))} more than you earn monthly. This is unsustainable.`,
+        action: { label: 'See spending', href: '/transactions' },
+      })
+    }
+
+    if (isRunwayInfinite) {
+      list.push({
+        type: 'good',
+        title: 'Income covers expenses',
+        body: 'Your average monthly income exceeds expenses. Your reserves are protected and growing.',
+      })
+    } else if (dBurn.runwayMonths >= 12) {
+      list.push({
+        type: 'good',
+        title: 'Strong emergency buffer',
+        body: `You could survive ${Math.round(dBurn.runwayMonths)} months without income.`,
+      })
+    } else if (dBurn.runwayMonths >= 6) {
+      list.push({
+        type: 'warning',
+        title: 'Moderate runway',
+        body: `You have ${Math.round(dBurn.runwayMonths)} months of expenses covered. Aim for 12 months.`,
+        action: { label: 'Add to savings', href: '/accounts' },
+      })
+    } else {
+      list.push({
+        type: 'critical',
+        title: 'Low runway — build emergency fund now',
+        body: `Only ${dBurn.runwayMonths.toFixed(1)} months of expenses covered. Job loss or emergency would be devastating.`,
+        action: { label: 'Open savings account', href: '/accounts/new' },
+      })
+    }
+
+    if (allocationBreakdown.wantsPct > 40) {
+      list.push({
+        type: 'warning',
+        title: 'High discretionary spend',
+        body: `${Math.round(allocationBreakdown.wantsPct)}% of income goes to wants vs. ${Math.round(allocationBreakdown.needsPct)}% needs.`,
+        action: { label: 'See categories', href: '/transactions' },
+      })
+    } else if (allocationBreakdown.needsPct > 60) {
+      list.push({
+        type: 'tip',
+        title: 'High fixed costs',
+        body: `${Math.round(allocationBreakdown.needsPct)}% of income is locked in necessities. Consider negotiating bills or increasing income.`,
+      })
+    }
+
+    const recentMonths = dCashflow.slice(-3)
+    const avgRecentSavings = recentMonths.reduce((s, m) => s + m.savings, 0) / Math.max(1, recentMonths.length)
+    const olderMonths = dCashflow.slice(0, -3)
+    const avgOlderSavings = olderMonths.reduce((s, m) => s + m.savings, 0) / Math.max(1, olderMonths.length)
+
+    if (avgRecentSavings < avgOlderSavings * 0.7 && avgOlderSavings > 0) {
+      list.push({
+        type: 'warning',
+        title: 'Savings trend declining',
+        body: `Your recent 3-month savings average ${format(avgRecentSavings)} is down from ${format(avgOlderSavings)}.`,
+        action: { label: 'View trends', href: '/portfolio' },
+      })
+    }
+
+    const topSpend = dSpending[0]
+    if (topSpend && topSpend.value > dSavings.income * 0.25) {
+      list.push({
+        type: 'tip',
+        title: `${topSpend.name} is your biggest category`,
+        body: `You spent ${format(topSpend.value)} on ${topSpend.name} — over 25% of income. A 10% reduction frees up ${format(topSpend.value * 0.1)}/mo.`,
+      })
+    }
+
+    return list
+  }, [dSavings, dBurn, isRunwayInfinite, allocationBreakdown, dCashflow, dSpending, savingsTarget, format])
 
   const simulatedExpenses = useMemo(() => {
     const wantsReduced = allocationBreakdown.wants * (1 - lifestyleDiscount / 100)
@@ -126,12 +251,31 @@ export default function InsightsView({ baseCurrency, cashflow, spending, savings
   }, [allocationBreakdown, lifestyleDiscount])
 
   const simulatedRunway = useMemo(() => {
-    if (savings.income >= simulatedExpenses) return Infinity
-    const monthlyNetBurn = simulatedExpenses - savings.income
-    const currentReserves = burn.monthlyBurn * burn.runwayMonths
+    if (dSavings.income >= simulatedExpenses) return Infinity
+    const monthlyNetBurn = simulatedExpenses - dSavings.income
+    const currentReserves = dBurn.monthlyBurn * dBurn.runwayMonths
     if (monthlyNetBurn <= 0) return Infinity
     return currentReserves / monthlyNetBurn
-  }, [savings.income, simulatedExpenses, burn])
+  }, [dSavings.income, simulatedExpenses, dBurn])
+
+  const simulatedSavingsRate = dSavings.income > 0
+    ? ((dSavings.income - simulatedExpenses) / dSavings.income) * 100
+    : 0
+
+  const projectionData = useMemo(() => {
+    const months = 12
+    const monthlySavings = dSavings.net
+    const currentNetWorth = dBurn.netWorth
+    const data = []
+    for (let i = 0; i <= months; i++) {
+      data.push({
+        month: `M${i}`,
+        projected: Math.round(currentNetWorth + monthlySavings * i),
+        target: Math.round(currentNetWorth + (dSavings.income * (savingsTarget / 100)) * i),
+      })
+    }
+    return data
+  }, [dBurn.netWorth, dSavings.net, dSavings.income, savingsTarget])
 
   return (
     <div className="min-h-screen bg-background pb-28">
@@ -143,173 +287,242 @@ export default function InsightsView({ baseCurrency, cashflow, spending, savings
               Insights
             </p>
             <h1 className="text-3xl font-bold tracking-tight text-foreground leading-none">
-              Financial Intelligence
+              Financial Health
             </h1>
+            <p className="text-xs text-muted-foreground mt-1.5 max-w-md">
+              Personalized analysis of your spending habits, savings efficiency, and financial trajectory.
+            </p>
           </div>
           <div className="flex gap-2">
-            <span className="text-[11px] bg-muted px-3 py-1.5 rounded-xl border border-border/70 font-semibold flex items-center gap-1 text-muted-foreground">
+            <span className="text-[11px] bg-muted px-3 py-1.5 rounded-xl border border-border/70 font-semibold flex items-center gap-1.5 text-muted-foreground">
               <Sparkles size={11} className="text-primary" aria-hidden="true" />
-              Intelligence Engine Active
+              Updated live
             </span>
           </div>
         </div>
 
-        <section className="bg-card border border-border rounded-3xl p-5 shadow-sm grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
-          <div className="md:col-span-4 flex flex-col items-center justify-center space-y-2 border-b md:border-b-0 md:border-r border-border pb-5 md:pb-0 md:pr-6">
-            <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground text-center">
-              Wealth Health Score
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
+          <div className="md:col-span-4 bg-card border border-border rounded-3xl p-6 shadow-sm flex flex-col items-center justify-center gap-3">
+            <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+              Overall Health Score
             </span>
-            <div className="relative w-28 h-28 flex items-center justify-center">
+            <div className="relative w-32 h-32 flex items-center justify-center">
               <svg className="absolute inset-0 w-full h-full transform -rotate-90" aria-hidden="true">
-                <circle cx="56" cy="56" r="48" stroke="var(--muted)" strokeWidth="6" fill="transparent" />
+                <circle cx="64" cy="64" r="56" stroke="var(--muted)" strokeWidth="8" fill="transparent" />
                 <circle
-                  cx="56"
-                  cy="56"
-                  r="48"
-                  stroke="var(--primary)"
-                  strokeWidth="8"
+                  cx="64"
+                  cy="64"
+                  r="56"
+                  stroke={`var(--${healthColor}-500)`}
+                  strokeWidth="10"
                   fill="transparent"
-                  strokeDasharray={2 * Math.PI * 48}
-                  strokeDashoffset={mounted ? 2 * Math.PI * 48 * (1 - healthScore / 100) : 2 * Math.PI * 48}
+                  strokeDasharray={2 * Math.PI * 56}
+                  strokeDashoffset={mounted ? 2 * Math.PI * 56 * (1 - healthScore / 100) : 2 * Math.PI * 56}
                   strokeLinecap="round"
-                  className="transition-all duration-500"
+                  className="transition-all duration-700"
                 />
               </svg>
               <div className="flex flex-col items-center">
-                <span className="text-3xl font-black text-foreground tracking-tight">{mounted ? healthScore : '—'}</span>
-                <span className="text-[9px] uppercase font-bold text-muted-foreground">Index</span>
+                <span className="text-4xl font-black text-foreground tracking-tight">{mounted ? healthScore : '—'}</span>
+                <span className="text-[10px] uppercase font-bold text-muted-foreground mt-0.5">/ 100</span>
               </div>
             </div>
-            <span className={`text-[11px] font-bold uppercase px-3 py-1 rounded-full
-              ${healthScore >= 80
-                ? 'bg-emerald-500/10 text-emerald-500'
-                : healthScore >= 55
-                ? 'bg-amber-500/10 text-amber-500'
-                : 'bg-red-500/10 text-red-500'}`}>
-              {healthScore >= 80 ? 'Excellent' : healthScore >= 55 ? 'Good' : 'Needs Optimization'}
+            <span className={`text-[11px] font-bold uppercase px-4 py-1.5 rounded-full bg-${healthColor}-500/10 text-${healthColor}-500`}>
+              {healthLabel}
             </span>
           </div>
 
-          <div className="md:col-span-8 space-y-3.5">
-            <h3 className="text-sm font-bold text-foreground flex items-center gap-1.5 leading-none">
-              <Smile size={16} className="text-primary" aria-hidden="true" /> Advice Diagnostic
-            </h3>
-            <p className="text-xs text-muted-foreground leading-relaxed">
-              {healthScore >= 80
-                ? `Exceptional structure. Your savings rate of ${Math.round(savings.savingsRate)}% comfortably clears your ${savingsTarget}% target.`
-                : healthScore >= 55
-                ? `Decent buffer. Savings sit at ${Math.round(savings.savingsRate)}%. Trimming non-essential spend could help reach ${savingsTarget}%.`
-                : `Active attention recommended. Your savings rate has dropped below a sustainable level — review recurring costs and discretionary spend.`}
-            </p>
-            <div className="grid grid-cols-2 gap-3 text-[11px] font-medium text-foreground pt-1.5">
-              <div className="flex items-center gap-1.5">
-                <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${savings.savingsRate >= savingsTarget ? 'bg-emerald-500' : 'bg-amber-500'}`} aria-hidden="true" />
-                <span>Savings target: <strong className="font-mono">{savingsTarget}%</strong></span>
+          <div className="md:col-span-8 grid grid-cols-2 gap-3 content-start">
+            <MetricCard
+              label="Monthly Income"
+              value={privacyMode ? '****' : format(dSavings.income)}
+              icon={<TrendingUp size={16} className="text-emerald-500" />}
+              trend={dSavings.income > dSavings.expense ? 'positive' : 'neutral'}
+            />
+            <MetricCard
+              label="Monthly Expenses"
+              value={privacyMode ? '****' : format(dSavings.expense)}
+              icon={<TrendingDown size={16} className="text-rose-500" />}
+              trend={dSavings.expense > dSavings.income * 0.7 ? 'negative' : 'neutral'}
+            />
+            <MetricCard
+              label="Actual Savings Rate"
+              value={privacyMode ? '****' : `${Math.round(dSavings.savingsRate)}%`}
+              icon={<PiggyBank size={16} className="text-primary" />}
+              sub={dSavings.savingsRate >= savingsTarget ? `Target: ${savingsTarget}% ✓` : `${Math.round(savingsTarget - dSavings.savingsRate)}pts below ${savingsTarget}% target`}
+              trend={dSavings.savingsRate >= savingsTarget ? 'positive' : 'negative'}
+            />
+            <MetricCard
+              label="Runway"
+              value={privacyMode ? '****' : isRunwayInfinite ? '∞ months' : `${Math.round(dBurn.runwayMonths)} months`}
+              icon={<Flame size={16} className="text-orange-500" />}
+              sub={isRunwayInfinite ? 'Income covers spend' : dBurn.runwayMonths < 6 ? 'Below recommended 6mo' : 'Healthy buffer'}
+              trend={isRunwayInfinite || dBurn.runwayMonths >= 6 ? 'positive' : 'negative'}
+            />
+          </div>
+        </div>
+
+        <section className="space-y-3">
+          <h2 className="text-sm font-bold text-foreground flex items-center gap-2">
+            <Lightbulb size={15} className="text-amber-500" aria-hidden="true" />
+            What to do next
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {insights.map((insight, i) => (
+              <div
+                key={i}
+                className={`bg-card border rounded-2xl p-4 shadow-sm space-y-2 ${
+                  insight.type === 'critical' ? 'border-red-500/30 bg-red-500/[0.02]' :
+                  insight.type === 'warning' ? 'border-amber-500/30 bg-amber-500/[0.02]' :
+                  insight.type === 'good' ? 'border-emerald-500/30 bg-emerald-500/[0.02]' :
+                  'border-border'
+                }`}
+              >
+                <div className="flex items-start gap-2.5">
+                  <span className="mt-0.5 shrink-0">
+                    {insight.type === 'critical' ? <AlertTriangle size={14} className="text-red-500" /> :
+                     insight.type === 'warning' ? <AlertTriangle size={14} className="text-amber-500" /> :
+                     insight.type === 'good' ? <ShieldCheck size={14} className="text-emerald-500" /> :
+                     <Target size={14} className="text-primary" />}
+                  </span>
+                  <div className="space-y-1 min-w-0">
+                    <h3 className="text-xs font-bold text-foreground">{insight.title}</h3>
+                    <p className="text-[11px] text-muted-foreground leading-relaxed">{insight.body}</p>
+                    {insight.action && (
+                      <Link
+                        href={insight.action.href}
+                        className="inline-flex items-center gap-1 text-[11px] font-semibold text-primary hover:underline mt-1"
+                      >
+                        {insight.action.label} <ChevronRight size={11} />
+                      </Link>
+                    )}
+                  </div>
+                </div>
               </div>
-              <div className="flex items-center gap-1.5">
-                <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${isRunwayInfinite || burn.runwayMonths >= 6 ? 'bg-emerald-500' : 'bg-red-500'}`} aria-hidden="true" />
-                <span>Runway cushion: <strong className="font-mono">{isRunwayInfinite ? 'Infinite' : 'Healthy'}</strong></span>
-              </div>
-            </div>
+            ))}
           </div>
         </section>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <KpiCard
-            label="Income (mo.)"
-            value={`+${wrapPrivacy(formatCurrency(savings.income, baseCurrency))}`}
-            icon={<TrendingUp className="w-4 h-4 text-income" aria-hidden="true" />}
-            accent="income"
-          />
-          <KpiCard
-            label="Expenses (mo.)"
-            value={`−${wrapPrivacy(formatCurrency(savings.expense, baseCurrency))}`}
-            icon={<TrendingDown className="w-4 h-4 text-expense" aria-hidden="true" />}
-            accent="expense"
-          />
-          <KpiCard
-            label="Savings rate"
-            value={`${Math.round(savings.savingsRate)}%`}
-            icon={<PiggyBank className="w-4 h-4 text-primary" aria-hidden="true" />}
-            accent={savings.net >= 0 ? 'income' : 'expense'}
-          />
-          <KpiCard
-            label="Runway"
-            value={isRunwayInfinite ? '∞' : `${burn.runwayMonths.toFixed(1)} mo`}
-            icon={<Flame className="w-4 h-4 text-amber-500" aria-hidden="true" />}
-            accent={isRunwayInfinite ? 'income' : burn.runwayMonths < 6 ? 'expense' : undefined}
-          />
-        </div>
+        <section className="bg-card border border-border rounded-2xl p-5 shadow-sm space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-sm font-bold text-foreground flex items-center gap-2">
+                <BarChart3 size={15} className="text-primary" aria-hidden="true" />
+                Cashflow History
+              </h2>
+              <p className="text-[11px] text-muted-foreground">Income vs expenses over time</p>
+            </div>
+            <div className="flex items-center gap-3 text-[10px]">
+              <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-emerald-500" /> Income</span>
+              <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-rose-500" /> Expense</span>
+            </div>
+          </div>
+          <div className="h-64 w-full">
+            {mounted ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={dCashflow} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                  <XAxis dataKey="month" tick={{ fill: 'var(--muted-foreground)', fontSize: 10 }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fill: 'var(--muted-foreground)', fontSize: 9 }} axisLine={false} tickLine={false}
+                    tickFormatter={v => (v >= 1000 ? `${(v / 1000).toFixed(0)}k` : String(v))} />
+                  <Tooltip
+                    contentStyle={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 12, fontSize: 11 }}
+                    formatter={(value, name) => [privacyMode ? '****' : format(Number(value ?? 0), displayCurrency), name]}
+                  />
+                  <Bar dataKey="income" fill="#10b981" radius={[4, 4, 0, 0]} name="Income" />
+                  <Bar dataKey="expense" fill="#f43f5e" radius={[4, 4, 0, 0]} name="Expense" />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="h-full w-full bg-muted/20 animate-pulse rounded-xl" aria-hidden="true" />
+            )}
+          </div>
+        </section>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <section className="bg-card border border-border rounded-2xl p-5 shadow-sm space-y-4">
             <div>
-              <h2 className="text-sm font-bold text-foreground">Cashflow Trend</h2>
-              <p className="text-[11px] text-muted-foreground">Last {cashflow.length} months</p>
+              <h2 className="text-sm font-bold text-foreground flex items-center gap-2">
+                <Target size={15} className="text-indigo-400" aria-hidden="true" />
+                Budget Rule: 50/30/20
+              </h2>
+              <p className="text-[11px] text-muted-foreground">How your income is allocated</p>
             </div>
-            <div className="h-64 w-full">
-              {mounted ? (
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={cashflow} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                    <XAxis dataKey="month" tick={{ fill: 'var(--muted-foreground)', fontSize: 10 }} axisLine={false} tickLine={false} />
-                    <YAxis tick={{ fill: 'var(--muted-foreground)', fontSize: 9 }} axisLine={false} tickLine={false}
-                      tickFormatter={v => (v >= 1000 ? `${(v / 1000).toFixed(0)}k` : String(v))} />
-                    <Tooltip
-                      contentStyle={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 12, fontSize: 11 }}
-                      formatter={(value) => [wrapPrivacy(formatCurrency(Number(value ?? 0), baseCurrency)), '']}
-                    />
-                    <Bar dataKey="income" fill="#10b981" radius={[4, 4, 0, 0]} name="Income" />
-                    <Bar dataKey="expense" fill="#ef4444" radius={[4, 4, 0, 0]} name="Expense" />
-                  </BarChart>
-                </ResponsiveContainer>
-              ) : (
-                <div className="h-full w-full bg-muted/20 animate-pulse rounded-xl" aria-hidden="true" />
-              )}
+
+            <div className="space-y-4">
+              <BudgetBar
+                label="Needs — Fixed Costs"
+                description="Rent, bills, groceries, transport"
+                target={50}
+                actual={allocationBreakdown.needsPct}
+                amount={privacyMode ? '****' : format(allocationBreakdown.needs, displayCurrency)}
+                color="bg-amber-500"
+              />
+              <BudgetBar
+                label="Wants — Lifestyle"
+                description="Dining, entertainment, shopping"
+                target={30}
+                actual={allocationBreakdown.wantsPct}
+                amount={privacyMode ? '****' : format(allocationBreakdown.wants, displayCurrency)}
+                color="bg-rose-500"
+              />
+              <BudgetBar
+                label="Savings & Debt Payoff"
+                description="Emergency fund, investments, extra payments"
+                target={20}
+                actual={allocationBreakdown.savingsPct}
+                amount={privacyMode ? '****' : format(allocationBreakdown.savings, displayCurrency)}
+                color="bg-emerald-500"
+              />
+            </div>
+
+            <div className="bg-muted/30 rounded-xl p-3 text-[11px] text-muted-foreground leading-relaxed">
+              {allocationBreakdown.savingsPct >= 20
+                ? `✓ You're allocating ${Math.round(allocationBreakdown.savingsPct)}% to savings — above the 20% recommendation.`
+                : allocationBreakdown.wantsPct > 35
+                ? `⚠ ${Math.round(allocationBreakdown.wantsPct)}% goes to wants. Trimming 5% would add ${format(dSavings.income * 0.05)}/mo to savings.`
+                : `Your allocation is reasonable. Aim to push savings from ${Math.round(allocationBreakdown.savingsPct)}% toward 20%.`}
             </div>
           </section>
 
           <section className="bg-card border border-border rounded-2xl p-5 shadow-sm space-y-4">
-            <div>
-              <h2 className="text-sm font-bold text-foreground">Spending by Category</h2>
-              <p className="text-[11px] text-muted-foreground">This month</p>
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-sm font-bold text-foreground flex items-center gap-2">
+                  <PieIcon size={15} className="text-rose-400" aria-hidden="true" />
+                  Top Spending
+                </h2>
+                <p className="text-[11px] text-muted-foreground">This month by category</p>
+              </div>
+              <Link href="/transactions" className="text-[11px] font-bold text-primary hover:underline">View all</Link>
             </div>
-            {spending.length === 0 ? (
-              <div className="h-64 flex items-center justify-center">
+
+            {dSpending.length === 0 ? (
+              <div className="h-48 flex items-center justify-center">
                 <p className="text-xs text-muted-foreground">No expenses recorded this month.</p>
               </div>
             ) : (
-              <div className="h-64 flex flex-col">
-                <div className="flex-1 relative">
-                  {mounted && (
-                    <ResponsiveContainer width="100%" height="100%">
-                      <PieChart>
-                        <Pie data={spending} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={55} outerRadius={75} paddingAngle={3}>
-                          {spending.map((entry, i) => (
-                            <Cell key={i} fill={entry.color} />
-                          ))}
-                        </Pie>
-                        <Tooltip formatter={(value) => [wrapPrivacy(formatCurrency(Number(value ?? 0), baseCurrency)), '']} />
-                      </PieChart>
-                    </ResponsiveContainer>
-                  )}
-                  <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                    <span className="text-[10px] uppercase font-bold text-muted-foreground">Total</span>
-                    <span className="text-sm font-bold text-foreground tabular-nums">
-                      {wrapPrivacy(formatCurrency(spending.reduce((s, c) => s + c.value, 0), baseCurrency))}
-                    </span>
-                  </div>
-                </div>
-                <ul className="flex flex-col gap-1 mt-2 max-h-[90px] overflow-y-auto pr-1">
-                  {spending.slice(0, 6).map(item => (
-                    <li key={item.name} className="flex items-center justify-between text-xs">
-                      <div className="flex items-center gap-1.5 min-w-0">
-                        <span className="w-2.5 h-2.5 rounded-md shrink-0" style={{ backgroundColor: item.color }} aria-hidden="true" />
+              <div className="space-y-3">
+                {dSpending.slice(0, 5).map((item, i) => (
+                  <div key={item.name} className="flex items-center gap-3">
+                    <span className="text-[10px] font-bold text-muted-foreground w-4">{i + 1}</span>
+                    <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: item.color }} />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between text-xs">
                         <span className="font-semibold text-foreground truncate">{item.name}</span>
+                        <span className="font-mono font-bold text-foreground">{privacyMode ? '****' : format(item.value)}</span>
                       </div>
-                      <span className="text-muted-foreground font-mono">{Math.round(item.percentage)}%</span>
-                    </li>
-                  ))}
-                </ul>
+                      <div className="h-1.5 bg-muted rounded-full overflow-hidden mt-1">
+                        <div
+                          className="h-full rounded-full transition-all"
+                          style={{
+                            width: `${Math.min(100, item.percentage)}%`,
+                            backgroundColor: item.color,
+                          }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
             )}
           </section>
@@ -317,93 +530,99 @@ export default function InsightsView({ baseCurrency, cashflow, spending, savings
 
         <section className="bg-card border border-border rounded-2xl p-5 shadow-sm space-y-4">
           <div>
-            <h2 className="text-sm font-bold text-foreground flex items-center gap-1.5">
-              <BadgeInfo size={15} className="text-indigo-400" aria-hidden="true" />
-              The 50/30/20 Budgeting Diagnostic
+            <h2 className="text-sm font-bold text-foreground flex items-center gap-2">
+              <TrendingUpIcon size={15} className="text-emerald-500" aria-hidden="true" />
+              Net Worth Projection
             </h2>
-            <p className="text-xs text-muted-foreground">
-              How much of your income funds Needs (survival), Wants (lifestyle), and Savings (net reserve).
-            </p>
+            <p className="text-[11px] text-muted-foreground">Where you'll be in 12 months at current pace vs. target pace</p>
           </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <BudgetBar
-              label="Needs (Rent, Bills, Gas)"
-              target="50%"
-              actual={`${Math.round(allocationBreakdown.needsPct)}%`}
-              amount={wrapPrivacy(formatCurrency(allocationBreakdown.needs, baseCurrency))}
-              color="bg-amber-500"
-              percentage={allocationBreakdown.needsPct}
-            />
-            <BudgetBar
-              label="Wants (Dining out, Luxury)"
-              target="30%"
-              actual={`${Math.round(allocationBreakdown.wantsPct)}%`}
-              amount={wrapPrivacy(formatCurrency(allocationBreakdown.wants, baseCurrency))}
-              color="bg-rose-500"
-              percentage={allocationBreakdown.wantsPct}
-            />
-            <BudgetBar
-              label="Savings & Excess Surplus"
-              target="20%"
-              actual={`${Math.round(allocationBreakdown.savingsPct)}%`}
-              amount={wrapPrivacy(formatCurrency(allocationBreakdown.savings, baseCurrency))}
-              color="bg-emerald-500"
-              percentage={allocationBreakdown.savingsPct}
-            />
+          <div className="h-56 w-full">
+            {mounted ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={projectionData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                  <XAxis dataKey="month" tick={{ fill: 'var(--muted-foreground)', fontSize: 10 }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fill: 'var(--muted-foreground)', fontSize: 9 }} axisLine={false} tickLine={false}
+                    tickFormatter={v => (v >= 1000 ? `${(v / 1000).toFixed(0)}k` : String(v))} />
+                  <Tooltip
+                    contentStyle={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 12, fontSize: 11 }}
+                    formatter={(value) => [privacyMode ? '****' : format(Number(value ?? 0)), '']}
+                  />
+                  <ReferenceLine y={dBurn.netWorth} stroke="var(--muted-foreground)" strokeDasharray="3 3" label={{ value: 'Today', position: 'insideTopRight', fontSize: 10, fill: 'var(--muted-foreground)' }} />
+                  <Line type="monotone" dataKey="projected" stroke="#8b5cf6" strokeWidth={2.5} dot={false} name="Current pace" />
+                  <Line type="monotone" dataKey="target" stroke="#10b981" strokeWidth={2} strokeDasharray="5 5" dot={false} name="Target pace" />
+                </LineChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="h-full w-full bg-muted/20 animate-pulse rounded-xl" aria-hidden="true" />
+            )}
+          </div>
+          <div className="flex items-center justify-between text-[11px]">
+            <span className="text-muted-foreground">
+              Current monthly net: <strong className="text-foreground">{privacyMode ? '****' : format(dSavings.net)}</strong>
+            </span>
+            <span className="text-muted-foreground">
+              Target monthly net: <strong className="text-emerald-500">{privacyMode ? '****' : format(dSavings.income * (savingsTarget / 100))}</strong>
+            </span>
           </div>
         </section>
 
         <section className="bg-card border border-border rounded-2xl p-5 shadow-sm space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
-              <h2 className="text-sm font-bold text-foreground flex items-center gap-1.5">
-                <Flame size={15} className="text-orange-400" aria-hidden="true" />
-                Live Runway & Burn Rate Simulator
+              <h2 className="text-sm font-bold text-foreground flex items-center gap-2">
+                <Flame size={15} className="text-orange-500" aria-hidden="true" />
+                Lifestyle Impact Simulator
               </h2>
-              <p className="text-xs text-muted-foreground">
-                Simulate cutting lifestyle spend and see the effect on your runway.
+              <p className="text-[11px] text-muted-foreground">
+                See how cutting discretionary spend affects your runway and savings rate
               </p>
             </div>
-            <div className="text-xs bg-orange-500/10 text-orange-500 font-bold px-2 py-1 rounded-lg">
-              Wants discount: {lifestyleDiscount}%
+            <div className="text-xs bg-orange-500/10 text-orange-600 font-bold px-3 py-1.5 rounded-lg">
+              Cut wants by: {lifestyleDiscount}%
             </div>
           </div>
 
-          <div className="space-y-4">
-            <label htmlFor="lifestyle-discount-slider" className="sr-only">Lifestyle spend discount percentage</label>
-            <input
-              id="lifestyle-discount-slider"
-              type="range"
-              min="0"
-              max="60"
-              step="5"
-              value={lifestyleDiscount}
-              onChange={(e) => setLifestyleDiscount(parseInt(e.target.value, 10))}
-              className="w-full accent-orange-500 cursor-pointer h-1.5"
+          <Slider
+            value={lifestyleDiscount}
+            onChange={setLifestyleDiscount}
+            min={0}
+            max={60}
+            step={5}
+            label={<span className="sr-only">Lifestyle discount percentage</span>}
+          />
+          <div className="flex justify-between text-[10px] text-muted-foreground">
+            <span>No cuts</span>
+            <span>60% cut</span>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
+            <SimResult
+              label="Monthly spend"
+              before={privacyMode ? '****' : format(dSavings.expense)}
+              after={privacyMode ? '****' : format(simulatedExpenses)}
+              better={simulatedExpenses < dSavings.expense}
             />
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
-              <div className="bg-muted/15 p-3.5 rounded-xl border border-border/40">
-                <div className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">Simulated Monthly Burn</div>
-                <div className="text-lg font-extrabold text-foreground font-mono mt-0.5">
-                  {wrapPrivacy(formatCurrency(simulatedExpenses, baseCurrency))}
-                </div>
-              </div>
-              <div className="bg-muted/15 p-3.5 rounded-xl border border-border/40">
-                <div className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">Simulated Runway Duration</div>
-                <div className="text-lg font-extrabold text-orange-500 font-mono mt-0.5">
-                  {!Number.isFinite(simulatedRunway) ? 'Infinite (Income covers spend)' : `${simulatedRunway.toFixed(1)} Months`}
-                </div>
-              </div>
-            </div>
-
-            <p className="text-xs text-muted-foreground leading-relaxed italic">
-              {isRunwayInfinite
-                ? 'Your average income covers your average expenses — reserves are protected.'
-                : `Cutting wants spend by ${lifestyleDiscount}% reduces estimated monthly expenses from ${formatCurrency(allocationBreakdown.totalExp, baseCurrency)} to ${formatCurrency(simulatedExpenses, baseCurrency)}, giving roughly ${!Number.isFinite(simulatedRunway) ? 'unbounded' : simulatedRunway.toFixed(1)} months of buffer.`}
-            </p>
+            <SimResult
+              label="Savings rate"
+              before={`${Math.round(dSavings.savingsRate)}%`}
+              after={`${Math.round(simulatedSavingsRate)}%`}
+              better={simulatedSavingsRate > dSavings.savingsRate}
+            />
+            <SimResult
+              label="Runway"
+              before={isRunwayInfinite ? '∞' : `${dBurn.runwayMonths.toFixed(1)} mo`}
+              after={!Number.isFinite(simulatedRunway) ? '∞' : `${simulatedRunway.toFixed(1)} mo`}
+              better={!Number.isFinite(simulatedRunway) || simulatedRunway > dBurn.runwayMonths}
+            />
           </div>
+
+          <p className="text-[11px] text-muted-foreground leading-relaxed bg-muted/20 rounded-xl p-3">
+            {lifestyleDiscount === 0
+              ? 'Adjust the slider to simulate reducing discretionary spending. Even small cuts compound dramatically over time.'
+              : !Number.isFinite(simulatedRunway)
+              ? `At ${lifestyleDiscount}% reduction, your income would fully cover expenses — achieving financial independence at current spend levels.`
+              : `A ${lifestyleDiscount}% lifestyle cut extends runway from ${dBurn.runwayMonths.toFixed(1)} to ${simulatedRunway.toFixed(1)} months and boosts savings rate to ${Math.round(simulatedSavingsRate)}%.`}
+          </p>
         </section>
 
       </div>
@@ -411,68 +630,85 @@ export default function InsightsView({ baseCurrency, cashflow, spending, savings
   )
 }
 
-function KpiCard({
-  label,
-  value,
-  icon,
-  accent,
-}: {
+function MetricCard({ label, value, icon, sub, trend }: {
   label: string
   value: string
   icon: React.ReactNode
-  accent?: 'income' | 'expense'
+  sub?: string
+  trend?: 'positive' | 'negative' | 'neutral'
 }) {
-  const valueColor = accent === 'income' ? 'text-income' : accent === 'expense' ? 'text-expense' : 'text-foreground'
   return (
-    <div className="bg-card border border-border rounded-2xl p-4 flex flex-col justify-between shadow-sm relative overflow-hidden">
-      <div className="flex items-center justify-between text-muted-foreground mb-2">
+    <div className="bg-card border border-border rounded-2xl p-4 shadow-sm space-y-2">
+      <div className="flex items-center justify-between text-muted-foreground">
         <span className="text-[10px] font-bold uppercase tracking-wider">{label}</span>
         {icon}
       </div>
-      <p className={`text-lg font-bold tabular-nums ${valueColor}`}>{value}</p>
+      <p className="text-xl font-black text-foreground tabular-nums">{value}</p>
+      {sub && (
+        <div className="flex items-center gap-1 text-[10px]">
+          {trend === 'positive' ? <ArrowUpRight size={11} className="text-emerald-500" /> :
+           trend === 'negative' ? <ArrowDownRight size={11} className="text-rose-500" /> :
+           <ArrowRight size={11} className="text-muted-foreground" />}
+          <span className={trend === 'positive' ? 'text-emerald-500' : trend === 'negative' ? 'text-rose-500' : 'text-muted-foreground'}>
+            {sub}
+          </span>
+        </div>
+      )}
     </div>
   )
 }
 
-function BudgetBar({
-  label,
-  target,
-  actual,
-  amount,
-  color,
-  percentage,
-}: {
+function BudgetBar({ label, description, target, actual, amount, color }: {
   label: string
-  target: string
-  actual: string
+  description: string
+  target: number
+  actual: number
   amount: string
   color: string
-  percentage: number
+}) {
+  const diff = actual - target
+  return (
+    <div className="space-y-1.5">
+      <div className="flex items-center justify-between text-xs">
+        <div>
+          <span className="font-bold text-foreground">{label}</span>
+          <span className="text-muted-foreground ml-1.5 text-[10px]">{description}</span>
+        </div>
+        <span className="font-mono font-bold text-foreground">{amount}</span>
+      </div>
+      <div className="relative h-2.5 bg-muted rounded-full overflow-hidden">
+        <div
+          className={`h-full rounded-full ${color} transition-all duration-500`}
+          style={{ width: `${Math.min(100, Math.max(0, actual))}%` }}
+        />
+        <div
+          className="absolute top-0 bottom-0 w-0.5 bg-foreground/40"
+          style={{ left: `${target}%` }}
+        />
+      </div>
+      <div className="flex items-center justify-between text-[10px]">
+        <span className="text-muted-foreground">Target: {target}%</span>
+        <span className={diff > 5 ? 'text-rose-500 font-semibold' : diff < -5 ? 'text-emerald-500 font-semibold' : 'text-muted-foreground'}>
+          Actual: {Math.round(actual)}% {diff > 5 ? '(over)' : diff < -5 ? '(under)' : ''}
+        </span>
+      </div>
+    </div>
+  )
+}
+
+function SimResult({ label, before, after, better }: {
+  label: string
+  before: string
+  after: string
+  better: boolean
 }) {
   return (
-    <div className="space-y-1.5 bg-muted/15 border border-border/40 p-3 rounded-xl flex flex-col justify-between">
-      <div>
-        <p className="text-[11px] font-bold text-foreground line-clamp-1">{label}</p>
-        <p className="text-[10px] text-muted-foreground">Standard target: <strong className="font-mono text-foreground/80">{target}</strong></p>
-      </div>
-      <div className="space-y-1 pt-1">
-        <div className="flex justify-between items-baseline text-xs font-mono">
-          <span className="font-black text-foreground">{amount}</span>
-          <span className="font-semibold text-muted-foreground">({actual})</span>
-        </div>
-        <div
-          className="h-1.5 w-full bg-muted rounded-full overflow-hidden"
-          role="progressbar"
-          aria-valuenow={Math.round(Math.min(100, Math.max(0, percentage)))}
-          aria-valuemin={0}
-          aria-valuemax={100}
-          aria-label={`${label} allocation`}
-        >
-          <div
-            className={`h-full rounded-full ${color} transition-all duration-500`}
-            style={{ width: `${Math.min(100, Math.max(0, percentage))}%` }}
-          />
-        </div>
+    <div className="bg-muted/20 border border-border/40 rounded-xl p-3.5 space-y-1">
+      <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">{label}</p>
+      <div className="flex items-baseline gap-2">
+        <span className="text-xs text-muted-foreground line-through">{before}</span>
+        <span className={`text-sm font-extrabold font-mono ${better ? 'text-emerald-500' : 'text-foreground'}`}>{after}</span>
+        {better && <ArrowUpRight size={12} className="text-emerald-500" />}
       </div>
     </div>
   )

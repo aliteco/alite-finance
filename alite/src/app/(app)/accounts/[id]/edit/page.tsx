@@ -40,7 +40,7 @@ export default async function EditAccountPage({
     }, 0) ?? 0
 
   return (
-    <div className="min-h-screen bg-background pb-28 md:pl-56">
+    <div className="min-h-screen bg-background pb-28">
       <div className="max-w-lg mx-auto px-4 pt-6 space-y-5">
 
         {/* Header */}

@@ -3,6 +3,7 @@
 
 import Link from 'next/link'
 import { AlertTriangle, Repeat, TrendingDown, CheckCircle2 } from 'lucide-react'
+import { useCurrency } from '@/components/currency-provider'
 
 export interface InsightAccount {
   id: string
@@ -29,19 +30,6 @@ interface DashboardInsightsProps {
   overdueRecurringCount: number
 }
 
-function formatCurrency(amount: number, currency: string) {
-  try {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency,
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(amount)
-  } catch {
-    return `${currency} ${Math.round(amount).toLocaleString()}`
-  }
-}
-
 // Flags any active credit_card account in negative territory beyond a
 // reasonable utilization heuristic, and any non-credit account that has
 // drifted negative (which should never legitimately happen and signals a
@@ -56,6 +44,7 @@ export default function DashboardInsights({
   nearLimitBudgets,
   overdueRecurringCount,
 }: DashboardInsightsProps) {
+  const { convert, format, displayCurrency } = useCurrency()
   const lowBalanceAccounts = getLowBalanceAlerts(accounts)
   const hasAnyAlert =
     overBudgets.length > 0 ||
@@ -106,7 +95,7 @@ export default function DashboardInsights({
               {b.name} is over budget
             </p>
             <p className="text-[11px] text-muted-foreground mt-0.5">
-              {formatCurrency(b.spent, b.currency)} of {formatCurrency(b.amount, b.currency)} spent
+              {format(convert(b.spent, b.currency, displayCurrency), displayCurrency)} of {format(convert(b.amount, b.currency, displayCurrency), displayCurrency)} spent
             </p>
           </div>
         </Link>
@@ -140,7 +129,7 @@ export default function DashboardInsights({
               {a.name} has a negative balance
             </p>
             <p className="text-[11px] text-muted-foreground mt-0.5">
-              {formatCurrency(a.balance, a.currency)} — review recent activity
+              {format(convert(a.balance, a.currency, displayCurrency), displayCurrency)} — review recent activity
             </p>
           </div>
         </Link>

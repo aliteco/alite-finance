@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import RecurringActions from '@/components/recurring-actions'
 import { renderCategoryIcon } from '@/lib/icons'
+import { CURRENCY_SYMBOLS } from '@/lib/services/currency-types'
 
 interface RecurringDetail {
   id: string
@@ -28,9 +29,14 @@ const FREQUENCY_LABELS: Record<string, string> = {
 }
 
 function formatCurrency(amount: number, currency: string) {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency', currency, minimumFractionDigits: 0, maximumFractionDigits: 2,
+  const symbol = CURRENCY_SYMBOLS[currency] ?? `${currency} `
+
+  const formatted = new Intl.NumberFormat('en-US', {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
   }).format(amount)
+
+  return `${symbol}${formatted}`
 }
 
 function formatDate(iso: string) {

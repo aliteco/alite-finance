@@ -68,7 +68,7 @@ async function getDashboardPayload() {
 
     supabase
       .from('accounts')
-      .select('id, name, currency, balance, type, color, include_in_net_worth') // ← added field
+      .select('id, name, currency, balance, type, color, include_in_net_worth')
       .eq('user_id', user.id)
       .eq('is_active', true)
       .order('balance', { ascending: false }),
@@ -111,7 +111,8 @@ async function getDashboardPayload() {
   const budgets: Budget[] = (budgetsRes.data as unknown as Budget[]) || []
   const overdueRecurringCount = overdueRecurringRes.count ?? 0
 
-  // Compute net worth server-side with proper currency conversion
+  // Net worth computed server-side in baseCurrency; the client converts
+  // it into the user's selected display currency.
   const netWorth = await NetWorthEngine.currentNetWorth(accounts, profile.base_currency)
 
   return {

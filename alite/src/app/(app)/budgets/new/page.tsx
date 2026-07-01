@@ -1,3 +1,4 @@
+// filepath: alite/src/app/(app)/budgets/new/page.tsx
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
@@ -32,7 +33,7 @@ export default async function NewBudgetPage() {
       .eq('is_active', true),
   ])
 
-  const baseCurrency = profileRes.data?.base_currency ?? 'IDR'
+  const baseCurrency = profileRes.data?.base_currency ?? 'USD'
   const categories = categoriesRes.data ?? []
   const existingBudgets = existingBudgetsRes.data ?? []
 

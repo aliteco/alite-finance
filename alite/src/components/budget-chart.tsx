@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useMemo } from 'react'
+import { CURRENCY_SYMBOLS } from '@/lib/services/currency-types'
 import {
   BarChart,
   Bar,
@@ -26,16 +27,14 @@ interface BudgetChartProps {
 }
 
 function formatCurrency(amount: number, currency: string) {
-  try {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency,
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(amount)
-  } catch {
-    return `${currency} ${Math.round(amount).toLocaleString()}`
-  }
+  const symbol = CURRENCY_SYMBOLS[currency] ?? `${currency} `
+
+  const formatted = new Intl.NumberFormat('en-US', {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+  }).format(amount)
+
+  return `${symbol}${formatted}`
 }
 
 export default function BudgetChart({ data, baseCurrency }: BudgetChartProps) {

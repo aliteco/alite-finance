@@ -9,6 +9,7 @@ import {
   Target,
   Briefcase,
   Settings,
+  Wallet,
   type LucideIcon,
 } from 'lucide-react'
 
@@ -24,6 +25,7 @@ export const NAV_ITEMS: readonly NavItem[] = [
   { href: '/accounts', label: 'Accounts', icon: CreditCard },
   { href: '/transactions', label: 'Activity', mobileLabel: 'Activity', icon: BarChart3 },
   { href: '/insights', label: 'Insights', icon: LineChart },
+  { href: '/budgets', label: 'Budgets', icon: Wallet },
   { href: '/recurring', label: 'Subscriptions', mobileLabel: 'Subs', icon: Repeat },
   { href: '/goals', label: 'Goals', icon: Target },
   { href: '/portfolio', label: 'Portfolio', icon: Briefcase },

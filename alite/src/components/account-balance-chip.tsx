@@ -1,4 +1,5 @@
 // filepath: alite/src/components/account-balance-chip.tsx
+import { CURRENCY_SYMBOLS } from '@/lib/services/currency-types'
 
 interface AccountBalanceChipProps {
   balance: number
@@ -7,13 +8,14 @@ interface AccountBalanceChipProps {
 }
 
 function formatCurrency(amount: number, currency: string) {
-  try {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency', currency, minimumFractionDigits: 0, maximumFractionDigits: 0,
-    }).format(amount)
-  } catch {
-    return `${currency} ${Math.round(amount).toLocaleString()}`
-  }
+  const symbol = CURRENCY_SYMBOLS[currency] ?? `${currency} `
+
+  const formatted = new Intl.NumberFormat('en-US', {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+  }).format(amount)
+
+  return `${symbol}${formatted}`
 }
 
 export default function AccountBalanceChip({ balance, currency, isCreditCard }: AccountBalanceChipProps) {

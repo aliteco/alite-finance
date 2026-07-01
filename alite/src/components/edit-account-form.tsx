@@ -1,7 +1,9 @@
+// filepath: alite/src/components/edit-account-form.tsx
 'use client'
 
 import { useState, useTransition } from 'react'
 import { updateAccount, archiveAccount } from '@/app/actions/transactions'
+import { useCurrency } from '@/components/currency-provider'
 
 const ACCOUNT_TYPES = [
   { value: 'bank', label: 'Bank' },
@@ -28,19 +30,6 @@ interface EditAccountFormProps {
   currentBalance: number
 }
 
-function formatCurrency(amount: number, currency: string) {
-  try {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency,
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 2,
-    }).format(amount)
-  } catch {
-    return `${currency} ${amount.toLocaleString()}`
-  }
-}
-
 export default function EditAccountForm({
   accountId,
   initialName,
@@ -53,6 +42,7 @@ export default function EditAccountForm({
   const [isPending, startTransition] = useTransition()
   const [isArchiving, setIsArchiving] = useState(false)
   const [confirmArchive, setConfirmArchive] = useState(false)
+  const { convert, format } = useCurrency()
 
   const [name, setName] = useState(initialName)
   const [type, setType] = useState(initialType)
@@ -64,6 +54,8 @@ export default function EditAccountForm({
   const hasNonZeroBalance = Math.abs(currentBalance) > 0.01
   const wouldBlockNegativeType =
     currentBalance < 0 && type !== initialType && !accountTypeAllowsNegativeBalance(type)
+
+  const displayBalance = format(convert(currentBalance, currency))
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault()
@@ -160,10 +152,10 @@ export default function EditAccountForm({
                 role="radio"
                 aria-checked={type === t.value}
                 onClick={() => setType(t.value)}
-                className={`rounded-xl px-3 py-2 text-xs font-medium transition-colors focus-visible:ring-2
-                  ${type === t.value
-                    ? 'bg-primary text-primary-foreground'
-                    : 'bg-muted text-muted-foreground hover:text-foreground'
+                className={`rounded-xl px-3 py-2 text-xs font-medium transition-colors focus-visible:ring-2 border ${
+                  type === t.value
+                    ? 'bg-selected-bg border-selected-border text-selected-fg'
+                    : 'bg-muted border-border text-muted-foreground hover:text-foreground'
                   }`}
               >
                 {t.label}
@@ -233,7 +225,7 @@ export default function EditAccountForm({
 
         {hasNonZeroBalance && (
           <p role="alert" className="text-[11px] text-amber-600 dark:text-amber-400 bg-amber-500/10 rounded-xl px-3 py-2.5 border border-amber-500/20 mb-3">
-            This account still holds a balance of <strong>{formatCurrency(currentBalance, currency)}</strong>.
+            This account still holds a balance of <strong>{displayBalance}</strong> ({currency} {currentBalance.toLocaleString()}).
             Archiving removes it from your net worth total — transaction history is kept, but
             the balance will no longer be counted anywhere.
           </p>

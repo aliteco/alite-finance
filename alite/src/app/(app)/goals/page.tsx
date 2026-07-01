@@ -5,6 +5,7 @@ import React, { useEffect, useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
+import { CURRENCY_SYMBOLS } from '@/lib/services/currency-types'
 import {
   Target,
   Sparkles,
@@ -100,16 +101,12 @@ export default function GoalsPage() {
   const wrapPrivacy = (val: string) => (privacyEnabled ? '••••••' : val)
 
   const formatCurrency = (amount: number, currency: string) => {
-    try {
-      return new Intl.NumberFormat('en-US', {
-        style: 'currency',
-        currency,
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 0,
-      }).format(amount)
-    } catch {
-      return `${currency} ${Math.round(amount).toLocaleString()}`
-    }
+    const symbol = CURRENCY_SYMBOLS[currency] ?? currency
+
+    return `${symbol}${Math.abs(amount).toLocaleString('en-US', {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    })}`
   }
 
   const active = useMemo(() => goals.filter(g => !g.is_completed), [goals])

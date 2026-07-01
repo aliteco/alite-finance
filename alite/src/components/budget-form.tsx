@@ -1,8 +1,10 @@
+// filepath: alite/src/components/budget-form.tsx
 'use client'
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { createBudget } from '@/app/actions/transactions'
+import { useCurrency } from '@/components/currency-provider'
 
 interface Category {
   id: string
@@ -24,6 +26,8 @@ const PERIODS = [
 
 export default function BudgetForm({ categories, baseCurrency, existingBudgets = [] }: BudgetFormProps) {
   const router = useRouter()
+  const { displayCurrency } = useCurrency()
+  const budgetCurrency = displayCurrency || baseCurrency
   const [isPending, startTransition] = useTransition()
 
   const [name, setName] = useState('')
@@ -52,7 +56,7 @@ export default function BudgetForm({ categories, baseCurrency, existingBudgets =
       const result = await createBudget({
         name: name.trim(),
         amount: numAmount,
-        currency: baseCurrency,
+        currency: budgetCurrency,
         period,
         category_id: categoryId,
         start_date: startDate,
@@ -71,7 +75,6 @@ export default function BudgetForm({ categories, baseCurrency, existingBudgets =
   return (
     <form onSubmit={handleSubmit} className="space-y-3" noValidate>
 
-      {/* Name */}
       <div className="bg-card border border-border rounded-2xl px-4 py-4">
         <label htmlFor="budget-name" className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest block mb-2">
           Budget name
@@ -89,10 +92,9 @@ export default function BudgetForm({ categories, baseCurrency, existingBudgets =
         />
       </div>
 
-      {/* Amount */}
       <div className="bg-card border border-border rounded-2xl px-4 py-4">
         <label htmlFor="budget-amount" className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest block mb-2">
-          Limit ({baseCurrency})
+          Limit ({budgetCurrency})
         </label>
         <input
           id="budget-amount"
@@ -107,7 +109,6 @@ export default function BudgetForm({ categories, baseCurrency, existingBudgets =
         />
       </div>
 
-      {/* Period */}
       <div className="bg-card border border-border rounded-2xl px-4 py-4">
         <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest block mb-2.5">
           Resets
@@ -129,7 +130,6 @@ export default function BudgetForm({ categories, baseCurrency, existingBudgets =
         </div>
       </div>
 
-      {/* Start date */}
       <div className="bg-card border border-border rounded-2xl px-4 py-4">
         <label htmlFor="budget-start" className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest block mb-2">
           Start date
@@ -143,7 +143,6 @@ export default function BudgetForm({ categories, baseCurrency, existingBudgets =
         />
       </div>
 
-      {/* Category */}
       <div className="bg-card border border-border rounded-2xl px-4 py-4">
         <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest block mb-2.5">
           Category

@@ -1,3 +1,4 @@
+// filepath: alite/src/app/(app)/transactions/new/page.tsx
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
@@ -7,7 +8,7 @@ import TransactionForm from '@/components/transaction-form'
 export default async function NewTransactionPage({
   searchParams,
 }: {
-  searchParams: Promise<{ account?: string }>
+  searchParams: Promise<{ account?: string; type?: string }>
 }) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -28,8 +29,11 @@ export default async function NewTransactionPage({
     getCategories(),
   ])
 
-  const baseCurrency = profileRes.data?.base_currency ?? 'IDR'
+  const baseCurrency = profileRes.data?.base_currency ?? 'USD'
   const accounts = accountsRes.data ?? []
+  const defaultType = (['income', 'expense', 'transfer'] as const).includes(params.type as any)
+    ? (params.type as 'income' | 'expense' | 'transfer')
+    : undefined
 
   if (accounts.length === 0) {
     return (
@@ -62,7 +66,6 @@ export default async function NewTransactionPage({
     <div className="min-h-screen bg-background pb-28">
       <div className="max-w-lg mx-auto px-4 pt-6 space-y-5">
 
-        {/* Header */}
         <div className="flex items-center gap-3">
           <Link
             href="/transactions"
@@ -79,6 +82,7 @@ export default async function NewTransactionPage({
           categories={categories}
           baseCurrency={baseCurrency}
           defaultAccountId={params.account}
+          defaultType={defaultType}
         />
       </div>
     </div>
